@@ -1129,8 +1129,8 @@ const NOCApplication = () => {
                             </div>
                         )}
 
-                        {/* Step 7: Payment */}
-                        {currentStep === 7 && (
+                        {/* Step 8: Payment */}
+                        {currentStep === 8 && (
                             <div>
                                 <h3 className="noc-section-title">Application Fee Payment</h3>
 
@@ -1141,8 +1141,8 @@ const NOCApplication = () => {
                             </div>
                         )}
 
-                        {/* Step 8: Review & Submit */}
-                        {currentStep === 8 && (
+                        {/* Step 9: Review & Submit */}
+                        {currentStep === 9 && (
                             <div>
                                 <h3 className="noc-section-title">Upload Payment Receipt & Submit Application</h3>
 

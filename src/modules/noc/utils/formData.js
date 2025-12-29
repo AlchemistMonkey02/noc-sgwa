@@ -266,16 +266,21 @@ export const formSteps = [
     },
     {
         id: 6,
+        title: 'Technical Compliance',
+        description: 'Piezometer and Flow Meter requirements'
+    },
+    {
+        id: 7,
         title: 'Document Upload',
         description: 'Upload required documents'
     },
     {
-        id: 7,
+        id: 8,
         title: 'Payment',
         description: 'Application fee payment'
     },
     {
-        id: 8,
+        id: 9,
         title: 'Review & Submit',
         description: 'Review application and submit'
     }

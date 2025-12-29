@@ -1,0 +1,776 @@
+/* CGWA Bhuneer Portal - Exact Replica Styles */
+
+:root {
+  /* Official Government Portal Colors */
+  --cgwa-primary: #0d4a8f;
+  --cgwa-secondary: #1e5a9e;
+  --cgwa-accent: #f47920;
+  --cgwa-success: #28a745;
+  --cgwa-danger: #dc3545;
+  --cgwa-warning: #ffc107;
+  --cgwa-info: #17a2b8;
+
+  /* Backgrounds */
+  --cgwa-bg-light: #f8f9fa;
+  --cgwa-bg-white: #ffffff;
+  --cgwa-bg-header: #0d4a8f;
+  --cgwa-bg-footer: #2c3e50;
+
+  /* Text Colors */
+  --cgwa-text-primary: #212529;
+  --cgwa-text-secondary: #6c757d;
+  --cgwa-text-white: #ffffff;
+  --cgwa-text-muted: #868e96;
+
+  /* Borders */
+  --cgwa-border-color: #dee2e6;
+  --cgwa-border-light: #e9ecef;
+
+  /* Shadows */
+  --cgwa-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  --cgwa-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  --cgwa-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+}
+
+/* Global Styles */
+.noc-portal {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--cgwa-text-primary);
+  background-color: var(--cgwa-bg-light);
+  min-height: 100vh;
+}
+
+/* Header Styles */
+.noc-header {
+  background: linear-gradient(135deg, var(--cgwa-bg-header) 0%, var(--cgwa-secondary) 100%);
+  color: var(--cgwa-text-white);
+  padding: 0;
+  box-shadow: var(--cgwa-shadow);
+}
+
+.noc-header-top {
+  background-color: rgba(0, 0, 0, 0.1);
+  padding: 8px 0;
+  font-size: 0.875rem;
+}
+
+.noc-header-main {
+  padding: 20px 0;
+}
+
+.noc-logo-section {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.noc-logo {
+  width: 80px;
+  height: 80px;
+}
+
+.noc-title-section h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.noc-title-section h2 {
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin: 5px 0 0 0;
+  opacity: 0.95;
+}
+
+.noc-contact-info {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.noc-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.noc-contact-item i {
+  font-size: 1.1rem;
+}
+
+/* Navigation */
+.noc-nav {
+  background-color: rgba(0, 0, 0, 0.15);
+  padding: 0;
+}
+
+.noc-nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 0;
+}
+
+.noc-nav-item {
+  position: relative;
+}
+
+.noc-nav-link {
+  display: block;
+  padding: 12px 20px;
+  color: var(--cgwa-text-white);
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border-bottom: 3px solid transparent;
+}
+
+.noc-nav-link:hover,
+.noc-nav-link.active {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-bottom-color: var(--cgwa-accent);
+}
+
+/* Container */
+.noc-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+/* Login/Register Pages */
+.noc-auth-page {
+  min-height: calc(100vh - 200px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.noc-auth-card {
+  background: var(--cgwa-bg-white);
+  border-radius: 8px;
+  box-shadow: var(--cgwa-shadow-lg);
+  padding: 40px;
+  width: 100%;
+  max-width: 500px;
+}
+
+.noc-auth-header {
+  text-align: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--cgwa-border-light);
+}
+
+.noc-auth-header h2 {
+  color: var(--cgwa-primary);
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0 0 10px 0;
+}
+
+.noc-auth-header p {
+  color: var(--cgwa-text-secondary);
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* Form Styles */
+.noc-form-group {
+  margin-bottom: 20px;
+}
+
+.noc-form-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: var(--cgwa-text-primary);
+  font-size: 0.9rem;
+}
+
+.noc-form-label.required::after {
+  content: ' *';
+  color: var(--cgwa-danger);
+}
+
+.noc-form-control {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  border: 1px solid var(--cgwa-border-color);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  background-color: var(--cgwa-bg-white);
+}
+
+.noc-form-control:focus {
+  outline: none;
+  border-color: var(--cgwa-primary);
+  box-shadow: 0 0 0 0.2rem rgba(13, 74, 143, 0.15);
+}
+
+.noc-form-control.error {
+  border-color: var(--cgwa-danger);
+}
+
+.noc-form-error {
+  color: var(--cgwa-danger);
+  font-size: 0.85rem;
+  margin-top: 5px;
+  display: block;
+}
+
+.noc-form-help {
+  color: var(--cgwa-text-muted);
+  font-size: 0.85rem;
+  margin-top: 5px;
+  display: block;
+}
+
+/* Buttons */
+.noc-btn {
+  padding: 10px 24px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+}
+
+.noc-btn-primary {
+  background-color: var(--cgwa-primary);
+  color: var(--cgwa-text-white);
+}
+
+.noc-btn-primary:hover {
+  background-color: var(--cgwa-secondary);
+  box-shadow: var(--cgwa-shadow);
+}
+
+.noc-btn-secondary {
+  background-color: var(--cgwa-text-secondary);
+  color: var(--cgwa-text-white);
+}
+
+.noc-btn-secondary:hover {
+  background-color: #5a6268;
+}
+
+.noc-btn-success {
+  background-color: var(--cgwa-success);
+  color: var(--cgwa-text-white);
+}
+
+.noc-btn-success:hover {
+  background-color: #218838;
+}
+
+.noc-btn-danger {
+  background-color: var(--cgwa-danger);
+  color: var(--cgwa-text-white);
+}
+
+.noc-btn-danger:hover {
+  background-color: #c82333;
+}
+
+.noc-btn-outline {
+  background-color: transparent;
+  border: 2px solid var(--cgwa-primary);
+  color: var(--cgwa-primary);
+}
+
+.noc-btn-outline:hover {
+  background-color: var(--cgwa-primary);
+  color: var(--cgwa-text-white);
+}
+
+.noc-btn-block {
+  width: 100%;
+  display: block;
+}
+
+.noc-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Links */
+.noc-link {
+  color: var(--cgwa-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.noc-link:hover {
+  color: var(--cgwa-secondary);
+  text-decoration: underline;
+}
+
+.noc-auth-links {
+  margin-top: 20px;
+  text-align: center;
+  padding-top: 20px;
+  border-top: 1px solid var(--cgwa-border-light);
+}
+
+.noc-auth-links p {
+  margin: 10px 0;
+  font-size: 0.9rem;
+}
+
+/* Application Form */
+.noc-application-wrapper {
+  background: var(--cgwa-bg-white);
+  border-radius: 8px;
+  box-shadow: var(--cgwa-shadow);
+  margin: 30px 0;
+  overflow: hidden;
+}
+
+.noc-form-header {
+  background: linear-gradient(135deg, var(--cgwa-primary) 0%, var(--cgwa-secondary) 100%);
+  color: var(--cgwa-text-white);
+  padding: 20px 30px;
+}
+
+.noc-form-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.noc-form-header p {
+  margin: 5px 0 0 0;
+  opacity: 0.9;
+  font-size: 0.95rem;
+}
+
+/* Progress Steps */
+.noc-progress-steps {
+  display: flex;
+  justify-content: space-between;
+  padding: 30px;
+  background-color: var(--cgwa-bg-light);
+  border-bottom: 2px solid var(--cgwa-border-light);
+}
+
+.noc-step {
+  flex: 1;
+  text-align: center;
+  position: relative;
+}
+
+.noc-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  width: 100%;
+  height: 2px;
+  background-color: var(--cgwa-border-color);
+  z-index: 0;
+}
+
+.noc-step.completed:not(:last-child)::after {
+  background-color: var(--cgwa-success);
+}
+
+.noc-step-number {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--cgwa-bg-white);
+  border: 2px solid var(--cgwa-border-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+
+.noc-step.active .noc-step-number {
+  background-color: var(--cgwa-primary);
+  border-color: var(--cgwa-primary);
+  color: var(--cgwa-text-white);
+  box-shadow: 0 0 0 4px rgba(13, 74, 143, 0.2);
+}
+
+.noc-step.completed .noc-step-number {
+  background-color: var(--cgwa-success);
+  border-color: var(--cgwa-success);
+  color: var(--cgwa-text-white);
+}
+
+.noc-step-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--cgwa-text-secondary);
+}
+
+.noc-step.active .noc-step-label {
+  color: var(--cgwa-primary);
+}
+
+.noc-step.completed .noc-step-label {
+  color: var(--cgwa-success);
+}
+
+/* Form Content */
+.noc-form-content {
+  padding: 40px;
+}
+
+.noc-section-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--cgwa-primary);
+  margin: 0 0 25px 0;
+  padding-bottom: 15px;
+  border-bottom: 2px solid var(--cgwa-border-light);
+}
+
+.noc-form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.noc-form-row.two-col {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.noc-form-row.three-col {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* Tables */
+.noc-table-wrapper {
+  overflow-x: auto;
+  margin: 20px 0;
+}
+
+.noc-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--cgwa-bg-white);
+}
+
+.noc-table th,
+.noc-table td {
+  padding: 12px;
+  text-align: left;
+  border: 1px solid var(--cgwa-border-color);
+}
+
+.noc-table th {
+  background-color: var(--cgwa-primary);
+  color: var(--cgwa-text-white);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.noc-table tbody tr:nth-child(even) {
+  background-color: var(--cgwa-bg-light);
+}
+
+.noc-table tbody tr:hover {
+  background-color: rgba(13, 74, 143, 0.05);
+}
+
+/* File Upload */
+.noc-file-upload {
+  border: 2px dashed var(--cgwa-border-color);
+  border-radius: 4px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.noc-file-upload:hover {
+  border-color: var(--cgwa-primary);
+  background-color: rgba(13, 74, 143, 0.02);
+}
+
+.noc-file-upload input[type="file"] {
+  display: none;
+}
+
+.noc-file-upload-icon {
+  font-size: 2.5rem;
+  color: var(--cgwa-text-muted);
+  margin-bottom: 10px;
+}
+
+.noc-file-upload-text {
+  color: var(--cgwa-text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Form Navigation Buttons */
+.noc-form-navigation {
+  display: flex;
+  justify-content: space-between;
+  padding: 30px 40px;
+  background-color: var(--cgwa-bg-light);
+  border-top: 2px solid var(--cgwa-border-light);
+}
+
+/* Alert Messages */
+.noc-alert {
+  padding: 15px 20px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  border-left: 4px solid;
+}
+
+.noc-alert-success {
+  background-color: #d4edda;
+  border-color: var(--cgwa-success);
+  color: #155724;
+}
+
+.noc-alert-danger {
+  background-color: #f8d7da;
+  border-color: var(--cgwa-danger);
+  color: #721c24;
+}
+
+.noc-alert-warning {
+  background-color: #fff3cd;
+  border-color: var(--cgwa-warning);
+  color: #856404;
+}
+
+.noc-alert-info {
+  background-color: #d1ecf1;
+  border-color: var(--cgwa-info);
+  color: #0c5460;
+}
+
+/* Footer */
+.noc-footer {
+  background-color: var(--cgwa-bg-footer);
+  color: var(--cgwa-text-white);
+  padding: 30px 0 15px 0;
+  margin-top: 50px;
+}
+
+.noc-footer-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 30px;
+  margin-bottom: 20px;
+}
+
+.noc-footer-section h3 {
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.noc-footer-section ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.noc-footer-section li {
+  margin-bottom: 8px;
+}
+
+.noc-footer-section a {
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.3s ease;
+}
+
+.noc-footer-section a:hover {
+  color: var(--cgwa-text-white);
+}
+
+.noc-footer-bottom {
+  text-align: center;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .noc-header-main {
+    text-align: center;
+  }
+
+  .noc-logo-section {
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .noc-contact-info {
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 15px;
+  }
+
+  .noc-nav-list {
+    flex-direction: column;
+  }
+
+  .noc-progress-steps {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .noc-step:not(:last-child)::after {
+    display: none;
+  }
+
+  .noc-form-row,
+  .noc-form-row.two-col,
+  .noc-form-row.three-col {
+    grid-template-columns: 1fr;
+  }
+
+  .noc-form-content {
+    padding: 20px;
+  }
+
+  .noc-form-navigation {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .noc-auth-card {
+    padding: 25px;
+  }
+}
+
+/* Radio and Checkbox Styles */
+.noc-radio-group,
+.noc-checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.noc-radio-item,
+.noc-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.noc-radio-item input[type="radio"],
+.noc-checkbox-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.noc-radio-item label,
+.noc-checkbox-item label {
+  cursor: pointer;
+  font-weight: 400;
+  margin: 0;
+}
+
+/* Loading Spinner */
+.noc-spinner {
+  border: 3px solid var(--cgwa-border-light);
+  border-top: 3px solid var(--cgwa-primary);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 20px auto;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Card Styles */
+.noc-card {
+  background: var(--cgwa-bg-white);
+  border-radius: 8px;
+  box-shadow: var(--cgwa-shadow);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.noc-card-header {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--cgwa-primary);
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--cgwa-border-light);
+}
+
+.noc-card-body {
+  padding: 10px 0;
+}
+
+/* MSME Exemption Banner */
+.noc-exemption-banner {
+  background: linear-gradient(135deg, #d4edda 0%, #c3f0ca 100%);
+  border: 2px solid var(--cgwa-success);
+  border-left: 6px solid var(--cgwa-success);
+  border-radius: 8px;
+  padding: 20px 25px;
+  margin: 25px 0;
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.15);
+  animation: slide-in 0.4s ease-out;
+}
+
+.noc-exemption-badge {
+  background-color: var(--cgwa-success);
+  color: var(--cgwa-text-white);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-block;
+  margin-left: 10px;
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

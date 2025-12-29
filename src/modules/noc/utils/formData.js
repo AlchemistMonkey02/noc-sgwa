@@ -2,6 +2,7 @@
 
 export const applicationTypes = [
     'Fresh NOC',
+    'Provisional NOC',
     'NOC Renewal',
     'NOC Amendment',
     'NOC Transfer'
@@ -35,6 +36,8 @@ export const waterQualityTypes = [
 
 export const groundWaterUtilization = [
     'Drinking/Domestic',
+    'Industry',
+    'Mining',
     'Industrial',
     'Irrigation',
     'Construction',

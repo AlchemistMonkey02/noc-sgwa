@@ -7,6 +7,9 @@ import FormNavigation from './components/FormNavigation';
 import PaymentModule from './components/PaymentModule';
 import PiezometerRequirements from './components/PiezometerRequirements';
 import FlowMeterCompliance from './components/FlowMeterCompliance';
+import { checkExemption, getExemptionDisplayConfig } from './utils/exemptionRules';
+import { getDistricts, getBlocksForDistrict, getBlockCategory, checkBlockEligibility } from './utils/blockClassification';
+import { getIndustryDropdownOptions, getMiningDropdownOptions, getOtherProjectDropdownOptions, isPollutingIndustry, isPackagedWaterIndustry } from './utils/industryClassification';
 import { initialFormData, formSteps, applicationTypes, applicationSubTypes, projectTypes, waterQualityTypes, groundWaterUtilization, msmeTypes, states, geologyTypes, structureTypes, documentTypes } from './utils/formData';
 import { validateStep1, validateStep2, validateStep3, validateStep4, validateStep5, validateStep6, validateFileSize, validateFileType } from './utils/formValidation';
 import './styles/noc-portal.css';
@@ -18,6 +21,11 @@ const NOCApplication = () => {
     const [errors, setErrors] = useState({});
     const [existingStructures, setExistingStructures] = useState([]);
 
+    // Phase  1: Block Classification State
+    const [availableBlocks, setAvailableBlocks] = useState([]);
+    const [blockCategory, setBlockCategory] = useState(null);
+    const [exemptionStatus, setExemptionStatus] = useState(null);
+
     useEffect(() => {
         // Check if user is logged in
         const userData = localStorage.getItem('nocUser');
@@ -26,21 +34,106 @@ const NOCApplication = () => {
         }
     }, [navigate]);
 
-    // Check for MSME exemption eligibility
+    // Phase 1: Comprehensive Exemption Check (replaces old MSME-only check)
     useEffect(() => {
-        const isMicroOrSmall = formData.msmeType === 'Micro' || formData.msmeType === 'Small';
-        const dailyRequirement = parseFloat(formData.dailyWaterRequirement) || 0;
-        const isUnder10KLD = dailyRequirement > 0 && dailyRequirement < 10; // 10 m³/day = 10 KLD
+        if (formData.isMSME || formData.groundWaterUtilizationFor || formData.dailyWaterRequirement || formData.organizationType) {
+            const exemption = checkExemption(formData);
+            setExemptionStatus(exemption);
 
-        const isExempt = formData.isMSME === 'Yes' && isMicroOrSmall && isUnder10KLD;
-
-        if (formData.isExemptMSME !== isExempt) {
-            setFormData(prev => ({
-                ...prev,
-                isExemptMSME: isExempt
-            }));
+            if (exemption.isExempt) {
+                setFormData(prev => ({
+                    ...prev,
+                    isExempt: true,
+                    exemptionType: exemption.exemptionType,
+                    exemptionCode: exemption.exemptionCode,
+                    isExemptMSME: exemption.exemptionCode === 'MSME_SM' // Keep for backward compatibility
+                }));
+            } else {
+                setFormData(prev => ({
+                    ...prev,
+                    isExempt: false,
+                    exemptionType: null,
+                    exemptionCode: null
+                }));
+            }
         }
-    }, [formData.isMSME, formData.msmeType, formData.dailyWaterRequirement, formData.isExemptMSME]);
+    }, [formData.isMSME, formData.msmeType, formData.dailyWaterRequirement, formData.groundWaterUtilizationFor, formData.organizationType, formData.applicationType]); 
+
+
+
+    // Phase 1: Load districts and blocks based on state selection
+
+    useEffect(() => {
+
+        if (formData.state) {
+
+            const districts = getDistricts(formData.state);
+
+            // For now, we'll use a simple implementation
+
+            // In production, this would fetch from blockClassification.js
+
+        }
+
+    }, [formData.state]);
+
+
+
+    // Phase 1: Load blocks when district changes
+
+    useEffect(() => {
+
+        if (formData.district) {
+
+            const blocks = getBlocksForDistrict(formData.state, formData.district);
+
+            setAvailableBlocks(blocks);
+
+        }
+
+    }, [formData.district, formData.state]);
+
+
+
+    // Phase 1: Check block category and eligibility
+    useEffect(() => {
+        if (formData.district && formData.block) {
+            const category = getBlockCategory(formData.district, formData.block);
+            setBlockCategory(category);
+
+            // Check eligibility based on block category and project details
+            if (category) {
+                const projectDetails = {
+                    industryType: formData.industryType,
+                    dailyWaterRequirement: parseFloat(formData.dailyWaterRequirement) || 0
+                };
+                
+                const eligibility = checkBlockEligibility(
+                    formData.district,
+                    formData.block,
+                    projectDetails
+                );
+
+                if (!eligibility.allowed) {
+                    // Show warning but don't block application (officer will review)
+                    console.warn('Block eligibility warning:', eligibility.reason);
+                    setFormData(prev => ({
+                        ...prev,
+                        blockEligibilityWarning: eligibility.reason
+                    }));
+                } else {
+                    setFormData(prev => ({
+                        ...prev,
+                        blockEligibilityWarning: null
+                    }));
+                }
+            }
+        } else {
+            setBlockCategory(null);
+        }
+    }, [formData.block, formData.district, formData.industryType, formData.dailyWaterRequirement]);
+
+
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -309,6 +402,93 @@ const NOCApplication = () => {
                                     </div>
                                 </div>
 
+                                {/* Dynamic Industry/Mining/Other Dropdown */}
+                                {formData.groundWaterUtilizationFor === 'Industry' && (
+                                    <div className="noc-form-group">
+                                        <label className="noc-form-label required">Industry Type</label>
+                                        <select
+                                            name="industryType"
+                                            className={`noc-form-control ${errors.industryType ? 'error' : ''}`}
+                                            value={formData.industryType || ''}
+                                            onChange={handleChange}
+                                        >
+                                            <option value="">Select Industry Type</option>
+                                            {(() => {
+                                                const industryOptions = getIndustryDropdownOptions();
+                                                const categories = [...new Set(industryOptions.map(ind => ind.category))];
+                                                return categories.map(category => (
+                                                    <optgroup key={category} label={category}>
+                                                        {industryOptions
+                                                            .filter(item => item.category === category)
+                                                            .map(item => (
+                                                                <option key={item.value} value={item.value}>
+                                                                    {item.label} {item.isPolluting ? '(Polluting)' : ''}
+                                                                </option>
+                                                            ))}
+                                                    </optgroup>
+                                                ));
+                                            })()}
+                                        </select>
+                                        {errors.industryType && <span className="noc-form-error">{errors.industryType}</span>}
+                                        {formData.industryType && isPollutingIndustry(formData.industryType) && (
+                                            <div className="noc-alert noc-alert-warning" style={{ marginTop: '10px' }}>
+                                                ⚠️ <strong>Polluting Industry:</strong> Additional compliance requirements apply including well-head protection and water quality monitoring.
+                                            </div>
+                                        )}
+                                        {formData.industryType && isPackagedWaterIndustry(formData.industryType) && (
+                                            <div className="noc-alert noc-alert-info" style={{ marginTop: '10px' }}>
+                                                ℹ️ <strong>Packaged Water:</strong> BIS license and regular product quality testing required.
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {formData.groundWaterUtilizationFor === 'Mining' && (
+                                    <div className="noc-form-group">
+                                        <label className="noc-form-label required">Mining Type</label>
+                                        <select
+                                            name="miningType"
+                                            className={`noc-form-control ${errors.miningType ? 'error' : ''}`}
+                                            value={formData.miningType || ''}
+                                            onChange={handleChange}
+                                        >
+                                            <option value="">Select Mining Type</option>
+                                            {getMiningDropdownOptions().map(mining => (
+                                                <option key={mining.value} value={mining.value}>
+                                                    {mining.label} ({mining.category})
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {errors.miningType && <span className="noc-form-error">{errors.miningType}</span>}
+                                        <div className="noc-alert noc-alert-info" style={{ marginTop: '10px' }}>
+                                            ℹ️ <strong>Mining Projects:</strong> Piezometer installation in core and buffer zones is mandatory. Dewatering treatment plan required.
+                                        </div>
+                                    </div>
+                                )}
+
+                                {formData.groundWaterUtilizationFor &&
+                                    formData.groundWaterUtilizationFor !== 'Industry' &&
+                                    formData.groundWaterUtilizationFor !== 'Mining' &&
+                                    formData.groundWaterUtilizationFor !== 'Domestic' && (
+                                        <div className="noc-form-group">
+                                            <label className="noc-form-label required">Project Category</label>
+                                            <select
+                                                name="otherProjectType"
+                                                className={`noc-form-control ${errors.otherProjectType ? 'error' : ''}`}
+                                                value={formData.otherProjectType || ''}
+                                                onChange={handleChange}
+                                            >
+                                                <option value="">Select Project Category</option>
+                                                {getOtherProjectDropdownOptions().map(project => (
+                                                    <option key={project.value} value={project.value}>
+                                                        {project.label} ({project.category})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            {errors.otherProjectType && <span className="noc-form-error">{errors.otherProjectType}</span>}
+                                        </div>
+                                    )}
+
                                 <div className="noc-form-row two-col">
                                     <div className="noc-form-group">
                                         <label className="noc-form-label required">Existing NOC Status</label>
@@ -418,29 +598,31 @@ const NOCApplication = () => {
                                     </div>
                                 )}
 
-                                {/* MSME Exemption Banner */}
-                                {formData.isExemptMSME && (
-                                    <div className="noc-exemption-banner">
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                                            <span style={{ fontSize: '2rem' }}>🎉</span>
-                                            <h3 style={{ margin: 0, color: '#155724' }}>MSME Exemption Eligible!</h3>
-                                        </div>
-                                        <p style={{ marginBottom: '10px' }}>
-                                            Your enterprise qualifies for <strong>MSME exemption</strong> under CGWA regulations
-                                            (Daily extraction &lt; 10 KLD for Micro/Small enterprises).
-                                        </p>
-                                        <div style={{ background: 'rgba(255,255,255,0.7)', padding: '15px', borderRadius: '6px', marginTop: '15px' }}>
-                                            <p style={{ margin: '0 0 10px 0', fontWeight: '600' }}>📋 You only need to submit:</p>
-                                            <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                                                <li>✓ MSME Registration Certificate</li>
-                                                <li>✓ Affidavit/Declaration of water usage</li>
-                                            </ul>
-                                            <p style={{ margin: '10px 0 0 0', fontSize: '0.9rem', fontStyle: 'italic' }}>
-                                                You do <strong>NOT</strong> need full NOC approval for groundwater extraction below 10 KLD.
+                                {/* Comprehensive Exemption Banner */}
+                                {exemptionStatus?.isExempt && (() => {
+                                    const displayConfig = getExemptionDisplayConfig(exemptionStatus);
+                                    return (
+                                        <div className="noc-exemption-banner">
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                                                <span style={{ fontSize: '2rem' }}>{displayConfig.icon}</span>
+                                                <h3 style={{ margin: 0, color: '#155724' }}>{displayConfig.title}</h3>
+                                            </div>
+                                            <p style={{ marginBottom: '10px' }}>
+                                                {exemptionStatus.message || displayConfig.message}
                                             </p>
+                                            {displayConfig.details && displayConfig.details.length > 0 && (
+                                                <div style={{ background: 'rgba(255,255,255,0.7)', padding: '15px', borderRadius: '6px', marginTop: '15px' }}>
+                                                    <p style={{ margin: '0 0 10px 0', fontWeight: '600' }}>📋 Details:</p>
+                                                    <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                                                        {displayConfig.details.map((detail, idx) => (
+                                                            <li key={idx}>{detail}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
-                                )}
+                                    );
+                                })()}
                             </div>
                         )}
 
@@ -480,7 +662,110 @@ const NOCApplication = () => {
                                     </div>
 
                                     <div className="noc-form-group">
-                                        <label className="noc-form-label required">Assessment Unit</label>
+                                        <label className="noc-form-label required">District</label>
+                                        <select
+                                            name="district"
+                                            className={`noc-form-control ${errors.district ? 'error' : ''}`}
+                                            value={formData.district || ''}
+                                            onChange={handleChange}
+                                        >
+                                            <option value="">Select District</option>
+                                            {formData.state && getDistricts(formData.state).map(district => (
+                                                <option key={district} value={district}>{district}</option>
+                                            ))}
+                                        </select>
+                                        {errors.district && <span className="noc-form-error">{errors.district}</span>}
+                                    </div>
+                                </div>
+
+                                <div className="noc-form-row two-col">
+                                    <div className="noc-form-group">
+                                        <label className="noc-form-label required">Block</label>
+                                        <select
+                                            name="block"
+                                            className={`noc-form-control ${errors.block ? 'error' : ''}`}
+                                            value={formData.block || ''}
+                                            onChange={handleChange}
+                                            disabled={!formData.district}
+                                        >
+                                            <option value="">Select Block</option>
+                                            {availableBlocks.map(block => (
+                                                <option key={block} value={block}>{block}</option>
+                                            ))}
+                                        </select>
+                                        {errors.block && <span className="noc-form-error">{errors.block}</span>}
+                                        {!formData.district && (
+                                            <span className="noc-form-help">Please select a district first</span>
+                                        )}
+                                    </div>
+
+                                    <div className="noc-form-group">
+                                        <label className="noc-form-label">Tehsil</label>
+                                        <input
+                                            type="text"
+                                            name="tehsil"
+                                            className="noc-form-control"
+                                            value={formData.tehsil}
+                                            onChange={handleChange}
+                                            placeholder="Enter tehsil"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Block Category Display */}
+                                {blockCategory && (
+                                    <div className="noc-alert" style={{
+                                        marginBottom: '20px',
+                                        background: blockCategory.color === '#28a745' ? 'linear-gradient(135deg, #d4edda 0%, #c3f0ca 100%)' :
+                                                   blockCategory.color === '#ffc107' ? 'linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%)' :
+                                                   blockCategory.color === '#ff9800' ? 'linear-gradient(135deg, #f8d7da 0%, #fab1a0 100%)' :
+                                                   'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)',
+                                        border: `2px solid ${blockCategory.color}`,
+                                        color: '#000'
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <span style={{ fontSize: '1.5rem' }}>
+                                                {blockCategory.code === 'SAFE' ? '✅' :
+                                                 blockCategory.code === 'SEMI_CRITICAL' ? '⚠️' :
+                                                 blockCategory.code === 'CRITICAL' ? '🚨' : '❌'}
+                                            </span>
+                                            <div style={{ flex: 1 }}>
+                                                <strong>Block Category: {blockCategory.name}</strong>
+                                                <p style={{ margin: '5px 0 0 0', fontSize: '0.9rem' }}>
+                                                    {blockCategory.description}
+                                                </p>
+                                                {blockCategory.restrictions && blockCategory.restrictions.length > 0 && (
+                                                    <div style={{ marginTop: '10px' }}>
+                                                        <strong>Restrictions:</strong>
+                                                        <ul style={{ margin: '5px 0 0 20px', padding: 0 }}>
+                                                            {blockCategory.restrictions.map((restriction, idx) => (
+                                                                <li key={idx} style={{ fontSize: '0.9rem' }}>{restriction}</li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                                <p style={{ margin: '10px 0 0 0', fontSize: '0.9rem', fontWeight: '600' }}>
+                                                    NOC Validity: {blockCategory.validityYears} years
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Block Eligibility Warning */}
+                                {formData.blockEligibilityWarning && (
+                                    <div className="noc-alert noc-alert-danger" style={{ marginBottom: '20px' }}>
+                                        <strong>⚠️ Restriction Notice:</strong>
+                                        <p style={{ margin: '5px 0 0 0' }}>{formData.blockEligibilityWarning}</p>
+                                        <p style={{ margin: '10px 0 0 0', fontSize: '0.9rem', fontStyle: 'italic' }}>
+                                            This application will be subject to additional scrutiny by the authority.
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="noc-form-row">
+                                    <div className="noc-form-group">
+                                        <label className="noc-form-label">Assessment Unit</label>
                                         <input
                                             type="text"
                                             name="assessmentUnit"

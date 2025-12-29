@@ -109,19 +109,22 @@ export const BLOCK_CLASSIFICATION_DATA = {
 
 /**
  * Get all districts
+ * @param {string} state - State name (optional, for future state filtering)
  * @returns {Array<string>} - List of districts
  */
-export const getDistricts = () => {
+export const getDistricts = (state = null) => {
+    // For now, return all districts. In future, filter by state if needed
     return Object.keys(BLOCK_CLASSIFICATION_DATA).sort();
 };
 
 /**
  * Get blocks for a specific district
+ * @param {string} state - State name (optional, currently unused)
  * @param {string} district - District name
  * @returns {Array<string>} - List of blocks
  */
-export const getBlocksForDistrict = (district) => {
-    if (!BLOCK_CLASSIFICATION_DATA[district]) {
+export const getBlocksForDistrict = (state, district) => {
+    if (!district || !BLOCK_CLASSIFICATION_DATA[district]) {
         return [];
     }
     return Object.keys(BLOCK_CLASSIFICATION_DATA[district]).sort();

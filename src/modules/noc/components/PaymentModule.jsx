@@ -2,18 +2,67 @@ import React, { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { calculateApplicationFee, generateReceiptNumber, generateTransactionId, formatCurrency, formatDate } from '../utils/paymentUtils';
+import { calculateAdvancedCharges, getChargeBreakdown } from '../utils/advancedChargeCalculation';
+import { getBlockCategory } from '../utils/blockClassification';
 
 const PaymentModule = ({ formData, onPaymentComplete }) => {
     const [fees, setFees] = useState({ baseFee: 0, gstAmount: 0, totalAmount: 0 });
+    const [advancedCharges, setAdvancedCharges] = useState(null);
+    const [chargeBreakdown, setChargeBreakdown] = useState(null);
     const [paymentMethod, setPaymentMethod] = useState('online');
     const [processing, setProcessing] = useState(false);
     const [paymentCompleted, setPaymentCompleted] = useState(false);
     const [receiptData, setReceiptData] = useState(null);
 
     useEffect(() => {
-        // Calculate fees when component mounts
-        const calculatedFees = calculateApplicationFee(formData);
-        setFees(calculatedFees);
+        // Use enhanced charge calculation if block category is available
+        if (formData.district && formData.block && formData.dailyWaterRequirement) {
+            const blockCategoryObj = getBlockCategory(formData.district, formData.block);
+            
+            if (blockCategoryObj) {
+                // Determine project category
+                let projectCategory = 'Industry';
+                if (formData.groundWaterUtilizationFor === 'Mining') {
+                    projectCategory = 'Mining';
+                } else if (formData.groundWaterUtilizationFor !== 'Industry') {
+                    projectCategory = 'Other';
+                }
+
+                // Check if provisional NOC
+                const isProvisional = formData.applicationType === 'Provisional NOC' || formData.applicationSubType === 'Provisional';
+
+                const charges = calculateAdvancedCharges({
+                    dailyWaterRequirement: parseFloat(formData.dailyWaterRequirement) || 0,
+                    blockCategory: blockCategoryObj.name,
+                    applicationType: formData.applicationType || 'Fresh NOC',
+                    projectCategory: projectCategory,
+                    isExempt: formData.isExempt || false,
+                    isProvisional: isProvisional
+                });
+
+                setAdvancedCharges(charges);
+                setChargeBreakdown(getChargeBreakdown(charges));
+                
+                // Set fees for backward compatibility
+                setFees({
+                    baseFee: charges.applicationFee,
+                    gstAmount: charges.gstAmount,
+                    totalAmount: charges.totalAmount
+                });
+            } else {
+                // Fallback to old calculation if block category not found
+                const calculatedFees = calculateApplicationFee(formData);
+                setFees(calculatedFees);
+                setAdvancedCharges(null);
+                setChargeBreakdown(null);
+            }
+        } else {
+            // Fallback to old calculation
+            const calculatedFees = calculateApplicationFee(formData);
+            setFees(calculatedFees);
+            setAdvancedCharges(null);
+            setChargeBreakdown(null);
+        }
     }, [formData]);
 
     const generateReceiptPDF = (paymentDetails) => {
@@ -56,14 +105,25 @@ const PaymentModule = ({ formData, onPaymentComplete }) => {
         }
 
         // Fee Breakdown Table
-        doc.autoTable({
-            startY: 120,
-            head: [['Description', 'Amount']],
-            body: [
+        let feeBreakdownBody = [];
+        if (advancedCharges && chargeBreakdown) {
+            chargeBreakdown.details.forEach(item => {
+                if (!item.isSubtotal) {
+                    feeBreakdownBody.push([item.label, item.value.replace('₹', '').replace(/,/g, '')]);
+                }
+            });
+        } else {
+            feeBreakdownBody = [
                 ['Base Application Fee', formatCurrency(fees.baseFee)],
                 ['GST (18%)', formatCurrency(fees.gstAmount)],
                 ['Total Amount', formatCurrency(fees.totalAmount)]
-            ],
+            ];
+        }
+
+        doc.autoTable({
+            startY: 120,
+            head: [['Description', 'Amount']],
+            body: feeBreakdownBody,
             theme: 'striped',
             headStyles: { fillColor: [13, 74, 143] },
             footStyles: { fillColor: [13, 74, 143], fontStyle: 'bold' }
@@ -104,8 +164,11 @@ const PaymentModule = ({ formData, onPaymentComplete }) => {
         // Notify parent component
         onPaymentComplete({
             ...paymentDetails,
-            ...fees,
-            paymentStatus: 'paid'
+            baseFee: advancedCharges ? advancedCharges.applicationFee : fees.baseFee,
+            gstAmount: advancedCharges ? advancedCharges.gstAmount : fees.gstAmount,
+            totalAmount: advancedCharges ? advancedCharges.totalAmount : fees.totalAmount,
+            paymentStatus: 'paid',
+            advancedCharges: advancedCharges
         });
     };
 
@@ -122,39 +185,88 @@ const PaymentModule = ({ formData, onPaymentComplete }) => {
 
             {/* Fee Breakdown */}
             <div className="noc-card" style={{ marginBottom: '30px' }}>
-                <div className="noc-card-header">Fee Breakdown</div>
+                <div className="noc-card-header">Charge Breakdown</div>
                 <div className="noc-card-body">
-                    <table className="noc-table">
-                        <thead>
-                            <tr>
-                                <th>Description</th>
-                                <th style={{ textAlign: 'right' }}>Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>
-                                    <strong>Base Application Fee</strong>
-                                    <br />
-                                    <span style={{ fontSize: '0.85rem', color: 'var(--cgwa-text-secondary)' }}>
-                                        {formData.applicationType}
-                                        {formData.isExemptMSME && ' (MSME Exempt - Reduced Fee)'}
-                                    </span>
-                                </td>
-                                <td style={{ textAlign: 'right' }}>{formatCurrency(fees.baseFee)}</td>
-                            </tr>
-                            <tr>
-                                <td>GST (18%)</td>
-                                <td style={{ textAlign: 'right' }}>{formatCurrency(fees.gstAmount)}</td>
-                            </tr>
-                        </tbody>
-                        <tfoot>
-                            <tr style={{ background: 'var(--cgwa-primary)', color: 'white', fontWeight: 'bold' }}>
-                                <td>Total Amount</td>
-                                <td style={{ textAlign: 'right', fontSize: '1.2rem' }}>{formatCurrency(fees.totalAmount)}</td>
-                            </tr>
-                        </tfoot>
-                    </table>
+                    {chargeBreakdown ? (
+                        // Enhanced charge breakdown
+                        <table className="noc-table">
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th style={{ textAlign: 'right' }}>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {chargeBreakdown.details.map((item, index) => {
+                                    if (item.isTotal) {
+                                        return (
+                                            <tr key={index} style={{ background: 'var(--cgwa-primary)', color: 'white', fontWeight: 'bold' }}>
+                                                <td>{item.label}</td>
+                                                <td style={{ textAlign: 'right', fontSize: '1.2rem' }}>{item.value}</td>
+                                            </tr>
+                                        );
+                                    }
+                                    if (item.isSubtotal) {
+                                        return (
+                                            <tr key={index} style={{ background: '#f8f9fa', fontWeight: '600' }}>
+                                                <td>{item.label}</td>
+                                                <td style={{ textAlign: 'right' }}>{item.value}</td>
+                                            </tr>
+                                        );
+                                    }
+                                    return (
+                                        <tr key={index}>
+                                            <td>
+                                                <strong>{item.label}</strong>
+                                                {item.description && (
+                                                    <>
+                                                        <br />
+                                                        <span style={{ fontSize: '0.85rem', color: 'var(--cgwa-text-secondary)' }}>
+                                                            {item.description}
+                                                        </span>
+                                                    </>
+                                                )}
+                                            </td>
+                                            <td style={{ textAlign: 'right' }}>{item.value}</td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    ) : (
+                        // Fallback to basic fee breakdown
+                        <table className="noc-table">
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th style={{ textAlign: 'right' }}>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <strong>Base Application Fee</strong>
+                                        <br />
+                                        <span style={{ fontSize: '0.85rem', color: 'var(--cgwa-text-secondary)' }}>
+                                            {formData.applicationType}
+                                            {formData.isExemptMSME && ' (MSME Exempt - Reduced Fee)'}
+                                        </span>
+                                    </td>
+                                    <td style={{ textAlign: 'right' }}>{formatCurrency(fees.baseFee)}</td>
+                                </tr>
+                                <tr>
+                                    <td>GST (18%)</td>
+                                    <td style={{ textAlign: 'right' }}>{formatCurrency(fees.gstAmount)}</td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr style={{ background: 'var(--cgwa-primary)', color: 'white', fontWeight: 'bold' }}>
+                                    <td>Total Amount</td>
+                                    <td style={{ textAlign: 'right', fontSize: '1.2rem' }}>{formatCurrency(fees.totalAmount)}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    )}
                 </div>
             </div>
 

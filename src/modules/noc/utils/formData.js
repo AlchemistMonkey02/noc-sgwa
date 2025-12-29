@@ -209,7 +209,33 @@ export const initialFormData = {
     paymentTransactionId: '',
     paymentDate: '',
     paymentReceiptNumber: '',
-    paymentMethod: 'online' // online/offline
+    paymentMethod: 'online', // online/offline
+
+    // Technical Compliance
+    piezometerRequired: false,
+    geologyType: '',
+    piezometerDetails: {
+        distanceFromWell: '',
+        depth: '',
+        monitoringFrequency: 'Monthly',
+        qualityTestingFrequency: 'Annual',
+        nablLabName: '',
+        installationDate: '',
+        piezometerLocation: '',
+        coordinates: { latitude: '', longitude: '' }
+    },
+    flowMeterDetails: {
+        meterType: '',
+        manufacturer: '',
+        modelNumber: '',
+        serialNumber: '',
+        bisStandard: '',
+        telemetryEnabled: 'Yes',
+        telemetryProvider: '',
+        installationProposedDate: '',
+        calibrationDate: '',
+        calibrationCertificate: null
+    }
 };
 
 export const formSteps = [

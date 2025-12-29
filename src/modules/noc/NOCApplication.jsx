@@ -5,6 +5,8 @@ import NOCFooter from './components/NOCFooter';
 import ProgressSteps from './components/ProgressSteps';
 import FormNavigation from './components/FormNavigation';
 import PaymentModule from './components/PaymentModule';
+import PiezometerRequirements from './components/PiezometerRequirements';
+import FlowMeterCompliance from './components/FlowMeterCompliance';
 import { initialFormData, formSteps, applicationTypes, applicationSubTypes, projectTypes, waterQualityTypes, groundWaterUtilization, msmeTypes, states, geologyTypes, structureTypes, documentTypes } from './utils/formData';
 import { validateStep1, validateStep2, validateStep3, validateStep4, validateStep5, validateStep6, validateFileSize, validateFileType } from './utils/formValidation';
 import './styles/noc-portal.css';
@@ -1023,6 +1025,54 @@ const NOCApplication = () => {
                                         value={formData.designation}
                                         onChange={handleChange}
                                         placeholder="Your designation"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Step 5.5: Technical Compliance (Piezometer & Flow Meter) */}
+                        {currentStep === 5.5 && (
+                            <div>
+                                <h3 className="noc-section-title">Technical Compliance Requirements</h3>
+
+                                <div className="noc-alert noc-alert-info" style={{ marginBottom: '30px' }}>
+                                    <strong>ℹ️ Compliance Requirements:</strong>
+                                    <p style={{ margin: '10px 0 0 0' }}>
+                                        As per SGWA regulations, all NOC holders must comply with technical requirements including piezometer installation (if applicable) and digital flow meter with telemetry.
+                                    </p>
+                                </div>
+
+                                {/* Piezometer Requirements */}
+                                <div style={{ marginBottom: '40px' }}>
+                                    <h4 style={{
+                                        padding: '12px 20px',
+                                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                        color: 'white',
+                                        borderRadius: '8px',
+                                        marginBottom: '20px'
+                                    }}>
+                                        1. Piezometer Requirements (Annexure-2)
+                                    </h4>
+                                    <PiezometerRequirements
+                                        formData={formData}
+                                        onUpdate={(data) => setFormData(prev => ({ ...prev, ...data }))}
+                                    />
+                                </div>
+
+                                {/* Flow Meter Compliance */}
+                                <div>
+                                    <h4 style={{
+                                        padding: '12px 20px',
+                                        background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                                        color: 'white',
+                                        borderRadius: '8px',
+                                        marginBottom: '20px'
+                                    }}>
+                                        2. Digital Flow Meter (MANDATORY for ALL)
+                                    </h4>
+                                    <FlowMeterCompliance
+                                        formData={formData}
+                                        onUpdate={(data) => setFormData(prev => ({ ...prev, ...data }))}
                                     />
                                 </div>
                             </div>

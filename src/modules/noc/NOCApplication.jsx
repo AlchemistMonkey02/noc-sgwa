@@ -1030,8 +1030,8 @@ const NOCApplication = () => {
                             </div>
                         )}
 
-                        {/* Step 5.5: Technical Compliance (Piezometer & Flow Meter) */}
-                        {currentStep === 5.5 && (
+                        {/* Step 6: Technical Compliance (Piezometer & Flow Meter) */}
+                        {currentStep === 6 && (
                             <div>
                                 <h3 className="noc-section-title">Technical Compliance Requirements</h3>
 
@@ -1078,8 +1078,8 @@ const NOCApplication = () => {
                             </div>
                         )}
 
-                        {/* Step 6: Document Upload */}
-                        {currentStep === 6 && (
+                        {/* Step 7: Document Upload */}
+                        {currentStep === 7 && (
                             <div>
                                 <h3 className="noc-section-title">Document Upload</h3>
 

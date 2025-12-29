@@ -10,15 +10,15 @@ const NOCHeader = () => {
                     <div className="noc-contact-info">
                         <div className="noc-contact-item">
                             <i className="📞"></i>
-                            <span>011-23383824</span>
+                            <span>9000000000</span>
                         </div>
                         <div className="noc-contact-item">
                             <i className="📱"></i>
-                            <span>9868232311</span>
+                            <span>90000000000</span>
                         </div>
                         <div className="noc-contact-item">
                             <i className="✉️"></i>
-                            <span>bhuneersupport-cgwa@gov.in</span>
+                            <span>rsgwa@gov.in</span>
                         </div>
                     </div>
                 </div>
@@ -29,10 +29,10 @@ const NOCHeader = () => {
                 <div className="noc-container">
                     <div className="noc-logo-section">
                         <div className="noc-title-section">
-                            <h1>MINISTRY OF JAL SHAKTI</h1>
+                            <h1>MINISTRY OF  Water Resources</h1>
                             <h2>CENTRAL GROUND WATER AUTHORITY</h2>
                             <p style={{ margin: '5px 0 0 0', fontSize: '0.9rem', opacity: 0.9 }}>
-                                BhuNeer - Groundwater NOC Application Portal
+                                Rajasthan State Groundwater Authority
                             </p>
                         </div>
                     </div>

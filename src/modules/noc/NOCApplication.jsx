@@ -1079,10 +1079,22 @@ const NOCApplication = () => {
                             </div>
                         )}
 
-                        {/* Step 7: Review & Submit */}
+                        {/* Step 7: Payment */}
                         {currentStep === 7 && (
                             <div>
-                                <h3 className="noc-section-title">Review & Submit Application</h3>
+                                <h3 className="noc-section-title">Application Fee Payment</h3>
+
+                                <PaymentModule
+                                    formData={formData}
+                                    onPaymentComplete={handlePaymentComplete}
+                                />
+                            </div>
+                        )}
+
+                        {/* Step 8: Review & Submit */}
+                        {currentStep === 8 && (
+                            <div>
+                                <h3 className="noc-section-title">Upload Payment Receipt & Submit Application</h3>
 
                                 <div className="noc-alert noc-alert-warning" style={{ marginBottom: '20px' }}>
                                     <strong>Important:</strong> Please review all the information carefully before submitting. Once submitted, you cannot edit the application.
@@ -1111,11 +1123,82 @@ const NOCApplication = () => {
                                             <div>
                                                 <strong>Organization:</strong> {formData.organizationName}
                                             </div>
+                                            {formData.paymentTransactionId && (
+                                                <>
+                                                    <div>
+                                                        <strong>Payment Status:</strong> <span style={{ color: 'var(--cgwa-success)', fontWeight: 'bold' }}>✓ PAID</span>
+                                                    </div>
+                                                    <div>
+                                                        <strong>Transaction ID:</strong> {formData.paymentTransactionId}
+                                                    </div>
+                                                    <div>
+                                                        <strong>Receipt Number:</strong> {formData.paymentReceiptNumber}
+                                                    </div>
+                                                    <div>
+                                                        <strong>Amount Paid:</strong> ₹{formData.totalAmount?.toLocaleString('en-IN')}
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="noc-card">
+                                {/* Payment Receipt Upload */}
+                                <div className="noc-card" style={{ marginBottom: '20px', border: '2px solid var(--cgwa-warning)' }}>
+                                    <div className="noc-card-header" style={{ background: 'var(--cgwa-warning)', color: 'white' }}>
+                                        Upload Payment Receipt * (MANDATORY)
+                                    </div>
+                                    <div className="noc-card-body">
+                                        <div className="noc-alert noc-alert-info" style={{ marginBottom: '20px' }}>
+                                            <strong>📤 Upload Required:</strong> Please upload the payment receipt you downloaded in the previous step. You cannot submit your application without uploading the payment proof.
+                                        </div>
+
+                                        <div className="noc-form-group">
+                                            <label className="noc-form-label required">Payment Receipt (PDF/JPG/PNG)</label>
+                                            <input
+                                                type="file"
+                                                accept=".pdf,.jpg,.jpeg,.png"
+                                                onChange={(e) => {
+                                                    const file = e.target.files[0];
+                                                    if (file) {
+                                                        if (validateFileSize(file)) {
+                                                            handleFileUpload('paymentReceipt', file);
+                                                            setErrors(prev => ({ ...prev, paymentReceipt: '' }));
+                                                        } else {
+                                                            alert('File size must be less than 5MB');
+                                                        }
+                                                    }
+                                                }}
+                                                className="noc-form-control"
+                                                style={{ padding: '10px' }}
+                                            />
+                                            <span className="noc-form-help">Accepted formats: PDF, JPG, PNG (Max 5MB)</span>
+                                            {errors.paymentReceipt && <span className="noc-form-error">{errors.paymentReceipt}</span>}
+
+                                            {formData.uploadedDocuments.paymentReceipt && (
+                                                <div style={{
+                                                    marginTop: '15px',
+                                                    padding: '15px',
+                                                    background: 'linear-gradient(135deg, #d4edda 0%, #c3f0ca 100%)',
+                                                    borderRadius: '8px',
+                                                    border: '2px solid var(--cgwa-success)',
+                                                    color: '#155724'
+                                                }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                        <span style={{ fontSize: '1.5rem' }}>✓</span>
+                                                        <div>
+                                                            <strong>Receipt Uploaded Successfully!</strong>
+                                                            <p style={{ margin: '5px 0 0 0' }}>File: {formData.uploadedDocuments.paymentReceipt.name}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Declaration */}
+                                <div className="noc-card" style={{ marginBottom: '20px' }}>
                                     <div className="noc-card-header">Declaration</div>
                                     <div className="noc-card-body">
                                         <div className="noc-checkbox-item">
@@ -1131,9 +1214,13 @@ const NOCApplication = () => {
                                     </div>
                                 </div>
 
-                                <div className="noc-alert noc-alert-success" style={{ marginTop: '20px' }}>
-                                    <strong>Application Fee:</strong> ₹10,000 (to be paid after submission)
-                                </div>
+                                {/* Submit Status Alert */}
+                                {!formData.uploadedDocuments.paymentReceipt && (
+                                    <div className="noc-alert noc-alert-danger">
+                                        <strong>❌ Cannot Submit Application</strong>
+                                        <p style={{ margin: '10px 0 0 0' }}>Please upload the payment receipt to enable the submit button.</p>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

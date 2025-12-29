@@ -29,20 +29,20 @@ const NOCFooter = () => {
                     <div className="noc-footer-section">
                         <h3>Contact Information</h3>
                         <p>Central Ground Water Authority</p>
-                        <p>Ministry of Jal Shakti</p>
-                        <p>CSMRS Campus, Olof Palme Marg</p>
-                        <p>Hauz Khas, New Delhi-110016</p>
+                        <p>Ministry of  water resources</p>
+                        <p>Rajasthan jaipur</p>
+                        <p>jaipur</p>
                         <p style={{ marginTop: '10px' }}>
-                            <strong>Phone:</strong> 011-23383824<br />
-                            <strong>Mobile:</strong> 9868232311<br />
-                            <strong>Email:</strong> bhuneersupport-cgwa@gov.in
+                            <strong>Phone:</strong> 919928383838<br />
+                            <strong>Mobile:</strong> 90000000000<br />
+                            <strong>Email:</strong> rgwa@gov.in
                         </p>
                     </div>
                 </div>
 
                 <div className="noc-footer-bottom">
                     <p>© 2024 Central Ground Water Authority. All Rights Reserved.</p>
-                    <p>Designed & Developed By National Informatics Centre (NIC)</p>
+                    <p>Designed & Developed By  GPSPSL</p>
                 </div>
             </div>
         </footer>

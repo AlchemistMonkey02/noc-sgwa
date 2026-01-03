@@ -7,89 +7,19 @@
  * Based on block category and quantity slabs
  * These rates will be applied to annual extraction quantity
  */
-export const GW_CHARGE_RATES = {
-    // Safe Blocks
-    Safe: {
-        Industry: {
-            '0-50': 5.0,      // ₹5 per cum for 0-50 KLD
-            '50-100': 7.0,    // ₹7 per cum for 50-100 KLD
-            '100+': 10.0      // ₹10 per cum for >100 KLD
-        },
-        Mining: {
-            '0-50': 4.0,
-            '50-100': 6.0,
-            '100+': 8.0
-        },
-        Other: {
-            '0-50': 4.0,
-            '50-100': 6.0,
-            '100+': 8.0
-        }
-    },
-    // Semi-Critical Blocks
-    'Semi-Critical': {
-        Industry: {
-            '0-50': 7.0,
-            '50-100': 10.0,
-            '100+': 15.0
-        },
-        Mining: {
-            '0-50': 6.0,
-            '50-100': 8.0,
-            '100+': 12.0
-        },
-        Other: {
-            '0-50': 6.0,
-            '50-100': 8.0,
-            '100+': 12.0
-        }
-    },
-    // Critical Blocks
-    'Critical': {
-        Industry: {
-            '0-50': 10.0,
-            '50-100': 15.0,
-            '100+': 20.0
-        },
-        Mining: {
-            '0-50': 8.0,
-            '50-100': 12.0,
-            '100+': 18.0
-        },
-        Other: {
-            '0-50': 8.0,
-            '50-100': 12.0,
-            '100+': 18.0
-        }
-    },
-    // Over-Exploited Blocks
-    'Over-Exploited': {
-        Industry: {
-            '0-50': 15.0,
-            '50-100': 20.0,
-            '100+': 30.0
-        },
-        Mining: {
-            '0-50': 7.5,      // 50% of industry rate for mining in over-exploited
-            '50-100': 10.0,
-            '100+': 15.0
-        },
-        Other: {
-            '0-50': 12.0,
-            '50-100': 18.0,
-            '100+': 25.0
-        }
-    }
-};
+import { TRANSITION_CONFIG } from '../../../config/transitionRules';
+
+// Dynamic Rate Accessor
+const GW_CHARGE_RATES = TRANSITION_CONFIG.CHARGE_RATES;
 
 /**
  * Application Fee (Fixed fee in addition to GW charges)
  */
 export const APPLICATION_FEES = {
-    'Fresh NOC': 5000,
-    'Provisional NOC': 5000,
-    'NOC Renewal': 3000,
-    'NOC Amendment': 2500
+    'Provisional NOC (New Project)': 10000,
+    'Regular NOC (Existing Project)': 10000,
+    'NOC Renewal': 5000,
+    'NOC Amendment / Modification': 5000
 };
 
 /**
@@ -99,26 +29,24 @@ export const GST_RATE = 0.18; // 18%
 
 /**
  * Get rate per cum based on block category, quantity, and project type
- * @param {string} blockCategory - Block category name (Safe, Semi-Critical, Critical, Over-Exploited)
+ * @param {string} blockCategory - Block category name 
  * @param {number} dailyQuantity - Daily quantity in m³/day (KLD)
  * @param {string} projectType - Project type (Industry, Mining, Other)
  * @returns {number} - Rate per cubic meter
  */
-export const getRatePerCum = (blockCategory, dailyQuantity, projectType = 'Industry') => {
-    const categoryRates = GW_CHARGE_RATES[blockCategory] || GW_CHARGE_RATES.Safe;
-    const typeRates = categoryRates[projectType] || categoryRates.Industry;
+export const getRatePerCum = (blockCategory, dailyQuantity, projectType = 'INDUSTRY') => {
+    // Normalize Inputs
+    const catKey = (blockCategory || 'SAFE').toUpperCase().replace('-', '_').replace(' ', '_');
+    const typeKey = (projectType || 'INDUSTRY').toUpperCase();
 
-    // Determine slab
-    let slab;
-    if (dailyQuantity <= 50) {
-        slab = '0-50';
-    } else if (dailyQuantity <= 100) {
-        slab = '50-100';
-    } else {
-        slab = '100+';
-    }
+    // Default to Safe/Industry if not found
+    const categoryRates = GW_CHARGE_RATES[catKey] || GW_CHARGE_RATES.SAFE;
+    const typeRates = categoryRates[typeKey] || categoryRates.INDUSTRY;
 
-    return typeRates[slab] || typeRates['100+'];
+    // Determine Slab
+    if (dailyQuantity <= 50) return typeRates.SLAB_1;
+    if (dailyQuantity <= 100) return typeRates.SLAB_2;
+    return typeRates.SLAB_3;
 };
 
 /**
@@ -174,7 +102,7 @@ export const calculateAdvancedCharges = ({
     }
 
     const dailyQty = parseFloat(dailyWaterRequirement) || 0;
-    
+
     // Get application fee
     const applicationFee = APPLICATION_FEES[applicationType] || APPLICATION_FEES['Fresh NOC'];
 
@@ -199,10 +127,10 @@ export const calculateAdvancedCharges = ({
 
     // Calculate subtotal
     const subtotal = applicationFee + groundwaterCharge;
-    
+
     // Calculate GST
     const gstAmount = subtotal * GST_RATE;
-    
+
     // Calculate total
     const totalAmount = subtotal + gstAmount;
 
@@ -296,4 +224,5 @@ export const getChargeBreakdown = (charges) => {
         details: details
     };
 };
+
 

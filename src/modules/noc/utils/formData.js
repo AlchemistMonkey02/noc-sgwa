@@ -1,11 +1,10 @@
 // Form data structure and dropdown options for NOC Application
 
 export const applicationTypes = [
-    'Fresh NOC',
-    'Provisional NOC',
+    'Provisional NOC (New Project)',
+    'Regular NOC (Existing Project)',
     'NOC Renewal',
-    'NOC Amendment',
-    'NOC Transfer'
+    'NOC Amendment / Modification'
 ];
 
 export const applicationSubTypes = [
@@ -13,7 +12,8 @@ export const applicationSubTypes = [
     'Industrial',
     'Mining',
     'Infrastructure',
-    'Domestic/Drinking',
+    // Domestic removed as primary subtype (handled via exemption/other)
+    'Domestic (Bulk/Community)',
     'Agriculture',
     'Hotel/Resort',
     'Hospital',
@@ -25,22 +25,22 @@ export const applicationSubTypes = [
 
 export const projectTypes = [
     'New Project',
-    'Expansion of Existing Project',
+    'Existing Project',
+    'Expansion',
     'Modernization'
 ];
 
 export const waterQualityTypes = [
     'Potable',
-    'Non-Potable'
+    'Non-Potable',
+    'Saline'
 ];
 
 export const groundWaterUtilization = [
     'Drinking/Domestic',
     'Industry',
     'Mining',
-    'Industrial',
-    'Irrigation',
-    'Construction',
+    'Infrastructure',
     'Commercial',
     'Mixed Use'
 ];
@@ -53,13 +53,7 @@ export const msmeTypes = [
 ];
 
 export const states = [
-    'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
-    'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka',
-    'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram',
-    'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu',
-    'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
-    'Andaman and Nicobar Islands', 'Chandigarh', 'Dadra and Nagar Haveli and Daman and Diu',
-    'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry'
+    'Rajasthan' // Locked to Rajasthan as per Act
 ];
 
 export const geologyTypes = [
@@ -81,66 +75,64 @@ export const structureTypes = [
 
 export const documentTypes = [
     {
-        id: 'cte',
-        name: 'Consent to Establish (CTE)',
+        id: 'land_ownership',
+        name: 'Land Ownership / Lease Documents',
         required: true,
-        description: 'Valid CTE from State Pollution Control Board'
+        description: 'Sale deed, Jamabandi, or valid lease deed'
     },
     {
-        id: 'projectReport',
-        name: 'Detailed Project Report',
+        id: 'nbc_calculation',
+        name: 'Water Requirement Calculation',
         required: true,
-        description: 'Comprehensive project report with water requirement calculations'
+        description: 'Detailed calculation as per NBC-2016 norms'
     },
     {
-        id: 'siteplan',
-        name: 'Site Plan',
+        id: 'project_report',
+        name: 'Detailed Project Report (DPR)',
         required: true,
-        description: 'Detailed site plan showing location of borewells'
+        description: 'Covering water balance and usage'
     },
     {
-        id: 'ownership',
-        name: 'Land Ownership Documents',
+        id: 'site_plan',
+        name: 'Site Plan / Location Map',
         required: true,
-        description: 'Sale deed, lease agreement, or ownership proof'
-    },
-    {
-        id: 'waterQuality',
-        name: 'Water Quality Report',
-        required: true,
-        description: 'From NABL accredited laboratory'
-    },
-    {
-        id: 'rwh',
-        name: 'Rainwater Harvesting Plan',
-        required: true,
-        description: 'Detailed RWH and recharge plan'
-    },
-    {
-        id: 'msme',
-        name: 'MSME Certificate',
-        required: false,
-        description: 'Required for MSME applicants',
-        exemptRequired: true // Required for exempt MSMEs
+        description: 'Showing all existing/proposed wells with geo-coordinates'
     },
     {
         id: 'affidavit',
-        name: 'Affidavit',
+        name: 'Notarized Affidavit (Annexure-12)',
         required: true,
-        description: 'On non-judicial stamp paper (Declaration of water usage for exempt MSMEs)',
-        exemptRequired: true // Required for exempt MSMEs
+        description: 'On ₹100 Stamp Paper as per format'
     },
     {
-        id: 'noc_local',
-        name: 'NOC from Local Authority',
+        id: 'flow_meter_undertaking',
+        name: 'Flow Meter Undertaking/Proposal',
         required: true,
-        description: 'From Municipal Corporation/Panchayat'
+        description: 'Proposal for digital flow meter with telemetry'
     },
     {
-        id: 'environmental',
-        name: 'Environmental Clearance',
+        id: 'rainwater_plan',
+        name: 'Rainwater Harvesting Plan',
+        required: true,
+        description: 'Technical design for recharge structures'
+    },
+    {
+        id: 'cte_cto',
+        name: 'Consent to Establish/Operate (CTE/CTO)',
+        required: false, // Mandatory for Industry/Mining but not all
+        description: 'From Pollution Control Board'
+    },
+    {
+        id: 'mining_plan',
+        name: 'Approved Mining Plan',
+        required: false, // Mandatory for Mining
+        description: 'Approved by Dept of Mines & Geology'
+    },
+    {
+        id: 'extra_doc_1',
+        name: 'Previous NOC (If Applicable)',
         required: false,
-        description: 'If applicable for the project'
+        description: 'For Renewal/Existing projects'
     }
 ];
 

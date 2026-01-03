@@ -12,6 +12,8 @@ import { getDistricts, getBlocksForDistrict, getBlockCategory, checkBlockEligibi
 import { getIndustryDropdownOptions, getMiningDropdownOptions, getOtherProjectDropdownOptions, isPollutingIndustry, isPackagedWaterIndustry } from './utils/industryClassification';
 import { initialFormData, formSteps, applicationTypes, applicationSubTypes, projectTypes, waterQualityTypes, groundWaterUtilization, msmeTypes, states, geologyTypes, structureTypes, documentTypes } from './utils/formData';
 import { validateStep1, validateStep2, validateStep3, validateStep4, validateStep5, validateStep6, validateFileSize, validateFileType } from './utils/formValidation';
+import { TRANSITION_CONFIG } from '../../config/transitionRules';
+import LegalDisclaimer from '../../components/LegalDisclaimer';
 import './styles/noc-portal.css';
 
 const NOCApplication = () => {
@@ -57,7 +59,7 @@ const NOCApplication = () => {
                 }));
             }
         }
-    }, [formData.isMSME, formData.msmeType, formData.dailyWaterRequirement, formData.groundWaterUtilizationFor, formData.organizationType, formData.applicationType]); 
+    }, [formData.isMSME, formData.msmeType, formData.dailyWaterRequirement, formData.groundWaterUtilizationFor, formData.organizationType, formData.applicationType]);
 
 
 
@@ -103,11 +105,24 @@ const NOCApplication = () => {
 
             // Check eligibility based on block category and project details
             if (category) {
+                // Rule: Strictly Ban Packaged Water in Over-Exploited Blocks (from Transition Config)
+                const isOE = category.code === 'OVER_EXPLOITED';
+                const industryType = formData.industryType || '';
+                const isPackagedWater = industryType.includes('Packaged') || industryType.includes('Mineral Water');
+
+                if (isOE && isPackagedWater) {
+                    setFormData(prev => ({
+                        ...prev,
+                        blockEligibilityWarning: '❌ CRITICAL: Packaged Drinking Water / Mineral Water industries are STRICTLY PROHIBITED in Over-Exploited blocks as per 2025 Act Interim Directions. Application will be Auto-Rejected.'
+                    }));
+                    return;
+                }
+
                 const projectDetails = {
                     industryType: formData.industryType,
                     dailyWaterRequirement: parseFloat(formData.dailyWaterRequirement) || 0
                 };
-                
+
                 const eligibility = checkBlockEligibility(
                     formData.district,
                     formData.block,
@@ -226,6 +241,10 @@ const NOCApplication = () => {
             case 6:
                 stepErrors = validateStep6(formData);
                 break;
+            case 7:
+                // Step 7 validation will be handled separately for documents
+                stepErrors = {};
+                break;
             default:
                 break;
         }
@@ -319,6 +338,11 @@ const NOCApplication = () => {
                                             ))}
                                         </select>
                                         {errors.applicationType && <span className="noc-form-error">{errors.applicationType}</span>}
+                                        {formData.applicationType === 'NOC Renewal' && (
+                                            <div className="noc-alert noc-alert-warning" style={{ marginTop: '10px' }}>
+                                                ⚠️ <strong>Renewal Notice:</strong> Applications must be submitted at least 90 days before expiry. Late applications may attract Environmental Compensation Charges.
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="noc-form-group">
@@ -717,17 +741,17 @@ const NOCApplication = () => {
                                     <div className="noc-alert" style={{
                                         marginBottom: '20px',
                                         background: blockCategory.color === '#28a745' ? 'linear-gradient(135deg, #d4edda 0%, #c3f0ca 100%)' :
-                                                   blockCategory.color === '#ffc107' ? 'linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%)' :
-                                                   blockCategory.color === '#ff9800' ? 'linear-gradient(135deg, #f8d7da 0%, #fab1a0 100%)' :
-                                                   'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)',
+                                            blockCategory.color === '#ffc107' ? 'linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%)' :
+                                                blockCategory.color === '#ff9800' ? 'linear-gradient(135deg, #f8d7da 0%, #fab1a0 100%)' :
+                                                    'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)',
                                         border: `2px solid ${blockCategory.color}`,
                                         color: '#000'
                                     }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                             <span style={{ fontSize: '1.5rem' }}>
                                                 {blockCategory.code === 'SAFE' ? '✅' :
-                                                 blockCategory.code === 'SEMI_CRITICAL' ? '⚠️' :
-                                                 blockCategory.code === 'CRITICAL' ? '🚨' : '❌'}
+                                                    blockCategory.code === 'SEMI_CRITICAL' ? '⚠️' :
+                                                        blockCategory.code === 'CRITICAL' ? '🚨' : '❌'}
                                             </span>
                                             <div style={{ flex: 1 }}>
                                                 <strong>Block Category: {blockCategory.name}</strong>

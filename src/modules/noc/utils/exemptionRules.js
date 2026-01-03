@@ -61,6 +61,15 @@ export const EXEMPTION_CATEGORIES = {
  * @param {Object} formData - Application form data
  * @returns {Object} - Exemption status and details
  */
+import { TRANSITION_CONFIG } from '../../../config/transitionRules';
+
+// ... (Existing EXEMPTION_CATEGORIES object remains same, it is just for display) ...
+
+/**
+ * Check if applicant qualifies for exemption
+ * @param {Object} formData - Application form data
+ * @returns {Object} - Exemption status and details
+ */
 export const checkExemption = (formData) => {
     const result = {
         isExempt: false,
@@ -70,91 +79,85 @@ export const checkExemption = (formData) => {
         message: ''
     };
 
-    // 1. Check Agriculture
-    if (formData.groundWaterUtilizationFor === 'Agriculture' ||
-        formData.projectType === 'Agricultural') {
+    const dailyRequirement = parseFloat(formData.dailyWaterRequirement) || 0;
+    const projectType = formData.groundWaterUtilizationFor; // Industry, Mining, etc.
+    const industryType = formData.industryType || '';
+
+    // --- 0. STRICT BANS (Rule Zero) ---
+    // Certain categories are NEVER Exempt, regardless of quantity.
+
+    // Check Configured Non-Exempt Types (Industry, Mining, Commercial etc.)
+    const utilizationType = formData.groundWaterUtilizationFor;
+    const isBannedType = TRANSITION_CONFIG.EXEMPTIONS.NON_EXEMPT_TYPES.some(type =>
+        utilizationType === type ||
+        (type === 'Commercial' && ['Hotel/Resort', 'Provisional NOC (New Project)'].includes(formData.applicationType)) // Heuristic
+    );
+
+    if (isBannedType) {
+        // Special Check: Industry is banned, UNLESS it's MSME Small/Micro (handled below)
+        // But even MSME is NOT exempt if it's Packaged Water.
+
+        if (industryType.includes('Packaged') || industryType.includes('Mineral Water')) {
+            result.message = '❌ Packaged Driving Water Units are NEVER Exempt, even if MSME.';
+            return result;
+        }
+
+        // If it is Industry/Mining, we check strictly.
+        if (utilizationType === 'Mining') {
+            result.message = '❌ Mining projects are NEVER Exempt.';
+            return result;
+        }
+    }
+
+
+    // 1. Check Agriculture (Statutory Exemption)
+    if (formData.groundWaterUtilizationFor === 'Agriculture') {
         result.isExempt = true;
-        result.exemptionType = EXEMPTION_CATEGORIES.AGRICULTURE.name;
-        result.exemptionCode = EXEMPTION_CATEGORIES.AGRICULTURE.code;
-        result.reason = 'Agricultural activities are exempt from NOC requirement';
-        result.message = '✅ Your agricultural activity is EXEMPT from NOC requirement as per SGWA Regulations.';
+        result.exemptionType = 'Agricultural Activities';
+        result.exemptionCode = 'AGR';
+        result.message = '✅ Agricultural activity is EXEMPT from NOC.';
         return result;
     }
 
     // 2. Check Individual Domestic Use
-    if (formData.applicationType === 'Individual Domestic Use') {
+    if (formData.applicationType === 'Individual Domestic Use' ||
+        (formData.groundWaterUtilizationFor === 'Drinking/Domestic' && dailyRequirement <= TRANSITION_CONFIG.EXEMPTIONS.DOMESTIC_MAX_KLD)) {
         result.isExempt = true;
-        result.exemptionType = EXEMPTION_CATEGORIES.DOMESTIC_INDIVIDUAL.name;
-        result.exemptionCode = EXEMPTION_CATEGORIES.DOMESTIC_INDIVIDUAL.code;
-        result.reason = 'Individual domestic consumers are exempt';
-        result.message = '✅ Individual domestic use is EXEMPT from NOC requirement.';
+        result.exemptionType = `Domestic Use (≤${TRANSITION_CONFIG.EXEMPTIONS.DOMESTIC_MAX_KLD} KLD)`;
+        result.exemptionCode = 'DOM_LIM';
+        result.message = `✅ Domestic use ≤${TRANSITION_CONFIG.EXEMPTIONS.DOMESTIC_MAX_KLD} KLD is EXEMPT.`;
         return result;
     }
 
-    // 3. Check Domestic/Drinking ≤5 m³/day
-    const dailyRequirement = parseFloat(formData.dailyWaterRequirement) || 0;
-    if (formData.groundWaterUtilizationFor === 'Drinking/Domestic' &&
-        dailyRequirement > 0 &&
-        dailyRequirement <= 5) {
+    // 3. Armed Forces
+    if (formData.organizationType === 'Armed Forces' || formData.organizationType === 'Central Armed Police Forces') {
         result.isExempt = true;
-        result.exemptionType = EXEMPTION_CATEGORIES.DOMESTIC_LIMITED.name;
-        result.exemptionCode = EXEMPTION_CATEGORIES.DOMESTIC_LIMITED.code;
-        result.reason = 'Drinking/Domestic use ≤5 m³/day is exempt';
-        result.message = `✅ Your project (${dailyRequirement} m³/day for drinking/domestic) is EXEMPT from NOC requirement.`;
+        result.exemptionType = 'Armed Forces';
+        result.exemptionCode = 'ARMED_F';
+        result.message = '✅ Armed Forces are EXEMPT.';
         return result;
     }
 
-    // 4. Check EWS Residential
-    if (formData.projectType === 'Residential (EWS)' ||
-        formData.projectType === 'Group Housing (EWS)') {
-        result.isExempt = true;
-        result.exemptionType = EXEMPTION_CATEGORIES.RESIDENTIAL_EWS.name;
-        result.exemptionCode = EXEMPTION_CATEGORIES.RESIDENTIAL_EWS.code;
-        result.reason = 'EWS residential projects for drinking/domestic are exempt';
-        result.message = '✅ EWS residential project is EXEMPT from NOC requirement.';
-        return result;
-    }
-
-    // 5. Check Government Drinking Water Schemes
-    if (formData.projectType === 'Government Drinking Water Scheme' ||
-        formData.organizationType === 'Government' &&
-        formData.groundWaterUtilizationFor === 'Public Water Supply') {
-        result.isExempt = true;
-        result.exemptionType = EXEMPTION_CATEGORIES.GOVT_DRINKING_WATER.name;
-        result.exemptionCode = EXEMPTION_CATEGORIES.GOVT_DRINKING_WATER.code;
-        result.reason = 'Government drinking water supply schemes are exempt';
-        result.message = '✅ Government drinking water scheme is EXEMPT from NOC requirement.';
-        return result;
-    }
-
-    // 6. Check Armed Forces
-    if (formData.organizationType === 'Armed Forces' ||
-        formData.organizationType === 'Central Armed Police Forces' ||
-        formData.organizationName?.toLowerCase().includes('armed forces') ||
-        formData.organizationName?.toLowerCase().includes('capf')) {
-        result.isExempt = true;
-        result.exemptionType = EXEMPTION_CATEGORIES.ARMED_FORCES.name;
-        result.exemptionCode = EXEMPTION_CATEGORIES.ARMED_FORCES.code;
-        result.reason = 'Armed Forces and CAPF are exempt';
-        result.message = '✅ Armed Forces/CAPF are EXEMPT from NOC requirement.';
-        return result;
-    }
-
-    // 7. Check MSME <10 m³/day (Enhanced from existing logic)
+    // 4. Check MSME Exemption (Strict 10 KLD Limit)
     const isMicroOrSmall = formData.msmeType === 'Micro' || formData.msmeType === 'Small';
-    const isUnder10M3 = dailyRequirement > 0 && dailyRequirement < 10;
 
-    if (formData.isMSME === 'Yes' && isMicroOrSmall && isUnder10M3) {
-        result.isExempt = true;
-        result.exemptionType = EXEMPTION_CATEGORIES.MSME_SMALL.name;
-        result.exemptionCode = EXEMPTION_CATEGORIES.MSME_SMALL.code;
-        result.reason = `MSME (${formData.msmeType}) drawing less than 10 m³/day is exempt`;
-        result.message = `✅ Your MSME (${dailyRequirement} m³/day) is EXEMPT from NOC requirement.`;
-        return result;
+    if (formData.isMSME === 'Yes' && isMicroOrSmall) {
+        // Must be under 10 KLD
+        if (dailyRequirement < TRANSITION_CONFIG.EXEMPTIONS.MSME_MAX_KLD) {
+            result.isExempt = true;
+            result.exemptionType = `MSME Small/Micro (<${TRANSITION_CONFIG.EXEMPTIONS.MSME_MAX_KLD} KLD)`;
+            result.exemptionCode = 'MSME_SM';
+            result.message = `✅ MSME drawing <${TRANSITION_CONFIG.EXEMPTIONS.MSME_MAX_KLD} KLD is EXEMPT.`;
+            return result;
+        } else {
+            // Explicit message why not exempt
+            result.message = `⚠️ MSME Exemption applies only for <${TRANSITION_CONFIG.EXEMPTIONS.MSME_MAX_KLD} KLD. Your requirement is ${dailyRequirement} KLD.`;
+            return result;
+        }
     }
 
     // Not exempt
-    result.message = '⚠️ Your project does NOT qualify for exemption. NOC application is mandatory.';
+    result.message = '⚠️ This project requires mandatory NOC under 2025 Act.';
     return result;
 };
 

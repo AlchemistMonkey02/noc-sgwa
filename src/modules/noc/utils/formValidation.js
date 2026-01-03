@@ -189,28 +189,68 @@ export const validateStep5 = (formData) => {
 export const validateStep6 = (formData) => {
     const errors = {};
 
-    // Check if MSME is exempt
-    if (formData.isExemptMSME) {
-        // Exempt MSMEs only need MSME certificate and affidavit
-        if (!formData.uploadedDocuments.msme) {
-            errors.msme = 'MSME certificate is required for exempt applications';
+    // Step 6: Technical Compliance (Flow Meter & Piezometer)
+    // Note: Checkboxes use HTML5 required attribute, so we focus on field validations
+    
+    // Flow Meter validation (MANDATORY for ALL)
+    const flowMeter = formData.flowMeterDetails || {};
+    
+    if (!flowMeter.meterType || !flowMeter.meterType.trim()) {
+        errors['flowMeter.meterType'] = 'Meter type is required';
+    }
+    
+    if (!flowMeter.manufacturer || !flowMeter.manufacturer.trim()) {
+        errors['flowMeter.manufacturer'] = 'Manufacturer name is required';
+    }
+    
+    if (!flowMeter.modelNumber || !flowMeter.modelNumber.trim()) {
+        errors['flowMeter.modelNumber'] = 'Model number is required';
+    }
+    
+    if (!flowMeter.bisStandard || !flowMeter.bisStandard.trim()) {
+        errors['flowMeter.bisStandard'] = 'BIS/IS Standard Certification Number is required';
+    }
+    
+    if (!flowMeter.telemetryEnabled || flowMeter.telemetryEnabled !== 'Yes') {
+        errors['flowMeter.telemetryEnabled'] = 'Telemetry must be enabled (mandatory)';
+    }
+    
+    if (!flowMeter.telemetryProvider || !flowMeter.telemetryProvider.trim()) {
+        errors['flowMeter.telemetryProvider'] = 'Telemetry service provider is required';
+    }
+    
+    if (!flowMeter.installationProposedDate) {
+        errors['flowMeter.installationProposedDate'] = 'Proposed installation date is required';
+    }
+    
+    // Piezometer validation (only if required)
+    if (formData.piezometerRequired) {
+        const piezometer = formData.piezometerDetails || {};
+        
+        if (!piezometer.distanceFromWell || !piezometer.distanceFromWell.toString().trim()) {
+            errors['piezometer.distanceFromWell'] = 'Distance from pumping well is required';
+        } else if (parseFloat(piezometer.distanceFromWell) < 50) {
+            errors['piezometer.distanceFromWell'] = 'Distance must be at least 50 meters from pumping well';
         }
-        if (!formData.uploadedDocuments.affidavit) {
-            errors.affidavit = 'Affidavit/Declaration of water usage is required for exempt applications';
+        
+        if (!piezometer.depth || !piezometer.depth.toString().trim()) {
+            errors['piezometer.depth'] = 'Piezometer depth is required';
         }
-    } else {
-        // Full NOC process requires all standard documents
-        const requiredDocs = ['cte', 'projectReport', 'siteplan', 'ownership', 'waterQuality', 'rwh', 'affidavit', 'noc_local'];
-
-        requiredDocs.forEach(docId => {
-            if (!formData.uploadedDocuments[docId]) {
-                errors[docId] = 'This document is required';
-            }
-        });
-
-        // MSME certificate required if MSME is selected (but not necessarily exempt)
-        if (formData.isMSME === 'Yes' && !formData.uploadedDocuments.msme) {
-            errors.msme = 'MSME certificate is required';
+        
+        if (!piezometer.piezometerLocation || !piezometer.piezometerLocation.trim()) {
+            errors['piezometer.piezometerLocation'] = 'Piezometer location is required';
+        }
+        
+        if (!piezometer.coordinates || !piezometer.coordinates.latitude || !piezometer.coordinates.latitude.toString().trim()) {
+            errors['piezometer.coordinates.latitude'] = 'GPS Latitude is required';
+        }
+        
+        if (!piezometer.coordinates || !piezometer.coordinates.longitude || !piezometer.coordinates.longitude.toString().trim()) {
+            errors['piezometer.coordinates.longitude'] = 'GPS Longitude is required';
+        }
+        
+        if (!piezometer.nablLabName || !piezometer.nablLabName.trim()) {
+            errors['piezometer.nablLabName'] = 'NABL accredited lab name is required';
         }
     }
 

@@ -4,11 +4,11 @@
 export const FEE_STRUCTURE = {
     applicationType: {
         'Fresh NOC': 5000,
-        'NOC Renewal': 3000,
-        'NOC Amendment': 2000,
-        'NOC Transfer': 2500
+        'NOC Renewal': 5000,
+        'NOC Amendment': 5000,
+        'NOC Transfer': 5000
     },
-    msmeExempt: 500, // Reduced fee for MSME exempt applications
+    msmeExempt: 5000, // Minimum fee applies to all applications
     gstRate: 0.18 // 18% GST
 };
 

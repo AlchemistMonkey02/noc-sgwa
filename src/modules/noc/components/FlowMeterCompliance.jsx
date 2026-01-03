@@ -4,17 +4,20 @@
 import React, { useState } from 'react';
 
 const FlowMeterCompliance = ({ formData, onUpdate }) => {
-    const [flowMeterDetails, setFlowMeterDetails] = useState({
-        meterType: '',
-        manufacturer: '',
-        modelNumber: '',
-        serialNumber: '',
-        bisStandard: '',
-        telemetryEnabled: 'Yes',
-        telemetryProvider: '',
-        installationProposedDate: '',
-        calibrationDate: '',
-        calibrationCertificate: null
+    // Initialize from formData if available, otherwise use defaults
+    const [flowMeterDetails, setFlowMeterDetails] = useState(() => {
+        return formData.flowMeterDetails || {
+            meterType: '',
+            manufacturer: '',
+            modelNumber: '',
+            serialNumber: '',
+            bisStandard: '',
+            telemetryEnabled: 'Yes',
+            telemetryProvider: '',
+            installationProposedDate: '',
+            calibrationDate: '',
+            calibrationCertificate: null
+        };
     });
 
     const handleChange = (field, value) => {

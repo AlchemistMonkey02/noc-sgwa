@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import NOCHeader from './components/NOCHeader';
 import NOCFooter from './components/NOCFooter';
 import './styles/noc-portal.css';
@@ -45,10 +45,6 @@ const NOCDashboard = () => {
         navigate('/noc/login');
     };
 
-    const handleNewApplication = () => {
-        navigate('/noc/application');
-    };
-
     if (!user) {
         return null;
     }
@@ -57,69 +53,124 @@ const NOCDashboard = () => {
         <div className="noc-portal">
             <NOCHeader />
 
-            <div className="noc-container" style={{ padding: '30px 15px' }}>
-                {/* Welcome Section */}
-                <div className="noc-card">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                            <h2 style={{ margin: 0, color: 'var(--cgwa-primary)' }}>
-                                Welcome, {user.username}!
-                            </h2>
-                            <p style={{ margin: '5px 0 0 0', color: 'var(--cgwa-text-secondary)' }}>
-                                Applicant Dashboard - BhuNeer NOC Portal
-                            </p>
+            <div className="dashboard-wrapper">
+                <div className="container-xl">
+
+                    {/* Welcome Banner */}
+                    <div className="welcome-banner">
+                        <div className="welcome-text">
+                            <h2>Welcome, {user.username}!</h2>
+                            <p>Applicant Dashboard &middot; Central Ground Water Authority</p>
                         </div>
-                        <button onClick={handleLogout} className="noc-btn noc-btn-secondary">
-                            Logout
+                        <button onClick={handleLogout} className="action-btn-sm" style={{ fontWeight: '600' }}>
+                            Sign Out
                         </button>
                     </div>
-                </div>
 
-                {/* Quick Actions */}
-                <div className="noc-card">
-                    <div className="noc-card-header">Quick Actions</div>
-                    <div className="noc-card-body">
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
-                            <button onClick={handleNewApplication} className="noc-btn noc-btn-primary">
-                                📝 New NOC Application
-                            </button>
-                            <button className="noc-btn noc-btn-outline">
-                                📋 View All Applications
-                            </button>
-                            <button className="noc-btn noc-btn-outline">
-                                💳 Payment History
-                            </button>
-                            <button className="noc-btn noc-btn-outline">
-                                📄 Download NOC
-                            </button>
+                    {/* Stats Grid */}
+                    <div className="section-header">
+                        <span>Application Overview</span>
+                    </div>
+                    <div className="stats-grid">
+                        <div className="stat-card blue">
+                            <div className="stat-value">2</div>
+                            <div className="stat-label">Total Applications</div>
+                        </div>
+                        <div className="stat-card orange">
+                            <div className="stat-value">1</div>
+                            <div className="stat-label">Under Scrutiny</div>
+                        </div>
+                        <div className="stat-card green">
+                            <div className="stat-value">1</div>
+                            <div className="stat-label">Approved NOCs</div>
+                        </div>
+                        <div className="stat-card red">
+                            <div className="stat-value">0</div>
+                            <div className="stat-label">Rejected / Returned</div>
                         </div>
                     </div>
-                </div>
 
-                {/* Application Statistics */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' }}>
-                    <div className="noc-card" style={{ textAlign: 'center', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
-                        <h3 style={{ fontSize: '2.5rem', margin: '10px 0' }}>2</h3>
-                        <p style={{ margin: 0, fontSize: '1.1rem' }}>Total Applications</p>
+                    {/* Quick Actions Grid */}
+                    <div className="section-header">
+                        <span>Quick Actions (Transition Mode)</span>
                     </div>
-                    <div className="noc-card" style={{ textAlign: 'center', background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: 'white' }}>
-                        <h3 style={{ fontSize: '2.5rem', margin: '10px 0' }}>1</h3>
-                        <p style={{ margin: 0, fontSize: '1.1rem' }}>Under Review</p>
-                    </div>
-                    <div className="noc-card" style={{ textAlign: 'center', background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', color: 'white' }}>
-                        <h3 style={{ fontSize: '2.5rem', margin: '10px 0' }}>1</h3>
-                        <p style={{ margin: 0, fontSize: '1.1rem' }}>Approved</p>
-                    </div>
-                    <div className="noc-card" style={{ textAlign: 'center', background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', color: 'white' }}>
-                        <h3 style={{ fontSize: '2.5rem', margin: '10px 0' }}>0</h3>
-                        <p style={{ margin: 0, fontSize: '1.1rem' }}>Rejected</p>
-                    </div>
-                </div>
+                    <div className="actions-grid">
+                        <Link to="/noc/application" className="action-card">
+                            <div className="action-icon-wrapper">📝</div>
+                            <div className="action-content">
+                                <h4>Provisional NOC</h4>
+                                <p>For New Projects (Not yet operational)</p>
+                            </div>
+                        </Link>
 
-                {/* Recent Applications */}
-                <div className="noc-card">
-                    <div className="noc-card-header">My Applications</div>
-                    <div className="noc-card-body">
+                        <Link to="/noc/application" className="action-card">
+                            <div className="action-icon-wrapper">🏭</div>
+                            <div className="action-content">
+                                <h4>Regular NOC</h4>
+                                <p>For Existing Projects (Operational)</p>
+                            </div>
+                        </Link>
+
+                        <Link to="/noc/application" className="action-card">
+                            <div className="action-icon-wrapper">🔄</div>
+                            <div className="action-content">
+                                <h4>NOC Renewal</h4>
+                                <p>Apply 90 days before expiry</p>
+                            </div>
+                        </Link>
+
+
+                        <Link to="/noc/rig-application" className="action-card">
+                            <div className="action-icon-wrapper">🏗️</div>
+                            <div className="action-content">
+                                <h4>Rig Registration</h4>
+                                <p><strong>For NEW rigs:</strong> Register drilling machinery with full details</p>
+                            </div>
+                        </Link>
+
+                        <Link to="/noc/rig-operation" className="action-card">
+                            <div className="action-icon-wrapper">📜</div>
+                            <div className="action-content">
+                                <h4>Rig Operation NOC</h4>
+                                <p><strong>For EXISTING rigs:</strong> Get permission to operate in specific areas</p>
+                            </div>
+                        </Link>
+
+                        <Link to="/noc/water-budget-calculator" className="action-card">
+                            <div className="action-icon-wrapper">💧</div>
+                            <div className="action-content">
+                                <h4>Water Budget Calculator</h4>
+                                <p>Calculate water requirements & charges</p>
+                            </div>
+                        </Link>
+
+                        <Link to="/noc/penalties" className="action-card">
+                            <div className="action-icon-wrapper">⚠️</div>
+                            <div className="action-content">
+                                <h4>Penalties & EC</h4>
+                                <p>View fixed penalties & compensation</p>
+                            </div>
+                        </Link>
+
+                        <Link to="/noc/document-requirements" className="action-card">
+                            <div className="action-icon-wrapper">📋</div>
+                            <div className="action-content">
+                                <h4>Checklist</h4>
+                                <p>Mandatory documents for SDO scrutiny</p>
+                            </div>
+                        </Link>
+                    </div>
+
+                    {/* Recent Applications Table */}
+                    <div className="section-header" style={{ marginTop: '50px' }}>
+                        <span>Recent Applications</span>
+                    </div>
+
+                    <div className="recent-apps-container">
+                        <div className="table-header-row">
+                            <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>Latest Submissions</span>
+                            <a href="#" className="view-all-link">View All Applications &rarr;</a>
+                        </div>
                         {applications.length > 0 ? (
                             <div className="noc-table-wrapper">
                                 <table className="noc-table">
@@ -136,25 +187,23 @@ const NOCDashboard = () => {
                                     <tbody>
                                         {applications.map(app => (
                                             <tr key={app.id}>
-                                                <td><strong>{app.id}</strong></td>
+                                                <td><span style={{ fontWeight: 600, color: 'var(--color-primary)' }}>{app.id}</span></td>
                                                 <td>{app.applicationType}</td>
                                                 <td>{app.projectName}</td>
                                                 <td>{app.submittedDate}</td>
                                                 <td>
-                                                    <span style={{
-                                                        padding: '5px 12px',
-                                                        borderRadius: '20px',
-                                                        fontSize: '0.85rem',
-                                                        fontWeight: '600',
-                                                        background: app.statusColor === 'success' ? '#d4edda' : app.statusColor === 'warning' ? '#fff3cd' : '#f8d7da',
-                                                        color: app.statusColor === 'success' ? '#155724' : app.statusColor === 'warning' ? '#856404' : '#721c24'
-                                                    }}>
+                                                    <span className={`status-badge ${app.statusColor}`}>
+                                                        {app.statusColor === 'success' && '✅'}
+                                                        {app.statusColor === 'warning' && '⏳'}
                                                         {app.status}
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <button className="noc-btn noc-btn-primary" style={{ padding: '5px 15px', fontSize: '0.85rem' }}>
-                                                        View Details
+                                                    <button
+                                                        className="action-btn-sm"
+                                                        onClick={() => navigate(`/noc/track-status/${app.id}`)}
+                                                    >
+                                                        Track Status
                                                     </button>
                                                 </td>
                                             </tr>
@@ -163,30 +212,30 @@ const NOCDashboard = () => {
                                 </table>
                             </div>
                         ) : (
-                            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--cgwa-text-secondary)' }}>
-                                <p style={{ fontSize: '1.1rem', margin: 0 }}>No applications found</p>
-                                <p style={{ margin: '10px 0 20px 0' }}>Click "New NOC Application" to submit your first application</p>
-                                <button onClick={handleNewApplication} className="noc-btn noc-btn-primary">
+                            <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--cgwa-text-secondary)' }}>
+                                <p style={{ fontSize: '1.2rem', margin: 0 }}>No applications found</p>
+                                <p style={{ margin: '10px 0 25px 0' }}>Get started by submitting your first application today.</p>
+                                <button onClick={() => navigate('/noc/application')} className="noc-btn noc-btn-primary">
                                     Start New Application
                                 </button>
                             </div>
                         )}
                     </div>
-                </div>
 
-                {/* Important Links */}
-                <div className="noc-card">
-                    <div className="noc-card-header">Important Links & Resources</div>
-                    <div className="noc-card-body">
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px' }}>
-                            <a href="#" className="noc-link">📖 User Manual</a>
-                            <a href="#" className="noc-link">❓ Frequently Asked Questions</a>
-                            <a href="#" className="noc-link">📋 Guidelines & Notifications</a>
-                            <a href="#" className="noc-link">💰 Fee Structure</a>
-                            <a href="#" className="noc-link">📞 Help & Support</a>
-                            <a href="#" className="noc-link">📝 Application Forms</a>
+                    {/* Resources Footer Section */}
+                    <div style={{ marginTop: '50px' }}>
+                        <div className="section-header">
+                            <span>Help & Resources</span>
+                        </div>
+                        <div className="resource-grid">
+                            <a href="#" className="resource-link">📖 User Manual</a>
+                            <a href="#" className="resource-link">❓ FAQ for Applicants</a>
+                            <a href="#" className="resource-link">📋 Guidelines v2.0</a>
+                            <a href="#" className="resource-link">📝 Download Forms (PDF)</a>
+                            <a href="#" className="resource-link">📞 Contact Support</a>
                         </div>
                     </div>
+
                 </div>
             </div>
 

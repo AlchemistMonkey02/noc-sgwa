@@ -1,0 +1,177 @@
+# SGWA Application Flow Diagrams
+
+## 1. High-Level System Architecture
+
+```mermaid
+graph TD
+    subgraph "Public Realm"
+        Public[Public User] --> Landing[Public Landing Page]
+        Landing --> KnowEC[Know Your EC]
+        Landing --> AppStatus[Track Status]
+        Landing --> Login[Login / Register]
+    end
+
+    subgraph "Applicant Portal (NOC)"
+        Login --> Dashboard[Applicant Dashboard]
+        Dashboard --> NewApp[New NOC Application]
+        Dashboard --> Profile[Company/User Profile]
+        Dashboard --> MyApps[My Applications]
+        Dashboard --> Pay[Payments]
+        Dashboard --> Compliance[Self Compliance]
+        
+        NewApp --> Form[Application Form]
+        Form --> Uploads[Document Uploads]
+        Uploads --> FeePay[Fee Payment]
+        FeePay --> Submit[Submit Application]
+    end
+
+    subgraph "Officer Portal"
+        OfficerLogin[Officer Login]
+        
+        subgraph "DGO (District)"
+            OfficerLogin --> DGODash[DGO Dashboard]
+            DGODash --> DGOList[Application List]
+            DGOList --> DGOReview[Review Application]
+            DGOReview --> InspAssign[Assign Inspector]
+            InspAssign --> InspReport[Inspection Report]
+            InspReport --> DGORec[Recommendation]
+        end
+
+        subgraph "SGWA (State Authority)"
+            OfficerLogin --> SGWADash[SGWA Dashboard]
+            DGORec --> SGWAList[Pending SGWA Approval]
+            SGWAList --> SGWAReview[Final Review]
+            SGWAReview --> TechReview[Technical Review]
+            TechReview --> SGWADecision{Decision}
+            SGWADecision -->|Approve| IssueNOC[Issue NOC]
+            SGWADecision -->|Reject| IssueReject[Issue Rejection]
+            SGWADecision -->|Query| RaiseQuery[Raise Query]
+        end
+
+        subgraph "Enforcement Wing"
+            OfficerLogin --> EnfDash[Enforcement Dashboard]
+            IssueNOC --> ActiveNOCs[Monitor Active NOCs]
+            ActiveNOCs --> ScheduleInsp[Schedule Inspection]
+            ScheduleInsp --> FieldInsp[Field Inspection]
+            FieldInsp --> ViolationCheck{Violation?}
+            ViolationCheck -->|Yes| Penalty[Issue Penalty/Warning]
+            ViolationCheck -->|No| Safe[Compliant]
+        end
+    end
+
+    Submit --> DGOList
+    RaiseQuery --> MyApps
+    IssueNOC --> MyApps
+    IssueReject --> MyApps
+```
+
+## 2. Detailed NOC Application Workflow
+
+```mermaid
+sequenceDiagram
+    participant App as Applicant
+    participant Sys as System
+    participant DGO as DGO Officer
+    participant Insp as Inspector
+    participant SGWA as SGWA Authority
+
+    App->>Sys: Register & Login
+    App->>Sys: Fill Application (Profile, Land, Water)
+    App->>Sys: Upload Documents
+    App->>Sys: Pay Processing Fees
+    App->>Sys: Submit Application
+
+    Sys->>DGO: Assign to District DGO
+    
+    DGO->>DGO: Review Application & Docs
+    alt Docs Incomplete
+        DGO->>App: Raise Query (Ask for Docs)
+        App->>DGO: Resubmit Docs
+    end
+
+    DGO->>Insp: Schedule Site Inspection
+    Insp->>App: Visit Site & Verify
+    Insp->>DGO: Submit Inspection Report
+
+    DGO->>SGWA: Forward with Recommendation (Approve/Reject)
+
+    SGWA->>SGWA: Review Application + DGO Report
+    opt Technical Review
+        SGWA->>SGWA: Internal Tech Review
+    end
+
+    alt Query Needed
+        SGWA->>App: Raise Query
+        App->>SGWA: Respond to Query
+    end
+
+    alt Approve
+        SGWA->>App: Issue NOC (Digital Certificate)
+        Sys->>App: Notify & Update Status
+    else Reject
+        SGWA->>App: Issue Rejection Letter
+        Sys->>App: Notify & Update Status
+    end
+```
+
+## 3. Enforcement & Compliance Workflow
+
+```mermaid
+stateDiagram-v2
+    [*] --> ActiveNOC
+    ActiveNOC --> Monitoring : System Checks
+    Monitoring --> Compliant : Data OK
+    Monitoring --> Flagged : Anomaly Detected
+    
+    ActiveNOC --> ScheduledInspection : Routine/Complaint
+    
+    ScheduledInspection --> FieldVisit
+    FieldVisit --> InspectionReport
+    
+    state InspectionReport {
+        [*] --> CheckMeter
+        CheckMeter --> CheckDocs
+        CheckDocs --> CheckExtraction
+    }
+
+    InspectionReport --> ViolationAssessment
+    
+    state ViolationAssessment {
+        [*] --> NoViolation
+        [*] --> MinorViolation
+        [*] --> MajorViolation
+    }
+
+    NoViolation --> Compliant
+    MinorViolation --> Warning : First Offense
+    Warning --> Rectified : Compliance Report
+    Warning --> MajorViolation : Repeated
+    
+    MajorViolation --> Penalty : Issue Challan
+    Penalty --> PenaltyPaid : Payment Received
+    Penalty --> Cancellation : Non-Payment
+    
+    MajorViolation --> Cancellation : Critical Violation
+    Cancellation --> [*]
+```
+
+## 4. Key Modules & Features
+
+### NOC Module
+- **Registration**: OTP-based, Profile Creation.
+- **Application**: Step-by-step form (General, Land Details, Water Requirement, Documents).
+- **Calculators**: Water Budget, Abstraction Charges.
+- **Payment**: Integrated Gateway for Fees.
+- **Self Compliance**: Post-NOC reporting.
+
+### Officer Module
+- **Dashboard**: Role-based stats (DGO/SGWA/Enforcement).
+- **Application Viewer**: Unified view of App Details, Docs, Timeline, Inspection Reports.
+- **Action Center**: Approve, Reject, Query, Forward.
+- **Reports**: Generate PDF reports.
+
+### Enforcement Wing
+- **Real-time Monitoring**: IoT/Meter reading integration.
+- **Inspection App**: Mobile-friendly view for field officers.
+- **Violation Matrix**: Automated mapping of findings to violations.
+- **Penalty System**: Calculation and recovery tracking.

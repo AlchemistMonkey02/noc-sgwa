@@ -1,0 +1,137 @@
+.app-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, #0f4c81 0%, #1a5490 50%, #2563a8 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 1;
+    transition: opacity 0.5s ease-out;
+}
+
+.app-loader.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.loader-content {
+    text-align: center;
+    color: white;
+}
+
+.loader-logo {
+    animation: fadeInScale 0.8s ease-out;
+}
+
+.logo-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.loader-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.loader-subtitle {
+    font-size: 1.2rem;
+    font-weight: 400;
+    margin: 0.5rem 0 0 0;
+    opacity: 0.95;
+    letter-spacing: 1px;
+}
+
+.loader-spinner {
+    margin: 2.5rem 0 1.5rem 0;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    margin: 0 auto;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.loader-text {
+    font-size: 1rem;
+    font-weight: 300;
+    margin: 0;
+    opacity: 0.9;
+    letter-spacing: 0.5px;
+    animation: fadeInOut 1.5s ease-in-out infinite;
+}
+
+/* Animations */
+@keyframes fadeInScale {
+    0% {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+}
+
+@keyframes fadeInOut {
+
+    0%,
+    100% {
+        opacity: 0.7;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .loader-title {
+        font-size: 1.5rem;
+    }
+
+    .loader-subtitle {
+        font-size: 1rem;
+    }
+
+    .logo-icon {
+        font-size: 3rem;
+    }
+}

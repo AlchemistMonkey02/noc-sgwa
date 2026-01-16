@@ -81,37 +81,6 @@ const NOCHeader = () => {
                     </div>
                 </div>
             </div>
-
-            {/* Rainbow Navigation */}
-            <nav className="rgwa-navbar">
-                <div className="container-xl">
-                    <ul className="rgwa-nav-list">
-                        <li className="rgwa-nav-item">
-                            <NavLink to="/noc/dashboard" className="rgwa-nav-link home-link">
-                                <span className="nav-icon">🏠</span> Home
-                            </NavLink>
-                        </li>
-                        <li className="rgwa-nav-item">
-                            <NavLink to="#" className="rgwa-nav-link">About Us</NavLink>
-                        </li>
-                        <li className="rgwa-nav-item">
-                            <NavLink to="#" className="rgwa-nav-link">Services</NavLink>
-                        </li>
-                        <li className="rgwa-nav-item">
-                            <NavLink to="#" className="rgwa-nav-link">Downloads</NavLink>
-                        </li>
-                        <li className="rgwa-nav-item">
-                            <NavLink to="#" className="rgwa-nav-link">Maps & Data</NavLink>
-                        </li>
-                        <li className="rgwa-nav-item">
-                            <NavLink to="#" className="rgwa-nav-link">Guidelines</NavLink>
-                        </li>
-                        <li className="rgwa-nav-item">
-                            <NavLink to="#" className="rgwa-nav-link">Contact Us</NavLink>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
         </header>
     );
 };

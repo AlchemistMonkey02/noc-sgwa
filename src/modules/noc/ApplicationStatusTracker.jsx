@@ -2,61 +2,79 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import NOCHeader from './components/NOCHeader';
 import NOCFooter from './components/NOCFooter';
+import { nocApplicationService } from './services/nocApplicationService';
 import './styles/noc-portal.css';
 
 const ApplicationStatusTracker = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [application, setApplication] = useState(null);
-
-    // Mock stages definition
-    const stages = [
-        { id: 1, label: 'Application Submitted', description: 'Application received by the system.' },
-        { id: 2, label: 'Document Verification', description: 'Reviewing uploaded documents for completeness.' },
-        { id: 3, label: 'Technical Scrutiny', description: 'Assessing technical feasibility and compliance.' },
-        { id: 4, label: 'Site Inspection', description: 'Field visit by officer (if required).' },
-        { id: 5, label: 'Final Approval', description: 'NOC generated and ready for download.' }
-    ];
+    const [timeline, setTimeline] = useState([]);
+    const [estimate, setEstimate] = useState(null);
 
     useEffect(() => {
-        // Mock API call to fetch application details based on ID
-        // In reality, this would be an API call
-        const fetchApplicationDetails = () => {
-            let mockStatus = 'submitted';
-            let currentStageId = 1;
-            let statusColor = 'primary';
+        const fetchApplicationDetails = async () => {
+            try {
+                // Determine if we are tracking by DB ID (UUID) or Application Number (NOC/...)
+                const response = await nocApplicationService.trackApplication(encodeURIComponent(id));
 
-            // Simulate different statuses based on ID patterns
-            if (id.endsWith('002')) {
-                mockStatus = 'approved';
-                currentStageId = 5;
-                statusColor = 'success';
-            } else if (id.endsWith('001')) {
-                mockStatus = 'scrutiny';
-                currentStageId = 3;
-                statusColor = 'warning';
-            } else if (id.includes('RIG')) {
-                mockStatus = 'document_verification';
-                currentStageId = 2;
-                statusColor = 'info';
+                if (response.success && response.data) {
+                    const data = response.data;
+
+                    // Populate basic details
+                    setApplication({
+                        id: data.applicationId || data.applicationNumber || id,
+                        applicationNumber: data.applicationNumber || data.applicationId,
+                        trackingId: data.trackingId,
+                        projectName: data.projectName || data.projectDetails?.projectName || 'N/A',
+                        submittedDate: data.submittedDate ? new Date(data.submittedDate).toLocaleDateString() : 'N/A',
+                        status: data.status,
+                        statusColor: data.status === 'APPROVED' ? 'success' : (data.status === 'REJECTED' ? 'danger' : 'info'),
+                        applicantName: data.applicantDetails?.name || 'Applicant',
+                        applicationType: data.applicationType || 'NOC',
+                        pendingWith: data.currentLocation || data.pendingWith || 'Processing',
+                        rejectionReason: data.remarks || null
+                    });
+
+                    // Set Timeline if available
+                    if (data.timeline && Array.isArray(data.timeline)) {
+                        setTimeline(data.timeline);
+                    }
+
+                    // Fetch Processing Estimates
+                    // Passing allApproved=true by default for optimistic estimate as per user request demo
+                    // In real world, logic might depend on application.status or other flags
+                    try {
+                        const estimateRes = await nocApplicationService.getProcessingEstimates({ allApproved: true });
+                        if (estimateRes.success && estimateRes.data && estimateRes.data.selectedEstimate) {
+                            setEstimate(estimateRes.data.selectedEstimate);
+                        }
+                    } catch (estErr) {
+                        console.error("Error fetching estimates", estErr);
+                    }
+
+                } else {
+                    setApplication(null);
+                }
+            } catch (err) {
+                console.error("Error fetching application details", err);
             }
-
-            setApplication({
-                id: id,
-                projectName: id.includes('RIG') ? 'Borewell Construction Project' : 'Industrial Water Supply',
-                submittedDate: '2024-12-01',
-                currentStageId: currentStageId,
-                status: mockStatus.replace('_', ' ').toUpperCase(),
-                statusColor: statusColor,
-                applicantName: 'John Doe',
-                applicationType: id.includes('RIG') ? 'Rig NOC' : 'Groundwater NOC'
-            });
         };
 
-        fetchApplicationDetails();
+        if (id) {
+            fetchApplicationDetails();
+        }
     }, [id]);
 
     if (!application) return <div>Loading...</div>;
+
+    // Helper to get status icon/color for timeline step
+    const getStepStatusClass = (status) => {
+        if (status === 'COMPLETED') return 'completed';
+        if (status === 'IN_PROGRESS' || status === 'PENDING_ACTION') return 'current';
+        if (status === 'REJECTED') return 'rejected';
+        return 'pending';
+    };
 
     return (
         <div className="noc-portal">
@@ -70,7 +88,10 @@ const ApplicationStatusTracker = () => {
                 {/* Application Summary Card */}
                 <div className="noc-card" style={{ marginBottom: '30px' }}>
                     <div className="noc-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span>Application ID: <strong>{application.id}</strong></span>
+                        <span>
+                            Application ID: <strong>{application.applicationNumber || application.id}</strong>
+                            {application.trackingId && <span style={{ marginLeft: '15px', fontSize: '0.9rem', color: '#666' }}>(Ref: {application.trackingId})</span>}
+                        </span>
                         <span className={`noc-badge noc-badge-${application.statusColor}`} style={{
                             padding: '5px 12px',
                             borderRadius: '20px',
@@ -83,20 +104,32 @@ const ApplicationStatusTracker = () => {
                         </span>
                     </div>
                     <div className="noc-card-body">
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px', marginBottom: '24px' }}>
                             <div>
-                                <label style={{ color: '#666', fontSize: '0.9rem' }}>Project Name</label>
-                                <div style={{ fontWeight: '600' }}>{application.projectName}</div>
+                                <label style={{ color: '#64748b', fontSize: '0.875rem', display: 'block', marginBottom: '4px' }}>Project Name</label>
+                                <div style={{ fontWeight: '600', color: '#1e293b' }}>{application.projectName}</div>
                             </div>
                             <div>
-                                <label style={{ color: '#666', fontSize: '0.9rem' }}>Application Type</label>
-                                <div style={{ fontWeight: '600' }}>{application.applicationType}</div>
+                                <label style={{ color: '#64748b', fontSize: '0.875rem', display: 'block', marginBottom: '4px' }}>Application Type</label>
+                                <div style={{ fontWeight: '600', color: '#1e293b' }}>{application.applicationType}</div>
                             </div>
                             <div>
-                                <label style={{ color: '#666', fontSize: '0.9rem' }}>Submitted Date</label>
-                                <div style={{ fontWeight: '600' }}>{application.submittedDate}</div>
+                                <label style={{ color: '#64748b', fontSize: '0.875rem', display: 'block', marginBottom: '4px' }}>Submitted Date</label>
+                                <div style={{ fontWeight: '600', color: '#1e293b' }}>{application.submittedDate}</div>
                             </div>
                         </div>
+
+                        <div style={{ paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
+                            <label style={{ color: '#64748b', fontSize: '0.875rem', display: 'block', marginBottom: '4px' }}>Current Location / Pending With</label>
+                            <div style={{ fontWeight: '700', color: '#1e3a8a', fontSize: '1.1rem' }}>{application.pendingWith}</div>
+                        </div>
+
+                        {application.status === 'REJECTED' && application.rejectionReason && (
+                            <div style={{ marginTop: '20px', padding: '15px', background: '#fee2e2', border: '1px solid #fecaca', borderRadius: '5px', color: '#b91c1c' }}>
+                                <strong style={{ display: 'block', marginBottom: '5px' }}>⚠️ Application Rejected</strong>
+                                {application.rejectionReason}
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -104,36 +137,82 @@ const ApplicationStatusTracker = () => {
                 <div className="noc-card">
                     <div className="noc-card-header">Processing Timeline</div>
                     <div className="noc-card-body" style={{ padding: '40px 20px' }}>
-                        <div className="status-timeline">
-                            {stages.map((stage, index) => {
-                                const isCompleted = stage.id < application.currentStageId;
-                                const isCurrent = stage.id === application.currentStageId;
-                                const isPending = stage.id > application.currentStageId;
+                        {timeline.length > 0 ? (
+                            <div className="status-timeline">
+                                {timeline.map((step, index) => {
+                                    // Map API 'status' (COMPLETED, PENDING) to UI classes
+                                    let stepClass = 'pending';
+                                    if (step.status === 'COMPLETED') stepClass = 'completed';
+                                    else if (step.status === 'IN_PROGRESS' || (step.status === 'PENDING' && index === 0)) stepClass = 'current';
 
-                                return (
-                                    <div key={stage.id} className={`timeline-item ${isCompleted ? 'completed' : isCurrent ? 'current' : 'pending'}`}>
-                                        <div className="timeline-marker">
-                                            {isCompleted ? '✓' : stage.id}
+                                    return (
+                                        <div key={index} className={`timeline-item ${stepClass}`}>
+                                            <div className="timeline-marker">
+                                                {step.status === 'COMPLETED' ? '✓' : (step.step || index + 1)}
+                                            </div>
+                                            <div className="timeline-content">
+                                                <h4 style={{ margin: '0 0 5px 0', color: stepClass === 'pending' ? '#999' : '#333' }}>
+                                                    {step.title}
+                                                </h4>
+                                                <p style={{ margin: 0, fontSize: '0.9rem', color: '#666' }}>
+                                                    {step.description}
+                                                </p>
+                                                {step.date && (
+                                                    <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '5px' }}>
+                                                        {new Date(step.date).toLocaleDateString()}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className="timeline-content">
-                                            <h4 style={{ margin: '0 0 5px 0', color: isPending ? '#999' : '#333' }}>
-                                                {stage.label}
-                                            </h4>
-                                            <p style={{ margin: 0, fontSize: '0.9rem', color: '#666' }}>
-                                                {stage.description}
-                                            </p>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div style={{ textAlign: 'center', color: '#666' }}>No timeline information available.</div>
+                        )}
                     </div>
                 </div>
 
+                {/* Processing Estimates Card */}
+                {estimate && (
+                    <div className="noc-card" style={{ marginTop: '30px', borderLeft: `5px solid ${estimate.color === 'green' ? '#10b981' : '#f59e0b'}` }}>
+                        <div className="noc-card-header">Estimated Time for Completion</div>
+                        <div className="noc-card-body">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                                <div>
+                                    <h3 style={{ margin: '0 0 5px 0', color: '#1e293b' }}>{estimate.duration}</h3>
+                                    <span style={{
+                                        display: 'inline-block',
+                                        padding: '4px 10px',
+                                        borderRadius: '12px',
+                                        background: estimate.color === 'green' ? '#d1fae5' : '#fef3c7',
+                                        color: estimate.color === 'green' ? '#065f46' : '#92400e',
+                                        fontSize: '0.8rem',
+                                        fontWeight: '600'
+                                    }}>
+                                        {estimate.label}
+                                    </span>
+                                </div>
+                            </div>
+                            {estimate.conditions && estimate.conditions.length > 0 && (
+                                <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px' }}>
+                                    <strong style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: '#475569' }}>Based on:</strong>
+                                    <ul style={{ margin: 0, paddingLeft: '20px', color: '#64748b' }}>
+                                        {estimate.conditions.map((cond, i) => (
+                                            <li key={i} style={{ marginBottom: '4px' }}>{cond}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 <div style={{ marginTop: '20px', textAlign: 'center' }}>
-                    <button className="noc-btn noc-btn-secondary" onClick={() => navigate('/noc/dashboard')}>
-                        Back to Dashboard
+                    <button className="noc-btn noc-btn-secondary" onClick={() => navigate('/noc/applications')}>
+                        Back to List
                     </button>
+                    {/* Only show Track another if coming from deep link, otherwise list is better */}
                 </div>
             </div>
 
@@ -143,8 +222,8 @@ const ApplicationStatusTracker = () => {
                     flex-direction: column;
                     gap: 0;
                     position: relative;
-                    max-width: 800px;
-                    margin: 0 auto;
+                    max-width: 1000px;
+                    margin: 20px auto 0;
                 }
                 .timeline-item {
                     display: flex;
@@ -155,56 +234,66 @@ const ApplicationStatusTracker = () => {
                 .timeline-item:last-child {
                     padding-bottom: 0;
                 }
-                /* Vertical Line */
+                /* Mobile Vertical Line */
                 .timeline-item:not(:last-child)::before {
                     content: '';
                     position: absolute;
-                    left: 20px; /* Center of marker (40px/2) */
-                    top: 40px;
-                    bottom: 0;
-                    width: 2px;
-                    background: #e9ecef;
+                    left: 24px; /* Center of marker */
+                    top: 50px;
+                    bottom: -10px;
+                    width: 3px;
+                    background: #e2e8f0;
                     z-index: 0;
-                }
-                .timeline-item.completed:not(:last-child)::before {
-                    background: #28a745;
                 }
                 
                 .timeline-marker {
-                    width: 40px;
-                    height: 40px;
+                    width: 48px;
+                    height: 48px;
                     border-radius: 50%;
                     background: #fff;
-                    border: 2px solid #e9ecef;
+                    border: 3px solid #e2e8f0;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-weight: bold;
+                    font-weight: 700;
+                    font-size: 1.1rem;
                     z-index: 1;
                     flex-shrink: 0;
-                    color: #999;
+                    color: #94a3b8;
+                    transition: all 0.3s ease;
                 }
                 .timeline-item.completed .timeline-marker {
-                    background: #28a745;
-                    border-color: #28a745;
+                    background: #1e3a8a; /* Navy Blue */
+                    border-color: #1e3a8a;
                     color: #fff;
                 }
                 .timeline-item.current .timeline-marker {
-                    background: #007bff;
-                    border-color: #007bff;
+                    background: #3b82f6; /* Lighter Blue */
+                    border-color: #3b82f6;
                     color: #fff;
-                    box-shadow: 0 0 0 4px rgba(0,123,255,0.2);
+                    box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.2);
+                    transform: scale(1.1);
                 }
                 
                 .timeline-content {
-                    padding-top: 8px;
+                    padding-top: 10px;
+                }
+                .timeline-content h4 {
+                    font-size: 1.1rem;
+                    font-weight: 700;
+                    color: #1e293b;
+                    color: #1e293b;
+                }
+                .timeline-item.pending .timeline-content h4 {
+                    color: #94a3b8;
                 }
 
-                @media (min-width: 768px) {
+                @media (min-width: 900px) {
                     .status-timeline {
                         flex-direction: row;
                         justify-content: space-between;
-                        gap: 10px;
+                        gap: 0;
+                        padding-top: 20px;
                     }
                     .timeline-item {
                         flex-direction: column;
@@ -212,18 +301,28 @@ const ApplicationStatusTracker = () => {
                         text-align: center;
                         flex: 1;
                         padding-bottom: 0;
+                        padding: 0 10px;
                     }
-                    /* Horizontal Line */
+                    /* Desktop Horizontal Line */
                     .timeline-item:not(:last-child)::before {
                         left: 50%;
-                        top: 20px;
+                        top: 24px; /* Center of marker */
                         width: 100%;
-                        height: 2px;
+                        height: 3px;
                         bottom: auto;
+                        transform: translateX(50%);
                     }
+                    .timeline-item.completed:not(:last-child)::before {
+                        background: #1e3a8a;
+                    }
+                     /* Ensure line is behind markers */
+                     .timeline-marker {
+                        position: relative;
+                        z-index: 2;
+                        margin-bottom: 16px;
+                     }
                 }
             `}</style>
-
             <NOCFooter />
         </div>
     );

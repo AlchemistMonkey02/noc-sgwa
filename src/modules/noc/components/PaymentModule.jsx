@@ -15,10 +15,35 @@ const PaymentModule = ({ formData, onPaymentComplete }) => {
     const [receiptData, setReceiptData] = useState(null);
 
     useEffect(() => {
-        // Use enhanced charge calculation if block category is available
+        // PRIORITY: Use API-calculated fee structure if available
+        if (formData.feeStructure && formData.feeStructure.totalEstimated) {
+            const structure = formData.feeStructure;
+            const gst = formData.gstAmount || (structure.totalEstimated - structure.totalBaseFee);
+
+            setFees({
+                baseFee: structure.totalBaseFee,
+                gstAmount: gst,
+                totalAmount: structure.totalEstimated
+            });
+
+            // Construct breakdown for UI from API data
+            const details = [
+                { label: 'Base Amount', value: formatCurrency(structure.baseAmount || 0) },
+                { label: 'EC Charges', value: formatCurrency(structure.ecCharges || 0) },
+                { label: 'Processing Fee', value: formatCurrency(structure.processingFee || 0) },
+                { label: 'Total Base Fee', value: formatCurrency(structure.totalBaseFee || 0), isSubtotal: true },
+                { label: 'GST (18%)', value: formatCurrency(gst), isSubtotal: true },
+                { label: 'Total Payable', value: formatCurrency(structure.totalEstimated), isTotal: true }
+            ];
+            setChargeBreakdown({ details });
+            setAdvancedCharges(null); // Use API data, not local calc
+            return;
+        }
+
+        // FALLBACK: Use local calculation (existing logic)
         if (formData.district && formData.block && formData.dailyWaterRequirement) {
             const blockCategoryObj = getBlockCategory(formData.district, formData.block);
-            
+
             if (blockCategoryObj) {
                 // Determine project category
                 let projectCategory = 'Industry';
@@ -42,7 +67,7 @@ const PaymentModule = ({ formData, onPaymentComplete }) => {
 
                 setAdvancedCharges(charges);
                 setChargeBreakdown(getChargeBreakdown(charges));
-                
+
                 // Set fees for backward compatibility
                 setFees({
                     baseFee: charges.applicationFee,

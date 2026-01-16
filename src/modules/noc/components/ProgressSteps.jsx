@@ -1,19 +1,21 @@
 import React from 'react';
 import '../styles/noc-portal.css';
 
-const ProgressSteps = ({ steps, currentStep }) => {
+const ProgressSteps = ({ steps, currentStep, onStepClick }) => {
     return (
-        <div className="noc-progress-steps">
+        <div className="form-stepper">
             {steps.map((step, index) => (
                 <div
                     key={step.id}
-                    className={`noc-step ${currentStep === step.id ? 'active' : ''
-                        } ${currentStep > step.id ? 'completed' : ''}`}
+                    className={`step-item ${currentStep === step.id ? 'active' : ''} ${currentStep > step.id ? 'completed' : ''}`}
+                    onClick={() => onStepClick && onStepClick(step.id)}
+                    style={{ cursor: onStepClick ? 'pointer' : 'default' }}
+                    title={`Click to go to: ${step.title}`}
                 >
-                    <div className="noc-step-number">
+                    <div className="step-circle">
                         {currentStep > step.id ? '✓' : step.id}
                     </div>
-                    <div className="noc-step-label">{step.title}</div>
+                    <div className="step-label">{step.title}</div>
                 </div>
             ))}
         </div>

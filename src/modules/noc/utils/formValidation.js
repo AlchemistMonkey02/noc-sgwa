@@ -38,6 +38,7 @@ export const validateLongitude = (lon) => {
 export const validateStep1 = (formData) => {
     const errors = {};
 
+    // --- BASIC DETAILS ---
     if (!formData.applicationType) {
         errors.applicationType = 'Application type is required';
     }
@@ -72,6 +73,39 @@ export const validateStep1 = (formData) => {
 
     if (formData.isMSME === 'Yes' && !formData.msmeRegistrationNumber.trim()) {
         errors.msmeRegistrationNumber = 'MSME registration number is required';
+    }
+
+    // --- APPLICANT DETAILS (Moved from Step 5) ---
+    if (!formData.applicantName.trim()) {
+        errors.applicantName = 'Applicant name is required';
+    }
+
+    if (!formData.applicantEmail) {
+        errors.applicantEmail = 'Email is required';
+    } else if (!validateEmail(formData.applicantEmail)) {
+        errors.applicantEmail = 'Invalid email format';
+    }
+
+    if (!formData.applicantMobile) {
+        errors.applicantMobile = 'Mobile number is required';
+    } else if (!validateMobile(formData.applicantMobile)) {
+        errors.applicantMobile = 'Invalid mobile number (10 digits required)';
+    }
+
+    if (formData.applicantPAN && !validatePAN(formData.applicantPAN)) {
+        errors.applicantPAN = 'Invalid PAN format (e.g., ABCDE1234F)';
+    }
+
+    if (formData.applicantAadhaar && !validateAadhaar(formData.applicantAadhaar)) {
+        errors.applicantAadhaar = 'Invalid Aadhaar number (12 digits required)';
+    }
+
+    if (!formData.organizationName.trim()) {
+        errors.organizationName = 'Organization name is required';
+    }
+
+    if (!formData.organizationType) {
+        errors.organizationType = 'Organization type is required';
     }
 
     return errors;
@@ -118,6 +152,23 @@ export const validateStep2 = (formData) => {
 };
 
 export const validateStep3 = (formData) => {
+    // Step 3: Drinking & Domestic Water Requirements
+    const errors = {};
+
+    // Basic range checks
+    if (formData.numberOfWorkers && parseInt(formData.numberOfWorkers) < 0) {
+        errors.numberOfWorkers = 'Cannot be negative';
+    }
+
+    if (formData.numberOfResidents && parseInt(formData.numberOfResidents) < 0) {
+        errors.numberOfResidents = 'Cannot be negative';
+    }
+
+    return errors;
+};
+
+export const validateStep4 = (formData) => {
+    // Step 4: Water Requirement Details (Was Step 3)
     const errors = {};
 
     if (!formData.dailyWaterRequirement || formData.dailyWaterRequirement <= 0) {
@@ -131,7 +182,8 @@ export const validateStep3 = (formData) => {
     return errors;
 };
 
-export const validateStep4 = (formData) => {
+export const validateStep5 = (formData) => {
+    // Step 5: Groundwater Structures (Was Step 4)
     const errors = {};
 
     const totalProposed =
@@ -141,46 +193,11 @@ export const validateStep4 = (formData) => {
         parseInt(formData.proposedDugCumBorewells || 0) +
         parseInt(formData.proposedPumps || 0);
 
-    if (totalProposed === 0) {
-        errors.proposedStructures = 'At least one proposed structure is required';
-    }
+    const totalExisting = formData.existingStructures ? formData.existingStructures.length : 0;
 
-    return errors;
-};
-
-export const validateStep5 = (formData) => {
-    const errors = {};
-
-    if (!formData.applicantName.trim()) {
-        errors.applicantName = 'Applicant name is required';
-    }
-
-    if (!formData.applicantEmail) {
-        errors.applicantEmail = 'Email is required';
-    } else if (!validateEmail(formData.applicantEmail)) {
-        errors.applicantEmail = 'Invalid email format';
-    }
-
-    if (!formData.applicantMobile) {
-        errors.applicantMobile = 'Mobile number is required';
-    } else if (!validateMobile(formData.applicantMobile)) {
-        errors.applicantMobile = 'Invalid mobile number (10 digits required)';
-    }
-
-    if (formData.applicantPAN && !validatePAN(formData.applicantPAN)) {
-        errors.applicantPAN = 'Invalid PAN format (e.g., ABCDE1234F)';
-    }
-
-    if (formData.applicantAadhaar && !validateAadhaar(formData.applicantAadhaar)) {
-        errors.applicantAadhaar = 'Invalid Aadhaar number (12 digits required)';
-    }
-
-    if (!formData.organizationName.trim()) {
-        errors.organizationName = 'Organization name is required';
-    }
-
-    if (!formData.organizationType) {
-        errors.organizationType = 'Organization type is required';
+    // Must have at least one structure (existing or proposed)
+    if (totalProposed === 0 && totalExisting === 0) {
+        errors.proposedStructures = 'Please add at least one existing or proposed structure';
     }
 
     return errors;
@@ -191,64 +208,64 @@ export const validateStep6 = (formData) => {
 
     // Step 6: Technical Compliance (Flow Meter & Piezometer)
     // Note: Checkboxes use HTML5 required attribute, so we focus on field validations
-    
+
     // Flow Meter validation (MANDATORY for ALL)
     const flowMeter = formData.flowMeterDetails || {};
-    
+
     if (!flowMeter.meterType || !flowMeter.meterType.trim()) {
         errors['flowMeter.meterType'] = 'Meter type is required';
     }
-    
+
     if (!flowMeter.manufacturer || !flowMeter.manufacturer.trim()) {
         errors['flowMeter.manufacturer'] = 'Manufacturer name is required';
     }
-    
+
     if (!flowMeter.modelNumber || !flowMeter.modelNumber.trim()) {
         errors['flowMeter.modelNumber'] = 'Model number is required';
     }
-    
+
     if (!flowMeter.bisStandard || !flowMeter.bisStandard.trim()) {
         errors['flowMeter.bisStandard'] = 'BIS/IS Standard Certification Number is required';
     }
-    
+
     if (!flowMeter.telemetryEnabled || flowMeter.telemetryEnabled !== 'Yes') {
         errors['flowMeter.telemetryEnabled'] = 'Telemetry must be enabled (mandatory)';
     }
-    
+
     if (!flowMeter.telemetryProvider || !flowMeter.telemetryProvider.trim()) {
         errors['flowMeter.telemetryProvider'] = 'Telemetry service provider is required';
     }
-    
+
     if (!flowMeter.installationProposedDate) {
         errors['flowMeter.installationProposedDate'] = 'Proposed installation date is required';
     }
-    
+
     // Piezometer validation (only if required)
     if (formData.piezometerRequired) {
         const piezometer = formData.piezometerDetails || {};
-        
+
         if (!piezometer.distanceFromWell || !piezometer.distanceFromWell.toString().trim()) {
             errors['piezometer.distanceFromWell'] = 'Distance from pumping well is required';
-        } else if (parseFloat(piezometer.distanceFromWell) < 50) {
-            errors['piezometer.distanceFromWell'] = 'Distance must be at least 50 meters from pumping well';
         }
-        
+        // Strict 50m check removed as per user request to allow test data
+
+
         if (!piezometer.depth || !piezometer.depth.toString().trim()) {
             errors['piezometer.depth'] = 'Piezometer depth is required';
         }
-        
+
         if (!piezometer.piezometerLocation || !piezometer.piezometerLocation.trim()) {
             errors['piezometer.piezometerLocation'] = 'Piezometer location is required';
         }
-        
+
         if (!piezometer.coordinates || !piezometer.coordinates.latitude || !piezometer.coordinates.latitude.toString().trim()) {
             errors['piezometer.coordinates.latitude'] = 'GPS Latitude is required';
         }
-        
+
         if (!piezometer.coordinates || !piezometer.coordinates.longitude || !piezometer.coordinates.longitude.toString().trim()) {
             errors['piezometer.coordinates.longitude'] = 'GPS Longitude is required';
         }
-        
+
         if (!piezometer.nablLabName || !piezometer.nablLabName.trim()) {
             errors['piezometer.nablLabName'] = 'NABL accredited lab name is required';
         }

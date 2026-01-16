@@ -1,0 +1,365 @@
+/* NOC Certificate Styles */
+
+.noc-certificate-container {
+    max-width: 210mm;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: white;
+}
+
+.noc-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 2rem;
+    gap: 1rem;
+}
+
+.noc-certificate-content {
+    background: white;
+    padding: 3rem;
+    border: 3px solid #1e40af;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+/* Header */
+.noc-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.noc-emblem {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.noc-govt-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1e40af;
+    margin: 0.5rem 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.noc-dept-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1e40af;
+    margin: 0.5rem 0;
+}
+
+.noc-wing-title {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: #475569;
+    margin: 0.5rem 0;
+}
+
+.noc-address {
+    font-size: 0.9375rem;
+    color: #64748b;
+    margin: 0.5rem 0;
+}
+
+.noc-divider {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #1e40af, transparent);
+    margin: 1.5rem 0;
+}
+
+/* Title Section */
+.noc-title-section {
+    text-align: center;
+    margin: 2rem 0;
+}
+
+.noc-main-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1e40af;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.noc-subtitle {
+    font-size: 1.125rem;
+    color: #475569;
+    margin: 0.5rem 0;
+    font-style: italic;
+}
+
+/* Reference Section */
+.noc-ref-section {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: #f8fafc;
+    border-left: 4px solid #1e40af;
+}
+
+.noc-ref-row {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.noc-ref-label {
+    font-weight: 600;
+    color: #475569;
+    min-width: 100px;
+}
+
+.noc-ref-value {
+    color: #1e293b;
+}
+
+/* Body */
+.noc-body {
+    margin: 2rem 0;
+    line-height: 1.8;
+}
+
+.noc-intro-text {
+    font-size: 1rem;
+    color: #1e293b;
+    margin-bottom: 2rem;
+    text-align: justify;
+}
+
+/* Sections */
+.noc-section {
+    margin: 2rem 0;
+}
+
+.noc-section-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #1e40af;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e2e8f0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Tables */
+.noc-details-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+}
+
+.noc-details-table tr {
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.noc-details-table td {
+    padding: 0.75rem 0.5rem;
+}
+
+.noc-table-label {
+    font-weight: 600;
+    color: #475569;
+    width: 40%;
+}
+
+.noc-table-value {
+    color: #1e293b;
+}
+
+/* Conditions List */
+.noc-conditions-list {
+    list-style-position: outside;
+    padding-left: 1.5rem;
+    margin: 1rem 0;
+}
+
+.noc-condition-item {
+    margin: 0.75rem 0;
+    color: #1e293b;
+    line-height: 1.6;
+}
+
+/* Disclaimer */
+.noc-disclaimer {
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    padding: 1rem;
+    font-size: 0.9375rem;
+    color: #92400e;
+    margin: 1.5rem 0;
+}
+
+/* Signature Section */
+.noc-signature-section {
+    margin-top: 3rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.noc-signature-block {
+    text-align: center;
+    min-width: 250px;
+}
+
+.noc-signature-name {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0.5rem 0;
+}
+
+.noc-signature-designation,
+.noc-signature-dept,
+.noc-signature-place,
+.noc-signature-date {
+    font-size: 0.9375rem;
+    color: #475569;
+    margin: 0.25rem 0;
+}
+
+/* Footer */
+.noc-footer {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 2px solid #e2e8f0;
+    text-align: center;
+}
+
+.noc-footer-text {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin: 0.5rem 0;
+}
+
+/* QR Code */
+.noc-qr-section {
+    position: absolute;
+    bottom: 2rem;
+    left: 2rem;
+    text-align: center;
+}
+
+.noc-qr-placeholder {
+    width: 100px;
+    height: 100px;
+    border: 2px solid #1e40af;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    color: #64748b;
+    background: #f8fafc;
+}
+
+.noc-qr-text {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 0.25rem;
+}
+
+/* Print Styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+
+    .noc-certificate-container {
+        margin: 0;
+        padding: 0;
+    }
+
+    .noc-certificate-content {
+        box-shadow: none;
+        border: 3px solid #1e40af;
+    }
+}
+
+/* Application Summary Styles */
+.application-summary-container {
+    background: var(--officer-bg-light);
+    padding: 2rem;
+    border-radius: 12px;
+    margin: 2rem 0;
+}
+
+.summary-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid var(--primary-600);
+}
+
+.summary-section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--primary-700);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.summary-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.summary-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.summary-value {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-dark);
+}
+
+.summary-declaration {
+    background: #f0f9ff;
+    border: 1px solid #0284c7;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+}
+
+.summary-declaration-text {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: #0c4a6e;
+    margin: 0;
+}
+
+.summary-checkbox-group {
+    margin-top: 1.5rem;
+}
+
+.summary-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1rem;
+    color: var(--text-dark);
+    margin: 1rem 0;
+}
+
+.summary-checkbox-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}

@@ -45,6 +45,23 @@ export const groundWaterUtilization = [
     'Mixed Use'
 ];
 
+export const industryTypes = [
+    'Packaged Drinking Water / Mineral Water',
+    'Tannery',
+    'Distillery / Breweries',
+    'Textile / Dyeing & Printing',
+    'Paper & Pulp',
+    'Power Plant',
+    'Chemical / Pharmaceutical',
+    'Steel / Metal Industry',
+    'Food Processing / Cold Storage',
+    'Ice Factory',
+    'Mining / Mineral Processing',
+    'Infrastructure / Construction',
+    'General Manufacturing (Non-Water Intensive)',
+    'Other'
+];
+
 export const msmeTypes = [
     'Micro',
     'Small',
@@ -75,65 +92,127 @@ export const structureTypes = [
 
 export const documentTypes = [
     {
+        id: 'loa',
+        name: 'Authorization Letter / Letter of Authority (LOA)',
+        required: true,
+        description: 'Authorized signatory letter on company letterhead'
+    },
+    {
         id: 'land_ownership',
-        name: 'Land Ownership / Lease Documents',
+        name: 'Certificate/Affidavit of Land Ownership',
         required: true,
         description: 'Sale deed, Jamabandi, or valid lease deed'
     },
     {
-        id: 'nbc_calculation',
-        name: 'Water Requirement Calculation',
+        id: 'site_map',
+        name: 'Site Map / Plot Plan',
         required: true,
-        description: 'Detailed calculation as per NBC-2016 norms'
+        description: 'Showing all existing/proposed wells with GPS coordinates'
     },
     {
-        id: 'project_report',
+        id: 'water_balance',
+        name: 'Water Balance Chart / Flow Diagram',
+        required: true,
+        description: 'Detailed water usage and recycling flow'
+    },
+    {
+        id: 'dpr',
         name: 'Detailed Project Report (DPR)',
         required: true,
-        description: 'Covering water balance and usage'
+        description: 'Comprehensive project report with water requirements'
     },
     {
-        id: 'site_plan',
-        name: 'Site Plan / Location Map',
+        id: 'cte',
+        name: 'Consent to Establish (CTE)',
+        required: false,
+        description: 'From State Pollution Control Board (for industries)'
+    },
+    {
+        id: 'cto',
+        name: 'Consent to Operate (CTO)',
+        required: false,
+        description: 'From State Pollution Control Board (for existing industries)'
+    },
+    {
+        id: 'gw_quality',
+        name: 'Ground Water Quality Report',
         required: true,
-        description: 'Showing all existing/proposed wells with geo-coordinates'
+        description: 'Recent water quality test report from NABL lab'
+    },
+    {
+        id: 'rwh_plan',
+        name: 'Rainwater Harvesting Plan/Affidavit',
+        required: true,
+        description: 'Technical design for rainwater recharge structures'
+    },
+    {
+        id: 'msme_cert',
+        name: 'MSME Certificate',
+        required: false,
+        description: 'Udyam registration certificate (if MSME)'
+    },
+    {
+        id: 'previous_noc',
+        name: 'Previous NOC Copy',
+        required: false,
+        description: 'For renewal/amendment applications'
+    },
+    {
+        id: 'env_clearance',
+        name: 'Environmental Clearance',
+        required: false,
+        description: 'EC from MoEF (for projects above threshold)'
+    },
+    {
+        id: 'impact_assessment',
+        name: 'Impact Assessment Report',
+        required: false,
+        description: 'For mining or large-scale dewatering projects'
+    },
+    {
+        id: 'bis_license',
+        name: 'BIS License Copy',
+        required: false,
+        description: 'For packaged drinking water industries'
+    },
+    {
+        id: 'mining_lease',
+        name: 'Mining Lease Copy',
+        required: false,
+        description: 'Approved mining lease document'
     },
     {
         id: 'affidavit',
-        name: 'Notarized Affidavit (Annexure-12)',
+        name: 'Notarized Affidavit',
         required: true,
-        description: 'On ₹100 Stamp Paper as per format'
+        description: 'On ₹100 stamp paper as per prescribed format'
     },
     {
-        id: 'flow_meter_undertaking',
-        name: 'Flow Meter Undertaking/Proposal',
+        id: 'flow_meter',
+        name: 'Flow Meter Undertaking',
         required: true,
-        description: 'Proposal for digital flow meter with telemetry'
-    },
-    {
-        id: 'rainwater_plan',
-        name: 'Rainwater Harvesting Plan',
-        required: true,
-        description: 'Technical design for recharge structures'
-    },
-    {
-        id: 'cte_cto',
-        name: 'Consent to Establish/Operate (CTE/CTO)',
-        required: false, // Mandatory for Industry/Mining but not all
-        description: 'From Pollution Control Board'
-    },
-    {
-        id: 'mining_plan',
-        name: 'Approved Mining Plan',
-        required: false, // Mandatory for Mining
-        description: 'Approved by Dept of Mines & Geology'
-    },
-    {
-        id: 'extra_doc_1',
-        name: 'Previous NOC (If Applicable)',
-        required: false,
-        description: 'For Renewal/Existing projects'
+        description: 'Proposal for digital flow meter installation with telemetry'
     }
+];
+
+// Water activity types for breakup
+export const waterActivityTypes = [
+    'Industrial Process',
+    'Boiler Feed',
+    'Cooling Tower',
+    'Domestic/Drinking',
+    'Greenbelt/Horticulture',
+    'Firefighting',
+    'Construction',
+    'Other'
+];
+
+export const waterSourceTypes = [
+    'Fresh Ground Water',
+    'Surface Water',
+    'Recycled Water (STP)',
+    'Recycled Water (ETP)',
+    'Municipal Supply'
 ];
 
 export const initialFormData = {
@@ -141,14 +220,20 @@ export const initialFormData = {
     applicationType: '',
     applicationSubType: '',
     projectType: '',
+    projectStatus: '', // Existing or New
     waterQualityType: '',
     groundWaterUtilizationFor: '',
+    industryType: '',
+    miningType: '',
+    otherProjectType: '',
+    industryNICCode: '',
     dateOfCommencement: '',
     existingNOCStatus: 'No',
     oldNOCNo: '',
     isMSME: 'No',
     msmeType: '',
     msmeRegistrationNumber: '',
+    msmeRegistrationDate: '',
     isExemptMSME: false,
 
     // Project Details
@@ -157,16 +242,36 @@ export const initialFormData = {
 
     // Location Details
     state: '',
+    district: '',
+    block: '',
     assessmentUnit: '',
     relevantBlocks: '',
     tehsil: '',
     projectAddress: '',
+    communicationAddress: '',
+    sameAsProjectAddress: false,
     pincode: '',
     latitude: '',
     longitude: '',
+    totalLandArea: '',
+    greenBeltArea: '',
+    isInWetland: false,
+    wetlandName: '',
     geology: '',
 
-    // Water Requirement
+    // Drinking & Domestic Water
+    numberOfWorkers: '',
+    numberOfResidents: '',
+    dailyRequirementPerPerson: 135, // CGWA standard in liters
+    domesticTotalDaily: 0,
+    domesticTotalAnnual: 0,
+
+    // Water Requirement Breakup
+    waterActivities: [], // Array of {activity, total, freshGW, surface, recycled}
+    stpCapacity: '',
+    etpCapacity: '',
+    recycledWaterUsage: '',
+    netFreshWaterRequired: 0,
     waterRequiredForGreenbelt: '',
     greenbeltArea: '',
     wetlandAreasName: '',
@@ -236,47 +341,52 @@ export const initialFormData = {
 export const formSteps = [
     {
         id: 1,
-        title: 'Application Type',
-        description: 'Select application type and project details'
+        title: 'Basic Details',
+        description: 'Application type, project details, and MSME status'
     },
     {
         id: 2,
-        title: 'Project & Location',
-        description: 'Project information and site location'
+        title: 'Location Details',
+        description: 'Project location, coordinates, and land information'
     },
     {
         id: 3,
-        title: 'Water Requirement',
-        description: 'Water requirement and usage details'
+        title: 'Drinking & Domestic',
+        description: 'Drinking and domestic water requirements'
     },
     {
         id: 4,
-        title: 'Groundwater Structures',
-        description: 'Existing and proposed structures'
+        title: 'Water Requirement',
+        description: 'Activity-wise water breakup and sources'
     },
     {
         id: 5,
-        title: 'Applicant Details',
-        description: 'Applicant information'
+        title: 'GW Structures',
+        description: 'Existing and proposed groundwater structures'
     },
     {
         id: 6,
-        title: 'Technical Compliance',
-        description: 'Piezometer and Flow Meter requirements'
+        title: 'Documents Required',
+        description: 'Checklist of required documents for your application'
     },
     {
         id: 7,
-        title: 'Document Upload',
-        description: 'Upload required documents'
+        title: 'Upload Documents',
+        description: 'Upload all required documents and certificates'
     },
     {
         id: 8,
-        title: 'Payment',
-        description: 'Application fee payment'
+        title: 'Fee Calculation',
+        description: 'Application fee calculation and payment gateway'
     },
     {
         id: 9,
-        title: 'Review & Submit',
-        description: 'Review application and submit'
+        title: 'Payment Receipt',
+        description: 'Upload payment receipt and transaction details'
+    },
+    {
+        id: 10,
+        title: 'Summary',
+        description: 'Review and submit your application'
     }
 ];

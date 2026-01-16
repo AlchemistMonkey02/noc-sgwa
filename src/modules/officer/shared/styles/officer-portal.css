@@ -1,0 +1,746 @@
+/* Officer Portal - BhuNeer Theme Styles */
+
+/* Color Variables */
+:root {
+    --officer-primary: #1e3a8a;
+    --officer-primary-light: #3b82f6;
+    --officer-primary-lighter: #60a5fa;
+    --officer-secondary: #475569;
+    --officer-success: #22c55e;
+    --officer-warning: #f59e0b;
+    --officer-danger: #ef4444;
+    --officer-info: #3b82f6;
+    --officer-text: #1e293b;
+    --officer-text-light: #64748b;
+    --officer-border: #e2e8f0;
+    --officer-bg-light: #f8fafc;
+    --officer-white: #ffffff;
+}
+
+/* Scenic Background */
+.officer-portal {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #60a5fa 100%);
+    background-image:
+        linear-gradient(135deg, rgba(30, 58, 138, 0.9) 0%, rgba(59, 130, 246, 0.85) 50%, rgba(96, 165, 250, 0.8) 100%),
+        url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxwYXR0ZXJuIGlkPSJzbWFsbEdyaWQiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMC4yIiBvcGFjaXR5PSIwLjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjc21hbGxHcmlkKSIvPjwvc3ZnPg==');
+    padding: 0;
+}
+
+/* Officer Header */
+.officer-header {
+    background: var(--officer-white);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.officer-header-left {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.officer-logo {
+    height: 50px;
+}
+
+.officer-header-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--officer-primary);
+    margin: 0;
+}
+
+.officer-header-subtitle {
+    font-size: 0.875rem;
+    color: var(--officer-text-light);
+    margin: 0;
+}
+
+.officer-header-right {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.officer-profile {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.officer-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--officer-primary) 0%, var(--officer-primary-light) 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1.125rem;
+}
+
+.officer-info h4 {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--officer-text);
+}
+
+.officer-info p {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--officer-text-light);
+}
+
+.officer-logout-btn {
+    padding: 0.5rem 1.25rem;
+    background: var(--officer-danger);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.officer-logout-btn:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+}
+
+/* Main Layout */
+.officer-layout {
+    display: flex;
+    min-height: calc(100vh - 82px);
+}
+
+/* Sidebar */
+.officer-sidebar {
+    width: 260px;
+    background: var(--officer-white);
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+    padding: 1.5rem 0;
+}
+
+.officer-nav {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.officer-nav-item {
+    margin: 0.25rem 0;
+}
+
+.officer-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1.5rem;
+    color: var(--officer-text);
+    text-decoration: none;
+    transition: all 0.2s;
+    font-weight: 500;
+    border-left: 3px solid transparent;
+}
+
+.officer-nav-link:hover {
+    background: var(--officer-bg-light);
+    border-left-color: var(--officer-primary-light);
+}
+
+.officer-nav-link.active {
+    background: linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0%, transparent 100%);
+    color: var(--officer-primary);
+    border-left-color: var(--officer-primary);
+}
+
+.officer-nav-icon {
+    font-size: 1.25rem;
+}
+
+/* Main Content */
+.officer-content {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+/* White Container */
+.officer-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: var(--officer-white);
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+/* Page Header */
+.officer-page-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--officer-border);
+}
+
+.officer-page-title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: var(--officer-primary);
+    margin: 0 0 0.5rem 0;
+}
+
+.officer-page-subtitle {
+    font-size: 1rem;
+    color: var(--officer-text-light);
+    margin: 0;
+}
+
+/* Statistics Cards */
+.officer-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.officer-stat-card {
+    background: var(--officer-white);
+    border: 1px solid var(--officer-border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s;
+}
+
+.officer-stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.officer-stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.officer-stat-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--officer-text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.officer-stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.officer-stat-icon.primary {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.2) 100%);
+    color: var(--officer-primary);
+}
+
+.officer-stat-icon.success {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.2) 100%);
+    color: var(--officer-success);
+}
+
+.officer-stat-icon.warning {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.2) 100%);
+    color: var(--officer-warning);
+}
+
+.officer-stat-icon.danger {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.2) 100%);
+    color: var(--officer-danger);
+}
+
+.officer-stat-value {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: var(--officer-text);
+    margin: 0;
+}
+
+.officer-stat-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--officer-text-light);
+}
+
+/* Application Card */
+.officer-app-card {
+    background: var(--officer-white);
+    border: 1px solid var(--officer-border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s;
+    cursor: pointer;
+}
+
+.officer-app-card:hover {
+    border-color: var(--officer-primary-light);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    transform: translateY(-2px);
+}
+
+.officer-app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 1rem;
+}
+
+.officer-app-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--officer-primary);
+    margin: 0 0 0.25rem 0;
+}
+
+.officer-app-number {
+    font-size: 0.875rem;
+    color: var(--officer-text-light);
+    margin: 0;
+}
+
+.officer-app-body {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.officer-app-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.officer-app-field-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--officer-text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.officer-app-field-value {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--officer-text);
+}
+
+.officer-app-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--officer-border);
+}
+
+/* Status Badge */
+.officer-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.875rem;
+    border-radius: 9999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.officer-badge.pending {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+}
+
+.officer-badge.approved {
+    background: rgba(34, 197, 94, 0.1);
+    color: #16a34a;
+}
+
+.officer-badge.rejected {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
+.officer-badge.under-review {
+    background: rgba(59, 130, 246, 0.1);
+    color: #2563eb;
+}
+
+.officer-badge.query-raised {
+    background: rgba(139, 92, 246, 0.1);
+    color: #7c3aed;
+}
+
+/* Buttons */
+.officer-btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.officer-btn-primary {
+    background: linear-gradient(135deg, var(--officer-primary) 0%, var(--officer-primary-light) 100%);
+    color: white;
+}
+
+.officer-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.officer-btn-success {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    color: white;
+}
+
+.officer-btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+
+.officer-btn-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+}
+
+.officer-btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.officer-btn-secondary {
+    background: var(--officer-bg-light);
+    color: var(--officer-text);
+    border: 1px solid var(--officer-border);
+}
+
+.officer-btn-secondary:hover {
+    background: var (--officer-border);
+}
+
+/* Timeline */
+.officer-timeline {
+    position: relative;
+    padding-left: 2.5rem;
+}
+
+.officer-timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.875rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--officer-border);
+}
+
+.officer-timeline-item {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.officer-timeline-marker {
+    position: absolute;
+    left: -2.5rem;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    background: var(--officer-white);
+    border: 3px solid var(--officer-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    z-index: 1;
+}
+
+.officer-timeline-marker.success {
+    border-color: var(--officer-success);
+    color: var(--officer-success);
+}
+
+.officer-timeline-content {
+    background: var(--officer-bg-light);
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 3px solid var(--officer-primary);
+}
+
+.officer-timeline-title {
+    font-weight: 600;
+    color: var(--officer-text);
+    margin: 0 0 0.25rem 0;
+}
+
+.officer-timeline-meta {
+    font-size: 0.8125rem;
+    color: var(--officer-text-light);
+    margin: 0 0 0.5rem 0;
+}
+
+.officer-timeline-description {
+    font-size: 0.9375rem;
+    color: var(--officer-text);
+    margin: 0;
+}
+
+/* Tables */
+.officer-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.officer-table thead {
+    background: var(--officer-bg-light);
+    border-bottom: 2px solid var(--officer-border);
+}
+
+.officer-table th {
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--officer-text);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.officer-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--officer-border);
+    color: var(--officer-text);
+}
+
+.officer-table tbody tr:hover {
+    background: var(--officer-bg-light);
+}
+
+/* Forms */
+.officer-form-group {
+    margin-bottom: 1.5rem;
+}
+
+.officer-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--officer-text);
+    font-size: 0.9375rem;
+}
+
+.officer-label.required::after {
+    content: ' *';
+    color: var(--officer-danger);
+}
+
+.officer-input,
+.officer-select,
+.officer-textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--officer-border);
+    border-radius: 8px;
+    font-size: 0.9375rem;
+    transition: all 0.2s;
+}
+
+.officer-input:focus,
+.officer-select:focus,
+.officer-textarea:focus {
+    outline: none;
+    border-color: var(--officer-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.officer-textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+/* Utility Classes */
+.officer-mt-1 {
+    margin-top: 0.5rem;
+}
+
+.officer-mt-2 {
+    margin-top: 1rem;
+}
+
+.officer-mt-3 {
+    margin-top: 1.5rem;
+}
+
+.officer-mt-4 {
+    margin-top: 2rem;
+}
+
+.officer-mb-1 {
+    margin-bottom: 0.5rem;
+}
+
+.officer-mb-2 {
+    margin-bottom: 1rem;
+}
+
+.officer-mb-3 {
+    margin-bottom: 1.5rem;
+}
+
+.officer-mb-4 {
+    margin-bottom: 2rem;
+}
+
+.officer-text-center {
+    text-align: center;
+}
+
+.officer-text-right {
+    text-align: right;
+}
+
+.officer-flex {
+    display: flex;
+}
+
+.officer-flex-between {
+    display: flex;
+    justify-content: space-between;
+}
+
+.officer-flex-center {
+    display: flex;
+    align-items: center;
+}
+
+.officer-gap-1 {
+    gap: 0.5rem;
+}
+
+.officer-gap-2 {
+    gap: 1rem;
+}
+
+.officer-gap-3 {
+    gap: 1.5rem;
+}
+
+/* Print Styles */
+@media print {
+
+    /* Hide non-printable elements */
+    .officer-header,
+    .officer-sidebar,
+    .officer-btn,
+    .officer-nav,
+    button {
+        display: none !important;
+    }
+
+    /* Reset Layout for Print */
+    .officer-portal {
+        background: white !important;
+        background-image: none !important;
+        height: auto !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .officer-layout {
+        display: block !important;
+        height: auto !important;
+    }
+
+    .officer-content {
+        padding: 0 !important;
+        margin: 0 !important;
+        overflow: visible !important;
+    }
+
+    .officer-container {
+        box-shadow: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Adjust typography for print */
+    body {
+        font-size: 12pt;
+        color: black !important;
+        background: white !important;
+    }
+
+    h1,
+    h2,
+    h3 {
+        color: black !important;
+        page-break-after: avoid;
+    }
+
+    p,
+    span,
+    div,
+    strong {
+        color: black !important;
+    }
+
+    /* Ensure card borders print */
+    .officer-card {
+        border: 1px solid #ddd !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+        margin-bottom: 20px !important;
+    }
+
+    /* Expand status backgrounds for printing if possible */
+    .officer-card.status-success,
+    .officer-card.status-warning,
+    .officer-card.status-danger {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Show official header in print */
+    .officer-report-header {
+        display: block !important;
+    }
+}

@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getOfficerToken, clearOfficerAuth } from '../utils/officerAuth';
 import '../styles/officer-portal.css';
+import API_BASE_URL from '../../../../config/apiConfig';
 
 const OfficerHeader = ({ officerName, officerRole, officerDesignation, district }) => {
     const navigate = useNavigate();
@@ -12,7 +13,7 @@ const OfficerHeader = ({ officerName, officerRole, officerDesignation, district 
 
             // Call logout API
             if (token) {
-                await fetch('http://localhost:5000/api/auth/logout', {
+                await fetch(`${API_BASE_URL}/auth/logout`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,

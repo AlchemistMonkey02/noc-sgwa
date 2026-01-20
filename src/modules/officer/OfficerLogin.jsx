@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { setOfficerToken, setOfficerRole, setOfficerData, setOfficerRefreshToken } from './shared/utils/officerAuth';
 import './shared/styles/officer-portal.css';
 
+import API_BASE_URL from '../../config/apiConfig';
+
 const OfficerLogin = () => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
@@ -22,7 +24,7 @@ const OfficerLogin = () => {
             console.log('Attempting login with:', { username: formData.username, role: formData.role });
 
             // Call the actual login API (role not sent to API - only used for UI navigation)
-            const response = await fetch('http://localhost:5000/api/auth/login', {
+            const response = await fetch(`${API_BASE_URL}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

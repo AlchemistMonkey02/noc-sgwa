@@ -1,19 +1,38 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getOfficerToken, clearOfficerAuth } from '../utils/officerAuth';
 import '../styles/officer-portal.css';
 
 const OfficerHeader = ({ officerName, officerRole, officerDesignation, district }) => {
     const navigate = useNavigate();
 
-    const handleLogout = () => {
-        // Clear authentication
-        localStorage.removeItem('officerToken');
-        localStorage.removeItem('officerRole');
-        navigate('/officer/login');
+    const handleLogout = async () => {
+        try {
+            const token = getOfficerToken();
+
+            // Call logout API
+            if (token) {
+                await fetch('http://localhost:5000/api/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Logout error:', error);
+            // Continue with logout even if API call fails
+        } finally {
+            // Clear authentication data
+            clearOfficerAuth();
+            // Redirect to login page
+            navigate('/officer/login');
+        }
     };
 
     const getInitials = (name) => {
-        return name
+        return (name || 'Officer')
             .split(' ')
             .map(n => n[0])
             .join('')

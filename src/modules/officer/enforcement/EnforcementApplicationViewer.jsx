@@ -52,20 +52,7 @@ const EnforcementApplicationViewer = () => {
             photos: ['site_photo_1.jpg', 'meter_photo.jpg']
         },
         // Mock timeline data
-        timeline: [
-            { stage: 'SUBMITTED', date: '2026-01-09T08:00:00', actor: 'Applicant', remarks: 'Application submitted successfully' },
-            { stage: 'DGO_REVIEW', date: '2026-01-10T10:00:00', actor: 'Amit Verma (DGO)', remarks: 'Site inspection completed. Recommended for approval.' },
-            { stage: 'SGWA_REVIEW', date: '2026-01-11T14:30:00', actor: 'Dr. Priya Sharma (SGWA)', remarks: 'Technical feasibility verified. Forwarded for final NOC issuance.' },
-            { stage: 'PENDING_ENFORCEMENT', date: '2026-01-11T14:35:00', actor: 'System', remarks: 'Awaiting final approval from Enforcement Wing' }
-        ],
-        // Mock inspection report
-        inspectionReport: {
-            date: '2026-01-10',
-            officer: 'Amit Verma (DGO Jaipur)',
-            findings: 'The unit has installed a digital flow meter as required. Piezometer installation is in progress. The proposed site for rainwater harvesting is adequate. No illegal abstraction observed.',
-            coordinates: '26.9124° N, 75.7873° E',
-            photos: ['site_photo_1.jpg', 'meter_photo.jpg']
-        }
+
     };
 
     const handleApproveClick = () => {

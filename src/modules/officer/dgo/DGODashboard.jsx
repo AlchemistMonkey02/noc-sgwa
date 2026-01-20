@@ -4,6 +4,7 @@ import OfficerHeader from '../shared/components/OfficerHeader';
 import OfficerSidebar from '../shared/components/OfficerSidebar';
 import ApplicationCard from '../shared/components/ApplicationCard';
 import officerService from '../services/officerService';
+import { getOfficerData } from '../shared/utils/officerAuth';
 import '../shared/styles/officer-portal.css';
 
 const DGODashboard = () => {
@@ -18,8 +19,14 @@ const DGODashboard = () => {
     const [recentApplications, setRecentApplications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [district, setDistrict] = useState('');
+    const [officerInfo, setOfficerInfo] = useState(null);
+    const [pendingInspections, setPendingInspections] = useState([]);
 
     useEffect(() => {
+        // Load officer data from localStorage
+        const userData = getOfficerData();
+        setOfficerInfo(userData);
+
         // Fetch dashboard statistics
         fetchDashboardData();
     }, []);
@@ -27,7 +34,10 @@ const DGODashboard = () => {
     const fetchDashboardData = async () => {
         try {
             setLoading(true);
+            console.log('Fetching DGO dashboard data...');
             const response = await officerService.getDGODashboard();
+
+            console.log('Dashboard response:', response);
 
             if (response.success) {
                 const data = response.data;
@@ -79,6 +89,16 @@ const DGODashboard = () => {
             });
 
             setDistrict('Jaipur');
+
+            setPendingInspections([
+                {
+                    id: 'app-insp-001',
+                    applicationNumber: 'RJ/CGWA/NOC/2026/009988',
+                    projectName: 'City Mall Complex',
+                    scheduledDate: '2026-01-21',
+                    officer: 'Current User'
+                }
+            ]);
 
             setRecentApplications([
                 {
@@ -137,10 +157,10 @@ const DGODashboard = () => {
     return (
         <div className="officer-portal">
             <OfficerHeader
-                officerName="Ramesh Kumar"
+                officerName={officerInfo?.name || officerInfo?.username || 'DGO Officer'}
                 officerRole="DGO"
-                officerDesignation="District Groundwater Officer"
-                district="Jaipur"
+                officerDesignation={officerInfo?.designation || 'District Groundwater Officer'}
+                district={district || officerInfo?.district || 'Jaipur'}
             />
 
             <div className="officer-layout">
@@ -229,6 +249,35 @@ const DGODashboard = () => {
                             </div>
                         </div>
 
+
+                        {/* Pending Inspections Section */}
+                        {pendingInspections.length > 0 && (
+                            <div className="officer-mt-4">
+                                <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--officer-warning)', margin: '0 0 1rem 0' }}>
+                                    🔍 Pending Inspections
+                                </h2>
+                                <div className="inspection-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                                    {pendingInspections.map(item => (
+                                        <div key={item.id} className="officer-card" style={{ padding: '1.5rem', borderLeft: '4px solid var(--officer-warning)' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                                <span className="status-badge status-inspection-scheduled">Scheduled</span>
+                                                <span style={{ fontSize: '0.875rem', color: '#666' }}>{new Date(item.scheduledDate).toLocaleDateString()}</span>
+                                            </div>
+                                            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.125rem' }}>{item.projectName}</h3>
+                                            <p style={{ margin: '0 0 1rem 0', color: '#666', fontSize: '0.9rem' }}>{item.applicationNumber}</p>
+                                            <button
+                                                className="officer-btn officer-btn-primary"
+                                                style={{ width: '100%' }}
+                                                onClick={() => navigate(`/officer/dgo/applications/${item.id}/inspection-report`)}
+                                            >
+                                                📝 Submit Report
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Recent Applications */}
                         <div className="officer-mt-4">
                             <div className="officer-flex-between officer-mb-3">
@@ -263,8 +312,8 @@ const DGODashboard = () => {
                         </div>
                     </div>
                 </main>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

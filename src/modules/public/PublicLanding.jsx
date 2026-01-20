@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import NOCRegister from '../noc/NOCRegister';
 import './styles/public-landing.css';
@@ -74,9 +74,9 @@ const PublicLanding = () => {
     };
 
     const onlineServices = [
-        { title: 'Groundwater NOC', icon: '📄', serviceType: 'water_abstractor' },
-        { title: 'Rig Registration', icon: '🏗️', serviceType: 'rig_registration' },
-        { title: 'Vendor Registration', icon: '⚙️', serviceType: 'vendor_registration' },
+        { title: 'Groundwater NOC', icon: '📄', link: '/public/services/noc' },
+        { title: 'Rig Registration', icon: '🏗️', link: '/public/services/rig' },
+        { title: 'Vendor Registration', icon: '⚙️', link: '/public/services/vendor' },
         { title: 'Know Your EC', icon: '💰', link: '/public/know-your-ec' },
         { title: 'Water Calculator', icon: '🧮', link: '/noc/water-budget-calculator' },
         { title: 'Application Status', icon: '📋', link: '/public/application-status' }
@@ -85,19 +85,10 @@ const PublicLanding = () => {
     const handleServiceCardClick = (service) => {
         if (service.link) {
             navigate(service.link);
-        } else if (service.serviceType) {
-            setFormData(prev => ({
-                ...prev,
-                userType: service.serviceType
-            }));
-            selectUserType(service.serviceType);
-
-            const loginPanel = document.querySelector('.login-panel');
-            if (loginPanel) {
-                loginPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
+            window.scrollTo(0, 0);
         }
     };
+
 
     const notifications = [
         { text: 'New Groundwater NOC Guidelines – 2026', icon: '⚠️' },
@@ -218,26 +209,27 @@ const PublicLanding = () => {
                     <div className="sidebar-section">
                         <h3 className="sidebar-title">Online Services</h3>
                         <ul className="sidebar-menu">
-                            <li><a href="#noc">➤ Apply for Groundwater NOC</a></li>
-                            <li><a href="#rig">➤ Rig Registration</a></li>
-                            <li><a href="#vendor">➤ Vendor Registration</a></li>
-                            <li><a href="#renewal">➤ NOC Renewal</a></li>
-                            <li><a href="#track">➤ Track Application</a></li>
+                            <li><Link to="/public/services/noc">➤ Apply for Groundwater NOC</Link></li>
+                            <li><Link to="/public/services/rig">➤ Rig Registration</Link></li>
+                            <li><Link to="/public/services/vendor">➤ Vendor Registration</Link></li>
+                            {/* NOC Renewal likely needs login/dashboard access */}
+                            <li><Link to="/noc/login">➤ NOC Renewal</Link></li>
+                            <li><Link to="/public/application-status">➤ Track Application</Link></li>
                         </ul>
                     </div>
                     <div className="sidebar-section">
                         <h3 className="sidebar-title">Guidelines</h3>
                         <ul className="sidebar-menu">
-                            <li><a href="#gw-act">➤ Groundwater Act</a></li>
-                            <li><a href="#fee">➤ Fee Structure</a></li>
-                            <li><a href="#eligibility">➤ Eligibility Criteria</a></li>
+                            <li><Link to="/public/guidelines?tab=act">➤ Groundwater Act</Link></li>
+                            <li><Link to="/public/guidelines?tab=fee">➤ Fee Structure</Link></li>
+                            <li><Link to="/public/guidelines?tab=eligibility">➤ Eligibility Criteria</Link></li>
                         </ul>
                     </div>
                     <div className="sidebar-section">
                         <h3 className="sidebar-title">Notifications</h3>
                         <ul className="sidebar-menu">
-                            <li><a href="#gw-act-notif">➤ Groundwater Act</a></li>
-                            <li><a href="#fee-notif">➤ Fee Structure</a></li>
+                            <li><Link to="/public/guidelines?tab=act">➤ Groundwater Act</Link></li>
+                            <li><Link to="/public/guidelines?tab=fee">➤ Fee Structure</Link></li>
                         </ul>
                     </div>
                 </aside>
@@ -327,15 +319,26 @@ const PublicLanding = () => {
 
                                 <div className="form-field">
                                     <label>Captcha</label>
-                                    <div className="captcha-row">
-                                        <div className="captcha-box">5 A 7 K 9</div>
-                                        <input
-                                            type="text"
-                                            name="captcha"
-                                            value={formData.captcha}
-                                            onChange={handleChange}
-                                            className="gov-input captcha-input-small"
-                                        />
+                                    <div className="captcha-container">
+                                        <div className="captcha-strip">
+                                            {/* Vertical stacking with spans */}
+                                            <span style={{ '--r': '-5deg' }}>5</span>
+                                            <span style={{ '--r': '3deg' }}>A</span>
+                                            <span style={{ '--r': '-2deg' }}>7</span>
+                                            <span style={{ '--r': '4deg' }}>K</span>
+                                            <span style={{ '--r': '-3deg' }}>9</span>
+                                        </div>
+                                        <div className="captcha-input-area">
+                                            <input
+                                                type="text"
+                                                name="captcha"
+                                                value={formData.captcha}
+                                                onChange={handleChange}
+                                                className="gov-input"
+                                                placeholder="Enter code"
+                                                style={{ height: '45px' }}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 

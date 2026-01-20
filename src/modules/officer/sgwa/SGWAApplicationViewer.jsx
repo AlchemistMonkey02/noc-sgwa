@@ -24,78 +24,28 @@ const SGWAApplicationViewer = () => {
     const fetchApplicationDetails = async () => {
         try {
             setLoading(true);
-            const response = await officerService.getApplicationDetails(applicationId);
+            const response = await officerService.getSGWAApplicationDetails(applicationId);
             if (response.success) {
-                setApplication(response.data.application);
+                const appData = response.data.application || response.data;
+
+                // Normalize data structure
+                const normalizedApp = {
+                    ...appData,
+                    applicantDetails: appData.applicantDetails || { name: appData.projectDetails?.applicantName },
+                    projectDetails: appData.projectDetails || {},
+                    locationDetails: appData.locationDetails || {},
+                    waterRequirement: appData.waterRequirement || {},
+                    documents: appData.documents || [],
+                    timeline: appData.timeline || [],
+                    dgoRecommendation: appData.dgoRecommendation || { status: 'PENDING' } // Handle missing recommendation
+                };
+
+                setApplication(normalizedApp);
             }
         } catch (error) {
             console.error('Error fetching application:', error);
-
-            // Use mock data as fallback
-            console.log('Using mock application data for SGWA');
-            setApplication({
-                id: applicationId,
-                applicationNumber: 'RJ/CGWA/NOC/2026/001250',
-                status: 'DGO_RECOMMENDED',
-                dgoRecommendation: {
-                    status: 'APPROVED',
-                    remarks: 'All documents verified. Site inspection completed. Water requirement is justified.',
-                    conditions: 'Subject to SGWA final approval and compliance monitoring.',
-                    recommendedBy: 'Ramesh Kumar (DGO - Jaipur)',
-                    date: '2026-01-09T14:30:00Z'
-                },
-                applicantDetails: {
-                    name: 'Mahindra Textiles Ltd',
-                    type: 'Private Limited Company',
-                    contactPerson: 'Sunil Mahindra',
-                    email: 'sunil@mahindratextiles.com',
-                    phone: '+91-9876543210',
-                    panNumber: 'MTEXT1234F'
-                },
-                projectDetails: {
-                    projectName: 'Industrial Dyeing Unit',
-                    projectType: 'Expansion of Existing Unit',
-                    sector: 'Industrial',
-                    industryType: 'Textile Manufacturing and Dyeing'
-                },
-                locationDetails: {
-                    district: 'Jaipur',
-                    block: 'Sanganer',
-                    village: 'Sitapura Industrial Area Phase II',
-                    plotNumber: 'Plot D-201, 202, 203'
-                },
-                waterRequirement: {
-                    dailyRequirement: 250.00,
-                    annualRequirement: 91250.00,
-                    sourceType: 'Groundwater (Deep Borewell)',
-                    numberOfBorewells: 5
-                },
-                documents: [
-                    { id: 'doc-001', type: 'LAND_OWNERSHIP_PROOF', fileName: 'land_ownership_certificate.pdf', uploadDate: '2026-01-05T10:00:00Z', verified: true },
-                    { id: 'doc-002', type: 'PROJECT_REPORT', fileName: 'detailed_project_report.pdf', uploadDate: '2026-01-05T10:05:00Z', verified: true },
-                    { id: 'doc-003', type: 'WATER_REQUIREMENT_CALCULATION', fileName: 'water_budget_calculation.pdf', uploadDate: '2026-01-05T10:10:00Z', verified: true },
-                    { id: 'doc-004', type: 'ENVIRONMENTAL_CLEARANCE', fileName: 'environmental_clearance.pdf', uploadDate: '2026-01-05T10:15:00Z', verified: true },
-                    { id: 'doc-005', type: 'DGO_INSPECTION_REPORT', fileName: 'dgo_site_inspection_report.pdf', uploadDate: '2026-01-09T14:00:00Z', verified: true }
-                ],
-                timeline: [
-                    { stage: 'APPLICATION_SUBMITTED', date: '2026-01-05T10:30:00Z', actor: 'Sunil Mahindra (Applicant)', remarks: 'Application submitted online' },
-                    { stage: 'DGO_ASSIGNED', date: '2026-01-06T09:00:00Z', actor: 'System', remarks: 'Application assigned to DGO Jaipur' },
-                    { stage: 'DOCUMENTS_VERIFIED', date: '2026-01-07T14:20:00Z', actor: 'Ramesh Kumar (DGO - Jaipur)', remarks: 'All documents verified and found in order' },
-                    { stage: 'SITE_INSPECTION_COMPLETED', date: '2026-01-08T11:00:00Z', actor: 'Ramesh Kumar (DGO - Jaipur)', remarks: 'Site inspection completed. Site found suitable.' },
-                    { stage: 'DGO_RECOMMENDED', date: '2026-01-09T14:30:00Z', actor: 'Ramesh Kumar (DGO - Jaipur)', remarks: 'Recommended for SGWA approval' },
-                    { stage: 'FORWARDED_TO_SGWA', date: '2026-01-10T08:00:00Z', actor: 'System', remarks: 'Application forwarded to SGWA for final approval' }
-                ],
-                workflow: {
-                    currentStage: 'SGWA_REVIEW',
-                    assignedTo: 'Dr. Priya Sharma',
-                    inspectionReport: {
-                        date: '2026-01-08T11:00:00Z',
-                        officer: 'Ramesh Kumar (DGO - Jaipur)',
-                        findings: 'Site inspection conducted on 08-Jan-2026. Existing borewell depth: 150m. Proposed new borewells: 3 nos at 200m depth. Water table: 80m below ground level. Area classification: Safe zone. No over-exploitation concerns. Recommended for approval subject to installation of water meters and quarterly reporting.',
-                        photos: ['inspection_photo_1.jpg', 'inspection_photo_2.jpg']
-                    }
-                }
-            });
+            // No mock data fallback - strictly API driven
+            setApplication(null);
         } finally {
             setLoading(false);
         }
@@ -119,6 +69,28 @@ const SGWAApplicationViewer = () => {
         } catch (error) {
             console.error('Error downloading document:', error);
             alert('Failed to download document');
+        }
+    };
+
+    const handleVerifyAllDocuments = async () => {
+        if (!application.documents || application.documents.length === 0) return;
+
+        try {
+            const documentIds = application.documents.map(d => d.id || d._id);
+            const response = await officerService.verifySGWADocumentsBulk({
+                documentIds,
+                applicationId: application.id, // Some backends might need this
+                status: 'ACCEPTED',
+                remarks: 'Verified by State Authority'
+            });
+
+            if (response.success) {
+                alert('All documents verified successfully!');
+                fetchApplicationDetails();
+            }
+        } catch (error) {
+            console.error('Error verifying documents:', error);
+            alert('Failed to verify documents: ' + error.message);
         }
     };
 
@@ -367,6 +339,15 @@ const SGWAApplicationViewer = () => {
 
                             {activeTab === 'documents' && (
                                 <div className="documents-tab">
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+                                        <button
+                                            className="officer-btn officer-btn-primary"
+                                            onClick={handleVerifyAllDocuments}
+                                            disabled={application.documents?.every(d => d.verified)}
+                                        >
+                                            ✓ Verify All Documents
+                                        </button>
+                                    </div>
                                     <div className="documents-grid">
                                         {application.documents && application.documents.length > 0 ? (
                                             application.documents.map((doc, index) => (
@@ -525,36 +506,35 @@ const SGWAApplicationViewer = () => {
                                         <button className="modal-close" onClick={() => setShowNOCModal(false)}>✕</button>
                                     </div>
                                     <div className="modal-body">
-                                        <form onSubmit={(e) => {
+                                        <form onSubmit={async (e) => {
                                             e.preventDefault();
-                                            const formData = new FormData(e.target);
-                                            const data = {
-                                                nocNumber: formData.get('nocNumber'),
-                                                validityYears: formData.get('validity'),
-                                                conditions: formData.get('conditions'),
-                                                waterAllocation: formData.get('waterAllocation'),
-                                                remarks: formData.get('remarks')
-                                            };
-                                            console.log('Issuing NOC:', data);
-                                            alert(`NOC Issued Successfully!\n\nNOC Number: ${data.nocNumber}\nValidity: ${data.validity} years\n\nNOC Certificate will be generated and sent to applicant via email.`);
-                                            setShowNOCModal(false);
+                                            try {
+                                                const formData = new FormData(e.target);
+
+                                                // Construct payload exactly as requested
+                                                const data = {
+                                                    remarks: formData.get('remarks'),
+                                                    nocValidityYears: parseInt(formData.get('validity'), 10),
+                                                    waterAllocation: parseFloat(formData.get('waterAllocation'))
+                                                };
+
+                                                const response = await officerService.approveApplication(applicationId, data);
+                                                if (response.success) {
+                                                    alert(`NOC Issued Successfully!\n\nValidity: ${data.nocValidityYears} years\nWater Allocation: ${data.waterAllocation} m³/day`);
+                                                    setShowNOCModal(false);
+                                                    fetchApplicationDetails(); // Refresh details
+                                                }
+                                            } catch (error) {
+                                                console.error('Error issuing NOC:', error);
+                                                alert('Failed to issue NOC: ' + error.message);
+                                            }
                                         }}>
                                             <div className="officer-form-group">
-                                                <label className="officer-label required">NOC Number</label>
-                                                <input
-                                                    type="text"
-                                                    name="nocNumber"
-                                                    className="officer-input"
-                                                    placeholder="Auto-generated or enter manually"
-                                                    defaultValue={`RJ/SGWA/NOC/${new Date().getFullYear()}/` + Math.floor(Math.random() * 10000).toString().padStart(5, '0')}
-                                                    required
-                                                />
-                                            </div>
-                                            <div className="officer-form-group">
-                                                <label className="officer-label required">Validity Period</label>
+                                                <label className="officer-label required">Validity Period (Years)</label>
                                                 <select name="validity" className="officer-select" required>
                                                     <option value="">Select validity...</option>
                                                     <option value="1">1 Year</option>
+                                                    <option value="2">2 Years</option>
                                                     <option value="3">3 Years</option>
                                                     <option value="5">5 Years</option>
                                                     <option value="10">10 Years</option>
@@ -567,28 +547,19 @@ const SGWAApplicationViewer = () => {
                                                     step="0.01"
                                                     name="waterAllocation"
                                                     className="officer-input"
-                                                    defaultValue={application.waterRequirement?.dailyRequirement}
+                                                    defaultValue={application.waterRequirement?.dailyRequirement || 0}
                                                     required
                                                 />
                                             </div>
                                             <div className="officer-form-group">
-                                                <label className="officer-label required">Conditions & Compliance Requirements</label>
-                                                <textarea
-                                                    name="conditions"
-                                                    className="officer-textarea"
-                                                    placeholder="Enter conditions..."
-                                                    required
-                                                    rows="4"
-                                                    defaultValue="1. Install water meters on all borewells&#10;2. Submit quarterly water extraction reports&#10;3. Comply with environmental norms&#10;4. Subject to periodic inspection"
-                                                />
-                                            </div>
-                                            <div className="officer-form-group">
-                                                <label className="officer-label">Additional Remarks</label>
+                                                <label className="officer-label required">Remarks / Conditions</label>
                                                 <textarea
                                                     name="remarks"
                                                     className="officer-textarea"
-                                                    placeholder="Enter any additional remarks..."
-                                                    rows="3"
+                                                    placeholder="Technical Review cleared. Forwarding for final NOC issuance."
+                                                    required
+                                                    rows="4"
+                                                    defaultValue="Technical Review cleared. Forwarding for final NOC issuance."
                                                 />
                                             </div>
                                             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
@@ -618,21 +589,31 @@ const SGWAApplicationViewer = () => {
                                         <button className="modal-close" onClick={() => setShowRejectionModal(false)}>✕</button>
                                     </div>
                                     <div className="modal-body">
-                                        <form onSubmit={(e) => {
+                                        <form onSubmit={async (e) => {
                                             e.preventDefault();
-                                            const formData = new FormData(e.target);
-                                            const data = {
-                                                rejectionReason: formData.get('reason'),
-                                                remarks: formData.get('remarks')
-                                            };
-                                            console.log('Rejecting application:', data);
-                                            alert('Application rejected by SGWA!\n\nApplicant will be notified via email about the final decision.');
-                                            setShowRejectionModal(false);
+                                            try {
+                                                const formData = new FormData(e.target);
+                                                const data = {
+                                                    reasonCode: formData.get('reasonCode'),
+                                                    remarks: formData.get('remarks')
+                                                };
+
+                                                const response = await officerService.sgwaRejectApplication(applicationId, data);
+                                                if (response.success) {
+                                                    alert('Application rejected by SGWA!\n\nApplicant will be notified via email about the final decision.');
+                                                    setShowRejectionModal(false);
+                                                    fetchApplicationDetails(); // Refresh details
+                                                }
+                                            } catch (error) {
+                                                console.error('Error rejecting application:', error);
+                                                alert('Failed to reject application: ' + error.message);
+                                            }
                                         }}>
                                             <div className="officer-form-group">
                                                 <label className="officer-label required">Rejection Reason</label>
-                                                <select name="reason" className="officer-select" required>
+                                                <select name="reasonCode" className="officer-select" required>
                                                     <option value="">Select reason...</option>
+                                                    <option value="CRITICAL_ZONE_VIOLATION">Critical Zone Violation</option>
                                                     <option value="INSUFFICIENT_JUSTIFICATION">Insufficient Justification</option>
                                                     <option value="OVEREXPLOITED_AREA">Over-exploited Area</option>
                                                     <option value="ENVIRONMENTAL_CONCERNS">Environmental Concerns</option>
@@ -679,37 +660,34 @@ const SGWAApplicationViewer = () => {
                                         <button className="modal-close" onClick={() => setShowQueryModal(false)}>✕</button>
                                     </div>
                                     <div className="modal-body">
-                                        <form onSubmit={(e) => {
+                                        <form onSubmit={async (e) => {
                                             e.preventDefault();
-                                            const formData = new FormData(e.target);
-                                            const data = {
-                                                queryType: formData.get('queryType'),
-                                                subject: formData.get('subject'),
-                                                description: formData.get('description'),
-                                                responseDeadline: formData.get('deadline')
-                                            };
-                                            console.log('Raising query from SGWA:', data);
-                                            alert('Query raised successfully by SGWA!\n\nApplicant will be notified and must respond within the deadline.');
-                                            setShowQueryModal(false);
+                                            try {
+                                                const formData = new FormData(e.target);
+                                                const data = {
+                                                    queryTitle: formData.get('queryTitle'),
+                                                    description: formData.get('description'),
+                                                    responseDeadline: formData.get('responseDeadline')
+                                                };
+
+                                                const response = await officerService.sgwaRaiseQuery(applicationId, data);
+                                                if (response.success) {
+                                                    alert('Query raised successfully by SGWA!\n\nApplicant will be notified and must respond within the deadline.');
+                                                    setShowQueryModal(false);
+                                                    fetchApplicationDetails(); // Refresh details
+                                                }
+                                            } catch (error) {
+                                                console.error('Error raising query:', error);
+                                                alert('Failed to raise query: ' + error.message);
+                                            }
                                         }}>
                                             <div className="officer-form-group">
-                                                <label className="officer-label required">Query Type</label>
-                                                <select name="queryType" className="officer-select" required>
-                                                    <option value="">Select type...</option>
-                                                    <option value="DOCUMENT_CLARIFICATION">Document Clarification</option>
-                                                    <option value="TECHNICAL_INFORMATION">Technical Information</option>
-                                                    <option value="WATER_JUSTIFICATION">Water Requirement Justification</option>
-                                                    <option value="ENVIRONMENTAL_DATA">Environmental Data</option>
-                                                    <option value="OTHER">Other</option>
-                                                </select>
-                                            </div>
-                                            <div className="officer-form-group">
-                                                <label className="officer-label required">Subject</label>
+                                                <label className="officer-label required">Query Title / Subject</label>
                                                 <input
                                                     type="text"
-                                                    name="subject"
+                                                    name="queryTitle"
                                                     className="officer-input"
-                                                    placeholder="Enter query subject..."
+                                                    placeholder="e.g. Borewell Depth Clarification"
                                                     required
                                                 />
                                             </div>
@@ -727,7 +705,7 @@ const SGWAApplicationViewer = () => {
                                                 <label className="officer-label required">Response Deadline</label>
                                                 <input
                                                     type="date"
-                                                    name="deadline"
+                                                    name="responseDeadline"
                                                     className="officer-input"
                                                     min={new Date().toISOString().split('T')[0]}
                                                     required

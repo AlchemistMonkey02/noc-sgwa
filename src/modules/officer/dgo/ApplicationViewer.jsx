@@ -15,6 +15,22 @@ const ApplicationViewer = () => {
     const [showApprovalModal, setShowApprovalModal] = useState(false);
     const [showRejectionModal, setShowRejectionModal] = useState(false);
     const [showQueryModal, setShowQueryModal] = useState(false);
+    const [showInspectionModal, setShowInspectionModal] = useState(false);
+    const [inspectionOfficers, setInspectionOfficers] = useState([]);
+
+    useEffect(() => {
+        const fetchOfficers = async () => {
+            try {
+                const response = await officerService.getOfficers('INSPECTION_OFFICER');
+                if (response.success) {
+                    setInspectionOfficers(response.data);
+                }
+            } catch (error) {
+                console.error('Error fetching officers:', error);
+            }
+        };
+        fetchOfficers();
+    }, []);
 
     useEffect(() => {
         fetchApplicationDetails();
@@ -25,102 +41,114 @@ const ApplicationViewer = () => {
             setLoading(true);
             const response = await officerService.getApplicationDetails(applicationId);
             if (response.success) {
-                setApplication(response.data.application);
+                const apiData = response.data; // Depending on if it's response.data or response.data.application.
+                // Based on previous list response, it might be response.data directly if getApplicationDetails returns the object. 
+                // Let's assume response.data is the application object based on common patterns, or check structure.
+                // Use a helper to transform to the shape this component expects
+                setApplication(transformApplicationData(apiData));
+            } else {
+                console.error('Failed to fetch:', response);
             }
         } catch (error) {
             console.error('Error fetching application:', error);
-
-            // Use mock data as fallback
-            console.log('Using mock application data');
-            setApplication({
-                id: applicationId,
-                applicationNumber: 'RJ/CGWA/NOC/2026/001234',
-                status: 'PENDING_VERIFICATION',
-                applicantDetails: {
-                    name: 'Rajesh Kumar Sharma',
-                    type: 'Private Limited Company',
-                    contactPerson: 'Rajesh Kumar Sharma',
-                    email: 'rajesh@abctextile.com',
-                    phone: '+91-9876543210',
-                    panNumber: 'ABCDE1234F'
-                },
-                projectDetails: {
-                    projectName: 'ABC Textile Manufacturing Unit',
-                    projectType: 'New Project',
-                    sector: 'Industrial',
-                    industryType: 'Textile Manufacturing'
-                },
-                locationDetails: {
-                    district: 'Jaipur',
-                    block: 'Sanganer',
-                    village: 'Sitapura Industrial Area',
-                    plotNumber: 'Plot A-101, 102'
-                },
-                waterRequirement: {
-                    dailyRequirement: 150.25,
-                    annualRequirement: 54841.25,
-                    sourceType: 'Groundwater (Borewell)',
-                    numberOfBorewells: 3
-                },
-                documents: [
-                    {
-                        id: 'doc-001',
-                        type: 'LAND_OWNERSHIP_PROOF',
-                        fileName: 'land_ownership_certificate.pdf',
-                        uploadDate: '2026-01-05T10:00:00Z',
-                        verified: true
-                    },
-                    {
-                        id: 'doc-002',
-                        type: 'PROJECT_REPORT',
-                        fileName: 'detailed_project_report.pdf',
-                        uploadDate: '2026-01-05T10:05:00Z',
-                        verified: true
-                    },
-                    {
-                        id: 'doc-003',
-                        type: 'WATER_REQUIREMENT_CALCULATION',
-                        fileName: 'water_budget_calculation.pdf',
-                        uploadDate: '2026-01-05T10:10:00Z',
-                        verified: false
-                    },
-                    {
-                        id: 'doc-004',
-                        type: 'ENVIRONMENTAL_CLEARANCE',
-                        fileName: 'environmental_clearance.pdf',
-                        uploadDate: '2026-01-05T10:15:00Z',
-                        verified: true
-                    }
-                ],
-                timeline: [
-                    {
-                        stage: 'APPLICATION_SUBMITTED',
-                        date: '2026-01-05T10:30:00Z',
-                        actor: 'Rajesh Kumar Sharma (Applicant)',
-                        remarks: 'Application submitted online'
-                    },
-                    {
-                        stage: 'DOCUMENTS_VERIFIED',
-                        date: '2026-01-06T14:20:00Z',
-                        actor: 'Ramesh Kumar (DGO - Jaipur)',
-                        remarks: 'Initial document verification completed'
-                    },
-                    {
-                        stage: 'UNDER_REVIEW',
-                        date: '2026-01-07T09:00:00Z',
-                        actor: 'Ramesh Kumar (DGO - Jaipur)',
-                        remarks: 'Technical review in progress'
-                    }
-                ],
-                workflow: {
-                    currentStage: 'DGO_REVIEW',
-                    assignedTo: 'Ramesh Kumar',
-                    inspectionReport: null
-                }
-            });
+            // No mock fallback anymore
         } finally {
             setLoading(false);
         }
+    };
+
+    // Helper to transform API data to component state structure
+    const transformApplicationData = (data) => {
+        // Calculate total water requirement
+        const waterBreakup = data.waterRequirement?.purposeWiseBreakup || {};
+        const totalWater = Object.values(waterBreakup).reduce((sum, val) => sum + (Number(val) || 0), 0);
+
+        // Synthesize timeline if empty
+        let timeline = data.progressTracking?.timeline || [];
+        if (timeline.length === 0) {
+            if (data.createdAt) {
+                timeline.push({
+                    stage: 'APPLICATION_CREATED',
+                    date: data.createdAt,
+                    actor: 'System',
+                    remarks: 'Application draft created'
+                });
+            }
+            if (data.submittedAt) {
+                timeline.push({
+                    stage: 'APPLICATION_SUBMITTED',
+                    date: data.submittedAt,
+                    actor: data.projectDetails?.applicantName || 'Applicant',
+                    remarks: 'Application submitted for review'
+                });
+            }
+            if (data.approvalFlow?.dgo?.reviewedAt) {
+                timeline.push({
+                    stage: 'DGO_REVIEW_UPDATE',
+                    date: data.approvalFlow.dgo.reviewedAt,
+                    actor: data.approvalFlow.dgo.reviewedBy || 'DGO Officer',
+                    remarks: `Status updated to ${data.approvalFlow.dgo.status}`
+                });
+            }
+            if (data.status === 'INSPECTION_SCHEDULED') {
+                // We don't have a date for when it *was* scheduled in the root object usually, 
+                // but we can show it as a pending item or just rely on status.
+                // For now, let's just stick to past events.
+            }
+            // Sort by date descending
+            timeline.sort((a, b) => new Date(b.date) - new Date(a.date));
+        }
+
+        return {
+            id: data._id || data.applicationId,
+            applicationNumber: data.applicationNumber,
+            status: data.status,
+            applicantDetails: {
+                name: data.projectDetails?.applicantName || 'N/A',
+                type: data.applicationSubType || 'N/A',
+                email: 'N/A',
+                phone: 'N/A',
+                contactPerson: data.projectDetails?.applicantName || 'N/A',
+                panNumber: 'N/A'
+            },
+            projectDetails: {
+                projectName: data.projectDetails?.projectName || 'N/A',
+                projectType: data.projectType || data.sectorType || 'N/A',
+                sector: data.sectorType || 'N/A',
+                industryType: data.applicationCategory || 'N/A'
+            },
+            locationDetails: {
+                district: data.location?.districtId || 'N/A',
+                block: data.location?.blockId || 'N/A',
+                village: data.location?.village || 'N/A',
+                plotNumber: 'N/A'
+            },
+            waterRequirement: {
+                dailyRequirement: totalWater,
+                annualRequirement: totalWater * 365,
+                sourceType: 'Groundwater',
+                numberOfBorewells: data.waterRequirement?.proposedExtraction?.numberOfBorewells || 0
+            },
+            documents: data.documents || [],
+            timeline: timeline,
+            workflow: {
+                currentStage: data.approvalFlow?.dgo?.status || 'PENDING',
+                inspectionReport: data.inspection ? {
+                    status: data.inspection.status,
+                    officerId: data.inspection.officerId,
+                    scheduledDate: data.inspection.scheduledDate,
+                    report: data.inspection.report
+                } : null,
+                query: data.query ? {
+                    queryId: data.query.queryId,
+                    subject: data.query.subject,
+                    description: data.query.query,
+                    raisedAt: data.query.raisedAt,
+                    status: data.query.status,
+                    responseDeadline: data.query.responseDeadline
+                } : null
+            }
+        };
     };
 
     const handleViewDocument = (document) => {
@@ -128,19 +156,168 @@ const ApplicationViewer = () => {
     };
 
     const handleDownloadDocument = async (documentId, fileName) => {
+        // Placeholder for download logic if service supports it
+        console.log("Download requested for:", documentId);
+        // In a real app, this would use officerService.downloadDocument(documentId)
+        alert("Download feature would trigger here for " + fileName);
+    };
+
+    const handleForwardApplication = async (formData) => {
         try {
-            const blob = await officerService.downloadDocument(documentId);
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.URL.revokeObjectURL(url);
+            const data = {
+                recommendation: 'RECOMMEND_APPROVAL',
+                remarks: formData.get('remarks'),
+                conditions: formData.get('conditions')
+            };
+            const response = await officerService.forwardApplication(applicationId, data);
+            if (response.success) {
+                alert('Application recommended for approval successfully!');
+                setShowApprovalModal(false);
+                fetchApplicationDetails(); // Refresh to update status
+            } else {
+                alert('Failed to forward application: ' + (response.error || 'Unknown error'));
+            }
         } catch (error) {
-            console.error('Error downloading document:', error);
-            alert('Failed to download document');
+            console.error('Error forwarding:', error);
+            alert('An error occurred while forwarding the application.');
+        }
+    };
+
+    const handleVerifyDocument = async (doc, status) => {
+        try {
+            // Check for valid ID
+            const docId = doc.documentId || doc.id || doc._id;
+            if (!docId) {
+                alert('Document ID missing');
+                return;
+            }
+
+            const payload = [{
+                documentId: docId,
+                status: status,
+                remarks: status === 'ACCEPTED' ? 'Verified by Officer' : 'Rejected by Officer'
+            }];
+
+            const response = await officerService.verifyDocuments(applicationId, payload);
+            if (response.success) {
+                // Optimistic update or refresh
+                fetchApplicationDetails();
+            } else {
+                alert('Failed to verify document');
+            }
+        } catch (error) {
+            console.error('Verification error:', error);
+            alert('Error verifying document');
+        }
+    };
+
+    const handleBulkVerify = async () => {
+        if (!application.documents || application.documents.length === 0) return;
+
+        // Filter valid docs that aren't already accepted
+        const docsToVerify = application.documents
+            .filter(d => d.status !== 'ACCEPTED')
+            .map(d => ({
+                documentId: d.documentId || d.id || d._id,
+                status: 'ACCEPTED',
+                remarks: 'Bulk Verified'
+            }))
+            .filter(d => d.documentId); // Ensure ID exists
+
+        if (docsToVerify.length === 0) {
+            alert('No pending documents to verify.');
+            return;
+        }
+
+        if (!window.confirm(`Are you sure you want to verify all ${docsToVerify.length} pending documents?`)) {
+            return;
+        }
+
+        try {
+            const response = await officerService.verifyDocuments(applicationId, docsToVerify);
+            if (response.success) {
+                alert('All documents verified successfully!');
+                fetchApplicationDetails();
+            } else {
+                alert('Bulk verification failed');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Error during bulk verification');
+        }
+    };
+
+    const handleScheduleInspection = async (formData) => {
+        try {
+            const date = formData.get('inspectionDate');
+            const officerId = formData.get('officerId');
+
+            if (!date) {
+                alert('Please select an inspection date');
+                return;
+            }
+            if (!officerId) {
+                alert('Please select an inspection officer');
+                return;
+            }
+
+            const response = await officerService.scheduleInspection(applicationId, {
+                inspectionDate: date,
+                officerId: officerId
+            });
+
+            if (response.success) {
+                alert('Inspection scheduled successfully!');
+                setShowInspectionModal(false);
+                // Update state immediately with returned data
+                if (response.data && response.data.application && response.data.inspection) {
+                    const combinedData = {
+                        ...response.data.application,
+                        inspection: response.data.inspection
+                    };
+                    setApplication(transformApplicationData(combinedData));
+                } else {
+                    fetchApplicationDetails();
+                }
+            } else {
+                alert('Failed to schedule inspection: ' + (response.error || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Error scheduling inspection:', error);
+            alert('An error occurred while scheduling the inspection.');
+        }
+    };
+
+    const handleRaiseQuery = async (formData) => {
+        try {
+            const queryData = {
+                queryType: formData.get('queryType'),
+                subject: formData.get('subject'),
+                description: formData.get('description'),
+                responseDeadline: formData.get('deadline')
+            };
+
+            const response = await officerService.raiseQuery(applicationId, queryData);
+            if (response.success) {
+                alert('Query raised successfully!');
+                setShowQueryModal(false);
+                // Update state immediately with returned data
+                if (response.data && response.data.application && response.data.query) {
+                    const combinedData = {
+                        ...response.data.application,
+                        query: response.data.query
+                    };
+                    setApplication(transformApplicationData(combinedData));
+                    setActiveTab('queries');
+                } else {
+                    fetchApplicationDetails();
+                }
+            } else {
+                alert('Failed to raise query: ' + (response.error || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Error raising query:', error);
+            alert('An error occurred while raising the query.');
         }
     };
 
@@ -232,6 +409,12 @@ const ApplicationViewer = () => {
                         onClick={() => setActiveTab('inspection')}
                     >
                         Inspection
+                    </button>
+                    <button
+                        className={`tab ${activeTab === 'queries' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('queries')}
+                    >
+                        Queries
                     </button>
                 </div>
 
@@ -343,6 +526,19 @@ const ApplicationViewer = () => {
 
                     {activeTab === 'documents' && (
                         <div className="documents-tab">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                <h3>Documents</h3>
+                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                    <button
+                                        className="officer-btn officer-btn-primary"
+                                        onClick={handleBulkVerify}
+                                        disabled={!application.documents?.some(d => d.status !== 'ACCEPTED')}
+                                    >
+                                        ✓ Verify All Pending
+                                    </button>
+                                </div>
+                            </div>
+
                             <div className="documents-grid">
                                 {application.documents && application.documents.length > 0 ? (
                                     application.documents.map((doc, index) => (
@@ -354,9 +550,14 @@ const ApplicationViewer = () => {
                                                 <p className="document-date">
                                                     Uploaded: {new Date(doc.uploadDate).toLocaleDateString()}
                                                 </p>
-                                                {doc.verified && (
+                                                {doc.status === 'ACCEPTED' ? (
                                                     <span className="verified-badge">✓ Verified</span>
+                                                ) : doc.status === 'REJECTED' ? (
+                                                    <span className="verified-badge" style={{ background: '#fee2e2', color: '#b91c1c' }}>✗ Rejected</span>
+                                                ) : (
+                                                    <span className="verified-badge" style={{ background: '#fef3c7', color: '#b45309' }}>⚠ Pending</span>
                                                 )}
+                                                {doc.remarks && <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.25rem' }}><em>{doc.remarks}</em></p>}
                                             </div>
                                             <div className="document-actions">
                                                 <button
@@ -366,13 +567,26 @@ const ApplicationViewer = () => {
                                                 >
                                                     👁️
                                                 </button>
-                                                <button
-                                                    className="btn-icon"
-                                                    onClick={() => handleDownloadDocument(doc.id, doc.fileName)}
-                                                    title="Download"
-                                                >
-                                                    📥
-                                                </button>
+                                                {doc.status !== 'ACCEPTED' && (
+                                                    <>
+                                                        <button
+                                                            className="btn-icon"
+                                                            style={{ color: '#16a34a', borderColor: '#16a34a' }}
+                                                            onClick={() => handleVerifyDocument(doc, 'ACCEPTED')}
+                                                            title="Verify"
+                                                        >
+                                                            ✓
+                                                        </button>
+                                                        <button
+                                                            className="btn-icon"
+                                                            style={{ color: '#dc2626', borderColor: '#dc2626' }}
+                                                            onClick={() => handleVerifyDocument(doc, 'REJECTED')}
+                                                            title="Reject"
+                                                        >
+                                                            ✗
+                                                        </button>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
                                     ))
@@ -419,30 +633,100 @@ const ApplicationViewer = () => {
                         <div className="inspection-tab">
                             {application.workflow?.inspectionReport ? (
                                 <div className="inspection-report">
-                                    <h3>Inspection Report</h3>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                        <h3>Inspection Details</h3>
+                                        <span className={`status-badge status-${application.workflow.inspectionReport.status.toLowerCase()}`}>
+                                            {application.workflow.inspectionReport.status}
+                                        </span>
+                                    </div>
                                     <div className="detail-grid">
                                         <div className="detail-item">
-                                            <label>Inspection Date</label>
-                                            <p>{application.workflow.inspectionReport.date}</p>
+                                            <label>Scheduled Date</label>
+                                            <p>{new Date(application.workflow.inspectionReport.scheduledDate).toLocaleDateString()}</p>
                                         </div>
                                         <div className="detail-item">
-                                            <label>Inspector</label>
-                                            <p>{application.workflow.inspectionReport.officer}</p>
+                                            <label>Assigned Officer</label>
+                                            <p>
+                                                {(() => {
+                                                    const officer = inspectionOfficers.find(o => o._id === application.workflow.inspectionReport.officerId);
+                                                    return officer
+                                                        ? `${officer.firstName} ${officer.lastName}`
+                                                        : (application.workflow.inspectionReport.officerId || 'N/A');
+                                                })()}
+                                            </p>
+                                        </div>
+                                        {application.workflow.inspectionReport.report ? (
+                                            <div className="detail-item full-width">
+                                                <label>Report Findings</label>
+                                                <div className="report-summary" style={{ background: '#f8fafc', padding: '1rem', borderRadius: '4px' }}>
+                                                    <p><strong>Rainwater Harvesting:</strong> {application.workflow.inspectionReport.report.rainwaterHarvesting || 'N/A'}</p>
+                                                    <p><strong>Meter Installed:</strong> {application.workflow.inspectionReport.report.meterInstalled || 'N/A'}</p>
+                                                    <p><strong>Plantation Status:</strong> {application.workflow.inspectionReport.report.plantationStatus || 'N/A'}</p>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="detail-item full-width">
+                                                <button
+                                                    className="officer-btn officer-btn-primary"
+                                                    onClick={() => navigate(`/officer/dgo/applications/${applicationId}/inspection-report`)}
+                                                >
+                                                    📝 Submit Site Inspection Report
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="empty-state">
+                                    <p>No inspection scheduled yet</p>
+                                    <button
+                                        className="officer-btn officer-btn-primary"
+                                        onClick={() => setShowInspectionModal(true)}
+                                    >
+                                        Schedule Inspection
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'queries' && (
+                        <div className="queries-tab">
+                            {application.workflow?.query ? (
+                                <div className="query-details">
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                        <h3>Active Query</h3>
+                                        <span className={`status-badge status-${application.workflow.query.status.toLowerCase()}`}>
+                                            {application.workflow.query.status}
+                                        </span>
+                                    </div>
+                                    <div className="detail-grid">
+                                        <div className="detail-item full-width">
+                                            <label>Subject</label>
+                                            <p>{application.workflow.query.subject}</p>
                                         </div>
                                         <div className="detail-item full-width">
-                                            <label>Findings</label>
-                                            <p>{application.workflow.inspectionReport.findings}</p>
+                                            <label>Description</label>
+                                            <p>{application.workflow.query.description}</p>
+                                        </div>
+                                        <div className="detail-item">
+                                            <label>Raised At</label>
+                                            <p>{new Date(application.workflow.query.raisedAt).toLocaleString()}</p>
+                                        </div>
+                                        <div className="detail-item">
+                                            <label>Response Deadline</label>
+                                            <p>{new Date(application.workflow.query.responseDeadline).toLocaleDateString()}</p>
                                         </div>
                                     </div>
                                 </div>
                             ) : (
                                 <div className="empty-state">
-                                    <p>No inspection report available</p>
+                                    <p>No active queries</p>
                                     <button
-                                        className="btn-primary"
-                                        onClick={() => navigate(`/officer/dgo/inspections/schedule/${applicationId}`)}
+                                        className="officer-btn officer-btn-warning"
+                                        onClick={() => setShowQueryModal(true)}
                                     >
-                                        Schedule Inspection
+                                        Raise New Query
                                     </button>
                                 </div>
                             )}
@@ -508,15 +792,7 @@ const ApplicationViewer = () => {
                             <div className="modal-body">
                                 <form onSubmit={(e) => {
                                     e.preventDefault();
-                                    const formData = new FormData(e.target);
-                                    const data = {
-                                        recommendation: 'APPROVED',
-                                        remarks: formData.get('remarks'),
-                                        conditions: formData.get('conditions')
-                                    };
-                                    console.log('Recommending for approval:', data);
-                                    alert('Application recommended for approval successfully!\n\nThis will be sent to SGWA for final approval.');
-                                    setShowApprovalModal(false);
+                                    handleForwardApplication(new FormData(e.target));
                                 }}>
                                     <div className="officer-form-group">
                                         <label className="officer-label required">Recommendation Remarks</label>
@@ -626,16 +902,7 @@ const ApplicationViewer = () => {
                             <div className="modal-body">
                                 <form onSubmit={(e) => {
                                     e.preventDefault();
-                                    const formData = new FormData(e.target);
-                                    const data = {
-                                        queryType: formData.get('queryType'),
-                                        subject: formData.get('subject'),
-                                        description: formData.get('description'),
-                                        responseDeadline: formData.get('deadline')
-                                    };
-                                    console.log('Raising query:', data);
-                                    alert('Query raised successfully!\n\nApplicant will be notified and must respond within the deadline.');
-                                    setShowQueryModal(false);
+                                    handleRaiseQuery(new FormData(e.target));
                                 }}>
                                     <div className="officer-form-group">
                                         <label className="officer-label required">Query Type</label>
@@ -688,6 +955,62 @@ const ApplicationViewer = () => {
                                         </button>
                                         <button type="submit" className="officer-btn" style={{ background: '#f59e0b', color: 'white' }}>
                                             Send Query
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Inspection Modal */}
+                {showInspectionModal && (
+                    <div className="modal-overlay" onClick={() => setShowInspectionModal(false)}>
+                        <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+                            <div className="modal-header">
+                                <h3>📅 Schedule Inspection</h3>
+                                <button className="modal-close" onClick={() => setShowInspectionModal(false)}>✕</button>
+                            </div>
+                            <div className="modal-body">
+                                <form onSubmit={(e) => {
+                                    e.preventDefault();
+                                    handleScheduleInspection(new FormData(e.target));
+                                }}>
+                                    <div className="officer-form-group">
+                                        <label className="officer-label required">Inspection Date</label>
+                                        <input
+                                            type="date"
+                                            name="inspectionDate"
+                                            className="officer-input"
+                                            min={new Date().toISOString().split('T')[0]}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="officer-form-group">
+                                        <label className="officer-label required">Assign Inspection Officer</label>
+                                        <select
+                                            name="officerId"
+                                            className="officer-input"
+                                            required
+                                        >
+                                            <option value="">Select Officer</option>
+                                            {inspectionOfficers.map(officer => (
+                                                <option key={officer._id} value={officer._id}>
+                                                    {officer.firstName} {officer.lastName}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+                                        <button
+                                            type="button"
+                                            className="officer-btn officer-btn-secondary"
+                                            onClick={() => setShowInspectionModal(false)}
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button type="submit" className="officer-btn officer-btn-primary">
+                                            Schedule
                                         </button>
                                     </div>
                                 </form>

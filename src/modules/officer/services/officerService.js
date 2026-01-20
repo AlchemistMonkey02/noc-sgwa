@@ -1,15 +1,14 @@
 import React from 'react';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+import API_BASE_URL from '../../../config/apiConfig';
 
 // Helper to get auth token
 const getAuthToken = () => {
-    return localStorage.getItem('authToken') || localStorage.getItem('token');
+    return localStorage.getItem('officerToken');
 };
 
 // Helper to get refresh token
 const getRefreshToken = () => {
-    return localStorage.getItem('refreshToken');
+    return localStorage.getItem('officerRefreshToken');
 };
 
 // API request helper with auto token refresh
@@ -68,11 +67,12 @@ const apiRequest = async (endpoint, options = {}) => {
 // Handle response
 const handleResponse = async (response) => {
     if (response.status === 401) {
-        // Clear tokens and redirect to login
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('nocUser');
-        window.location.href = '/';
+        // Clear officer tokens and redirect to officer login
+        localStorage.removeItem('officerToken');
+        localStorage.removeItem('officerRefreshToken');
+        localStorage.removeItem('officerRole');
+        localStorage.removeItem('officerData');
+        window.location.href = '/officer/login';
         throw new Error('Session expired. Please login again.');
     }
 
@@ -115,6 +115,42 @@ const officerService = {
 
     // ==================== APPLICATIONS ====================
 
+    // Get SGWA Applications (State Level)
+    getSGWAApplications: async (filters = {}) => {
+        const queryParams = new URLSearchParams();
+        Object.keys(filters).forEach(key => {
+            if (filters[key]) queryParams.append(key, filters[key]);
+        });
+        const response = await apiRequest(`/officer/sgwa/applications?${queryParams.toString()}`);
+        return handleResponse(response);
+    },
+
+    // Get Single Application Details (SGWA)
+    getSGWAApplicationDetails: async (applicationId) => {
+        const response = await apiRequest(`/officer/sgwa/applications/${applicationId}`);
+        return handleResponse(response);
+    },
+
+    // Get Applications Pending SGWA Review
+    getSGWAPendingApplications: async (filters = {}) => {
+        const queryParams = new URLSearchParams();
+        Object.keys(filters).forEach(key => {
+            if (filters[key]) queryParams.append(key, filters[key]);
+        });
+        const response = await apiRequest(`/officer/sgwa/applications/pending?${queryParams.toString()}`);
+        return handleResponse(response);
+    },
+
+    // Get Technical Review Applications
+    getTechnicalReviewApplications: async (filters = {}) => {
+        const queryParams = new URLSearchParams();
+        Object.keys(filters).forEach(key => {
+            if (filters[key]) queryParams.append(key, filters[key]);
+        });
+        const response = await apiRequest(`/officer/sgwa/applications/technical-review?${queryParams.toString()}`);
+        return handleResponse(response);
+    },
+
     // Get Applications (with filters)
     getApplications: async (filters = {}) => {
         const queryParams = new URLSearchParams();
@@ -135,6 +171,57 @@ const officerService = {
     // Get Single Application Details
     getApplicationDetails: async (applicationId) => {
         const response = await apiRequest(`/officer/dgo/applications/${applicationId}`);
+        return handleResponse(response);
+    },
+
+    // Forward Application (Recommend for Approval)
+    forwardApplication: async (applicationId, data) => {
+        const response = await apiRequest(`/officer/dgo/applications/${applicationId}/forward`, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        return handleResponse(response);
+    },
+
+    // Verify Documents (Single or Bulk)
+    verifyDocuments: async (applicationId, documents) => {
+        const response = await apiRequest(`/officer/dgo/applications/${applicationId}/verify-documents`, {
+            method: 'POST',
+            body: JSON.stringify({ documents })
+        });
+        return handleResponse(response);
+    },
+
+    // Get Officers by Role
+    getOfficers: async (role) => {
+        const response = await apiRequest(`/officer/dgo/officers?role=${role}`);
+        return handleResponse(response);
+    },
+
+    // Schedule Inspection
+    scheduleInspection: async (applicationId, data) => {
+        const response = await apiRequest(`/officer/dgo/applications/${applicationId}/schedule-inspection`, {
+            method: 'POST',
+            body: JSON.stringify(data) // expects { inspectionDate, officerId }
+        });
+        return handleResponse(response);
+    },
+
+    // Raise Query
+    raiseQuery: async (applicationId, queryData) => {
+        const response = await apiRequest(`/officer/dgo/applications/${applicationId}/raise-query`, {
+            method: 'POST',
+            body: JSON.stringify(queryData)
+        });
+        return handleResponse(response);
+    },
+
+    // Submit Inspection Report
+    submitInspectionReport: async (applicationId, reportData) => {
+        const response = await apiRequest(`/officer/dgo/applications/${applicationId}/inspection-report`, {
+            method: 'POST',
+            body: JSON.stringify(reportData)
+        });
         return handleResponse(response);
     },
 
@@ -425,6 +512,15 @@ const officerService = {
         return handleResponse(response);
     },
 
+    // Verify Documents Bulk (SGWA)
+    verifySGWADocumentsBulk: async (data) => {
+        const response = await apiRequest('/officer/sgwa/verify-documents-bulk', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        return handleResponse(response);
+    },
+
     // Reject Application (SGWA)
     sgwaRejectApplication: async (applicationId, rejectionData) => {
         const response = await apiRequest(
@@ -432,6 +528,18 @@ const officerService = {
             {
                 method: 'POST',
                 body: JSON.stringify(rejectionData)
+            }
+        );
+        return handleResponse(response);
+    },
+
+    // Raise Query (SGWA)
+    sgwaRaiseQuery: async (applicationId, queryData) => {
+        const response = await apiRequest(
+            `/officer/sgwa/applications/${applicationId}/query`,
+            {
+                method: 'POST',
+                body: JSON.stringify(queryData)
             }
         );
         return handleResponse(response);

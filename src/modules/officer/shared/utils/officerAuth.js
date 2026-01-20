@@ -25,8 +25,17 @@ export const setOfficerData = (data) => {
     localStorage.setItem('officerData', JSON.stringify(data));
 };
 
+export const getOfficerRefreshToken = () => {
+    return localStorage.getItem('officerRefreshToken');
+};
+
+export const setOfficerRefreshToken = (token) => {
+    localStorage.setItem('officerRefreshToken', token);
+};
+
 export const clearOfficerAuth = () => {
     localStorage.removeItem('officerToken');
+    localStorage.removeItem('officerRefreshToken');
     localStorage.removeItem('officerRole');
     localStorage.removeItem('officerData');
 };

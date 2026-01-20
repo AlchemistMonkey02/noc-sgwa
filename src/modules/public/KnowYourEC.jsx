@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import API_BASE_URL from '../../config/apiConfig';
 import './styles/public-landing.css';
 
 const KnowYourEC = () => {
@@ -30,9 +31,9 @@ const KnowYourEC = () => {
         const fetchMasterData = async () => {
             try {
                 const [appTypeRes, waterQualityRes, areaCatRes] = await Promise.all([
-                    fetch('http://localhost:3000/api/master-data/application-types'),
-                    fetch('http://localhost:3000/api/master-data/water-quality-types'),
-                    fetch('http://localhost:3000/api/master-data/area-categories')
+                    fetch(`${API_BASE_URL}/master-data/application-types`),
+                    fetch(`${API_BASE_URL}/master-data/water-quality-types`),
+                    fetch(`${API_BASE_URL}/master-data/area-categories`)
                 ]);
 
                 const parseResponse = async (res) => {
@@ -91,7 +92,7 @@ const KnowYourEC = () => {
                 annualExtraction: formData.annualExtraction
             }).toString();
 
-            const response = await fetch(`http://localhost:3000/api/public/know-your-ec?${queryParams}`);
+            const response = await fetch(`${API_BASE_URL}/public/know-your-ec?${queryParams}`);
             const data = await response.json();
 
             if (response.ok && data.success) {

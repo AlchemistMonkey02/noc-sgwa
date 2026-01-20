@@ -39,65 +39,35 @@ const SGWADashboard = () => {
                 });
 
                 if (data.recentApplications && data.recentApplications.length > 0) {
-                    setRecentApplications(data.recentApplications);
+                    const mappedRecents = data.recentApplications.map(app => ({
+                        applicationId: app.id || app._id,
+                        applicationNumber: app.applicationNumber,
+                        applicantName: app.applicantDetails?.name || app.projectDetails?.applicantName || 'N/A',
+                        projectName: app.projectDetails?.projectName || 'N/A',
+                        district: app.locationDetails?.district || 'N/A',
+                        // Handle both string and object water requirement
+                        waterRequirement: typeof app.waterRequirement === 'object'
+                            ? `${app.waterRequirement.total || app.waterRequirement.dailyRequirement || 0} m³/day`
+                            : app.waterRequirement,
+                        submittedDate: app.submittedDate,
+                        status: app.status,
+                        daysInQueue: app.daysInQueue || 0
+                    }));
+                    setRecentApplications(mappedRecents);
                 }
             }
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
-
-            // Use mock data as fallback
-            console.log('Using mock data - backend API not available');
-
+            // Strictly API driven - no mock fallback
             setStatistics({
-                total: 95,
-                pendingApproval: 25,
-                approved: 45,
-                rejected: 10,
-                dgoRecommended: 15,
-                queriesRaised: 8
+                total: 0,
+                pendingApproval: 0,
+                approved: 0,
+                rejected: 0,
+                dgoRecommended: 0,
+                queriesRaised: 0
             });
-
-            setRecentApplications([
-                {
-                    applicationId: 'app-sgwa-001',
-                    applicationNumber: 'RJ/CGWA/NOC/2026/001250',
-                    applicantName: 'Mahindra Textiles Ltd',
-                    projectName: 'Industrial Dyeing Unit',
-                    district: 'Jaipur',
-                    block: 'Sanganer',
-                    waterRequirement: '250.00 m³/day',
-                    submittedDate: '2026-01-10T08:00:00Z',
-                    status: 'DGO_RECOMMENDED',
-                    dgoRecommendation: 'APPROVED',
-                    daysInQueue: 1
-                },
-                {
-                    applicationId: 'app-sgwa-002',
-                    applicationNumber: 'RJ/CGWA/NOC/2026/001251',
-                    applicantName: 'Rajasthan Hotels Pvt Ltd',
-                    projectName: '5-Star Resort Complex',
-                    district: 'Udaipur',
-                    block: 'City',
-                    waterRequirement: '350.00 m³/day',
-                    submittedDate: '2026-01-09T11:30:00Z',
-                    status: 'DGO_RECOMMENDED',
-                    dgoRecommendation: 'APPROVED',
-                    daysInQueue: 2
-                },
-                {
-                    applicationId: 'app-sgwa-003',
-                    applicationNumber: 'RJ/CGWA/NOC/2026/001252',
-                    applicantName: 'Aditya Power Generation',
-                    projectName: 'Thermal Power Plant',
-                    district: 'Jodhpur',
-                    block: 'Pali Road',
-                    waterRequirement: '500.00 m³/day',
-                    submittedDate: '2026-01-08T09:15:00Z',
-                    status: 'PENDING_SGWA_APPROVAL',
-                    dgoRecommendation: 'APPROVED',
-                    daysInQueue: 3
-                }
-            ]);
+            setRecentApplications([]);
         } finally {
             setLoading(false);
         }

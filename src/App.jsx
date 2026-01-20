@@ -6,6 +6,12 @@ import PublicLanding from './modules/public/PublicLanding';
 import KnowYourEC from './modules/public/KnowYourEC';
 import ApplicationStatus from './modules/public/ApplicationStatus';
 
+// Public Service Info Pages
+import GroundwaterServices from './modules/public/pages/GroundwaterServices';
+import RigRegistrationInfo from './modules/public/pages/RigRegistrationInfo';
+import VendorRegistrationInfo from './modules/public/pages/VendorRegistrationInfo';
+import PublicGuidelines from './modules/public/pages/PublicGuidelines';
+
 // Officer Module
 import OfficerLogin from './modules/officer/OfficerLogin';
 import ProtectedRoute from './modules/officer/shared/components/ProtectedRoute';
@@ -15,6 +21,11 @@ import DGODashboard from './modules/officer/dgo/DGODashboard';
 import DGOApplicationDetail from './modules/officer/dgo/DGOApplicationDetail';
 import ApplicationViewer from './modules/officer/dgo/ApplicationViewer';
 import ApplicationsList from './modules/officer/dgo/ApplicationsList';
+import DGOInspectionList from './modules/officer/dgo/InspectionList';
+import QueriesList from './modules/officer/dgo/QueriesList';
+import OfficerReports from './modules/officer/dgo/OfficerReports';
+
+import InspectionReport from './modules/officer/dgo/InspectionReport';
 
 // SGWA Module
 import SGWADashboard from './modules/officer/sgwa/SGWADashboard';
@@ -71,6 +82,12 @@ function App() {
         <Route path="/public/know-your-ec" element={<KnowYourEC />} />
         <Route path="/public/application-status" element={<ApplicationStatus />} />
 
+        {/* New Service Info Routes */}
+        <Route path="/public/services/noc" element={<GroundwaterServices />} />
+        <Route path="/public/services/rig" element={<RigRegistrationInfo />} />
+        <Route path="/public/services/vendor" element={<VendorRegistrationInfo />} />
+        <Route path="/public/guidelines" element={<PublicGuidelines />} />
+
         {/* NOC Module Routes (Applicant Portal) */}
         <Route path="/noc" element={<Navigate to="/" replace />} />
         <Route path="/noc/login" element={<NOCLogin />} />
@@ -125,6 +142,38 @@ function App() {
           element={
             <ProtectedRoute requiredRole="DGO">
               <ApplicationViewer />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/officer/dgo/applications/:applicationId/inspection-report"
+          element={
+            <ProtectedRoute requiredRole="DGO">
+              <InspectionReport />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/officer/dgo/inspections"
+          element={
+            <ProtectedRoute requiredRole="DGO">
+              <DGOInspectionList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/officer/dgo/queries"
+          element={
+            <ProtectedRoute requiredRole="DGO">
+              <QueriesList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/officer/dgo/reports"
+          element={
+            <ProtectedRoute requiredRole="DGO">
+              <OfficerReports />
             </ProtectedRoute>
           }
         />

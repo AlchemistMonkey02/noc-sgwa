@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import API_BASE_URL from '../config/apiConfig';
 
 const AuthContext = createContext(null);
 
@@ -35,7 +36,7 @@ export const AuthProvider = ({ children }) => {
     const login = async (username, password, type) => {
         setIsLoggingOut(false);
         try {
-            const response = await fetch('http://localhost:3000/api/auth/login', {
+            const response = await fetch(`${API_BASE_URL}/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -105,7 +106,7 @@ export const AuthProvider = ({ children }) => {
                 return false;
             }
 
-            const response = await fetch('http://localhost:3000/api/auth/refresh', {
+            const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${currentToken}`,
@@ -144,7 +145,7 @@ export const AuthProvider = ({ children }) => {
         try {
             const token = localStorage.getItem('authToken');
             if (token) {
-                const response = await fetch('http://localhost:3000/api/auth/logout', {
+                const response = await fetch(`${API_BASE_URL}/auth/logout`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,

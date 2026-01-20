@@ -11,7 +11,7 @@ const SGWAApplicationsList = () => {
     const [filteredApplications, setFilteredApplications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({
-        status: '',
+        status: 'APPROVED_DGO', // Default to pending view as requested
         district: '',
         search: '',
         dgoRecommendation: ''
@@ -44,19 +44,67 @@ const SGWAApplicationsList = () => {
     }, []);
 
     useEffect(() => {
+        fetchApplications();
+    }, [filters]); // Refetch when filters change (server-side filtering)
+
+    // Removed applyFilters client-side logic as we are now doing server-side filtering via fetchApplications
+    /*
+    useEffect(() => {
         applyFilters();
     }, [filters, allApplications]);
+    */
 
     const fetchApplications = async () => {
         try {
             setLoading(true);
-            const response = await officerService.getSGWAApplications({});
-            if (response.success) {
-                setAllApplications(response.data.applications);
+            let response;
+
+            // If status is 'APPROVED_DGO' (Pending SGWA Review), use the specific /pending endpoint
+            if (filters.status === 'APPROVED_DGO') {
+                response = await officerService.getSGWAPendingApplications(filters);
+            } else {
+                response = await officerService.getSGWAApplications(filters);
+            }
+
+            if (response.success && response.data) {
+                const rawData = response.data.applications || response.data || [];
+
+                // Helper to calculate days in queue
+                const calculateDays = (dateString) => {
+                    if (!dateString) return 0;
+                    const submitted = new Date(dateString);
+                    const now = new Date();
+                    const diffTime = Math.abs(now - submitted);
+                    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                };
+
+                // Map API data to component structure
+                const mappedApps = rawData.map(app => ({
+                    id: app.id || app._id || app.applicationId,
+                    applicationNumber: app.applicationNumber || 'N/A',
+                    applicantName: app.applicantDetails?.name || app.projectDetails?.applicantName || 'N/A',
+                    projectName: app.projectDetails?.projectName || 'N/A',
+                    district: app.locationDetails?.district || app.locationDetails?.state || 'N/A', // Fallback to state if district is coded/missing
+                    // Handle waterRequirement - check root or nested, default to 'N/A' to avoid showing 0 if just missing
+                    waterRequirement: (app.waterRequirement?.total || app.waterRequirement?.dailyRequirement || app.waterRequirement) || 'N/A',
+                    status: app.status,
+                    dgoRecommendation: app.dgoRecommendation?.status || app.dgoRecommendation || 'N/A',
+                    daysInQueue: app.daysInQueue || calculateDays(app.submittedDate),
+                    submittedDate: app.submittedDate
+                }));
+
+                // Update both states since filters are applied server-side
+                setAllApplications(mappedApps);
+                setFilteredApplications(mappedApps);
+            } else {
+                setAllApplications([]);
+                setFilteredApplications([]);
             }
         } catch (error) {
             console.error('Error fetching applications:', error);
-            setAllApplications(mockApplications);
+            // Strict API Usage: No mock data
+            setAllApplications([]);
+            setFilteredApplications([]);
         } finally {
             setLoading(false);
         }
@@ -92,6 +140,7 @@ const SGWAApplicationsList = () => {
     const getStatusBadge = (status) => {
         const statusMap = {
             'DGO_RECOMMENDED': { label: 'DGO Recommended', class: 'primary' },
+            'APPROVED_DGO': { label: 'DGO Approved', class: 'primary' }, // Added match for API
             'PENDING_SGWA_APPROVAL': { label: 'Pending Approval', class: 'warning' },
             'SGWA_APPROVED': { label: 'SGWA Approved', class: 'success' },
             'SGWA_REJECTED': { label: 'SGWA Rejected', class: 'danger' },
@@ -164,8 +213,7 @@ const SGWAApplicationsList = () => {
                                     onChange={(e) => setFilters({ ...filters, status: e.target.value })}
                                 >
                                     <option value="">All Status</option>
-                                    <option value="DGO_RECOMMENDED">DGO Recommended</option>
-                                    <option value="PENDING_SGWA_APPROVAL">Pending Approval</option>
+                                    <option value="APPROVED_DGO">Pending SGWA Review</option>
                                     <option value="SGWA_APPROVED">SGWA Approved</option>
                                     <option value="SGWA_REJECTED">SGWA Rejected</option>
                                     <option value="SGWA_QUERY_RAISED">Query Raised</option>

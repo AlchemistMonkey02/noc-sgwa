@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import API_BASE_URL from '../../config/apiConfig';
 import NOCHeader from './components/NOCHeader';
 import NOCFooter from './components/NOCFooter';
 import Sidebar from './components/Sidebar';
@@ -87,7 +88,7 @@ const CompanyProfile = () => {
             try {
                 // 1. Fetch Company Types
                 try {
-                    const typesRes = await fetch('http://localhost:3000/api/companies/types');
+                    const typesRes = await fetch(`${API_BASE_URL}/companies/types`);
                     if (typesRes.ok) {
                         const data = await typesRes.json();
                         if (data.success && Array.isArray(data.data)) {
@@ -98,7 +99,7 @@ const CompanyProfile = () => {
 
                 // 2. Fetch States
                 try {
-                    const statesRes = await fetch('http://localhost:3000/api/master/states');
+                    const statesRes = await fetch(`${API_BASE_URL}/master/states`);
                     if (statesRes.ok) {
                         const data = await statesRes.json();
                         // Handle different potential response structures
@@ -186,7 +187,7 @@ const CompanyProfile = () => {
                 // Determine if state is passed as ID or Name/Code. API likely supports Name/Code based on previous responses.
                 // If API expects ID but we have "RJ", this might fail if not handled by backend.
                 // Assuming backend handles "RJ" or frontend state mapping is robust.
-                const response = await fetch(`http://localhost:3000/api/master/districts?state=${formData.commAddress.state}`);
+                const response = await fetch(`${API_BASE_URL}/master/districts?state=${formData.commAddress.state}`);
                 if (response.ok) {
                     const data = await response.json();
                     const list = Array.isArray(data) ? data : (data.data || []);
@@ -207,7 +208,7 @@ const CompanyProfile = () => {
                 return;
             }
             try {
-                const response = await fetch(`http://localhost:3000/api/master/districts?state=${formData.regAddress.state}`);
+                const response = await fetch(`${API_BASE_URL}/master/districts?state=${formData.regAddress.state}`);
                 if (response.ok) {
                     const data = await response.json();
                     const list = Array.isArray(data) ? data : (data.data || []);

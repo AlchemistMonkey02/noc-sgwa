@@ -6166,8 +6166,254 @@ button[class*="tab"].active {
   border-radius: 6px;
   margin-top: 0.5rem;
 }
+
 .bhuneer-label {
   font-weight: 500;
   color: var(--gray-700);
 }
 
+
+/* =========================================
+   PREMIUM REGISTRATION UI (GOV STANDARD)
+   ========================================= */
+
+.reg-modal-header {
+  background: #1e3a8a;
+  /* Deep Blue from image */
+  color: white;
+  padding: 2.5rem 2rem;
+  text-align: center;
+  position: relative;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.reg-modal-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.025em;
+  color: white;
+}
+
+/* Underline separator */
+.reg-modal-title::after {
+  content: '';
+  display: block;
+  width: 60px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.3);
+  margin: 1rem auto 0.5rem;
+  border-radius: 2px;
+}
+
+.reg-dept-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.reg-govt-name {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  margin-bottom: 1.5rem;
+  font-weight: 400;
+}
+
+.reg-instruction {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+  max-width: 500px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* Stepper Component */
+.reg-stepper {
+  display: flex;
+  justify-content: center;
+  padding: 2rem 0;
+  position: relative;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+/* Connecting line */
+.reg-stepper::before {
+  content: '';
+  position: absolute;
+  top: 35px;
+  /* Adjust based on circle size */
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: #e2e8f0;
+  z-index: 0;
+}
+
+.reg-step {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.reg-step-circle {
+  width: 32px;
+  height: 32px;
+  background: #f1f5f9;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  border: 2px solid white;
+  /* White ring to separate from line */
+  transition: all 0.3s ease;
+}
+
+.reg-step.active .reg-step-circle {
+  background: #1e3a8a;
+  color: white;
+  box-shadow: 0 0 0 4px rgba(30, 58, 138, 0.1);
+  width: 40px;
+  /* Make active slightly larger */
+  height: 40px;
+}
+
+.reg-step-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+
+.reg-step.active .reg-step-label {
+  color: #1e3a8a;
+  font-weight: 700;
+}
+
+/* Form Section */
+.reg-section-header {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  margin: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.reg-section-icon {
+  color: #1e3a8a;
+  font-size: 1.1rem;
+}
+
+.reg-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  margin: 0;
+}
+
+.reg-section-desc {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 400;
+}
+
+.reg-form-body {
+  padding: 0 2rem 2rem;
+}
+
+.reg-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  /* 3 columns for desktop */
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.reg-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 0.4rem;
+}
+
+.reg-label span.required {
+  color: #dc2626;
+  margin-left: 2px;
+}
+
+.reg-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  color: #1e293b;
+  transition: all 0.2s;
+  background: white;
+}
+
+.reg-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.reg-actions {
+  background: #f8fafc;
+  padding: 1.5rem 2rem;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+.btn-next {
+  background: #1e3a8a;
+  color: white;
+  padding: 0.75rem 2rem;
+  border-radius: 6px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-next:hover {
+  background: #172554;
+}
+
+/* Close Icon Override */
+.modal-close-icon {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.modal-close-icon:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

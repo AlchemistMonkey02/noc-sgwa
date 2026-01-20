@@ -441,6 +441,51 @@
     margin-top: 1rem;
 }
 
+/* Status Badges */
+.status-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-submitted {
+    background-color: #e2e8f0;
+    color: #475569;
+}
+
+.status-pending-dgo-review {
+    background-color: #fef3c7;
+    color: #b45309;
+}
+
+.status-under-review-dgo {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.status-query-raised-dgo {
+    background-color: #ffedd5;
+    color: #c2410c;
+}
+
+.status-inspection-scheduled {
+    background-color: #e0e7ff;
+    color: #3730a3;
+}
+
+.status-approved {
+    background-color: #dcfce7;
+    color: #15803d;
+}
+
+.status-rejected {
+    background-color: #fee2e2;
+    color: #b91c1c;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .summary-row {

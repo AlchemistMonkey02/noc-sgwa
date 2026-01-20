@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { setOfficerToken, setOfficerRole, setOfficerData } from './shared/utils/officerAuth';
+import { setOfficerToken, setOfficerRole, setOfficerData, setOfficerRefreshToken } from './shared/utils/officerAuth';
 import './shared/styles/officer-portal.css';
 
 const OfficerLogin = () => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
-        email: '',
+        username: '',
         password: '',
         role: 'DGO'
     });
@@ -19,31 +19,41 @@ const OfficerLogin = () => {
         setLoading(true);
 
         try {
-            // Mock API call - replace with actual backend API
-            // const response = await fetch('http://api.sgwa.rajasthan.gov.in/api/v1/officer/login', {
-            //   method: 'POST',
-            //   headers: { 'Content-Type': 'application/json' },
-            //   body: JSON.stringify(formData)
-            // });
+            console.log('Attempting login with:', { username: formData.username, role: formData.role });
 
-            // Mock authentication logic
-            if (formData.email && formData.password) {
-                // Mock token and user data
-                const mockToken = 'mock-jwt-token-' + Date.now();
-                const mockOfficerData = {
-                    name: getMockOfficerName(formData.role),
-                    email: formData.email,
-                    role: formData.role,
-                    designation: getMockDesignation(formData.role),
-                    district: formData.role === 'DGO' ? 'Jaipur' : ''
-                };
+            // Call the actual login API (role not sent to API - only used for UI navigation)
+            const response = await fetch('http://localhost:5000/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: formData.username,
+                    password: formData.password
+                })
+            });
+
+            const data = await response.json();
+            console.log('Login response:', { ok: response.ok, data });
+
+            // Check for token in different possible locations
+            const token = data.token || data.data?.token;
+            const refreshToken = data.refreshToken || data.data?.refreshToken;
+            const user = data.user || data.data?.user || {};
+
+            if (response.ok && token) {
+                console.log('Login successful, storing auth data...');
 
                 // Set authentication data
-                setOfficerToken(mockToken);
+                setOfficerToken(token);
+                if (refreshToken) {
+                    setOfficerRefreshToken(refreshToken);
+                }
+                // Use the role selected by user in the UI for navigation
                 setOfficerRole(formData.role);
-                setOfficerData(mockOfficerData);
+                setOfficerData(user);
 
-                // Redirect based on role
+                console.log('Auth data stored, redirecting to dashboard...');
+
+                // Redirect based on user-selected role
                 const dashboardRoutes = {
                     'DGO': '/officer/dgo/dashboard',
                     'SGWA': '/officer/sgwa/dashboard',
@@ -51,36 +61,22 @@ const OfficerLogin = () => {
                     'INSPECTION': '/officer/inspection/dashboard'
                 };
 
-                navigate(dashboardRoutes[formData.role]);
+                const redirectUrl = dashboardRoutes[formData.role];
+                console.log('Redirecting to:', redirectUrl);
+
+                // Navigate immediately
+                navigate(redirectUrl);
             } else {
-                setError('Please enter valid credentials');
+                setError(data.message || 'Invalid username or password');
             }
         } catch (err) {
-            setError('Login failed. Please try again.');
+            console.error('Login error:', err);
+            setError('Login failed. Please check your connection and try again.');
         } finally {
             setLoading(false);
         }
     };
 
-    const getMockOfficerName = (role) => {
-        const names = {
-            'DGO': 'Ramesh Kumar',
-            'SGWA': 'Dr. Priya Sharma',
-            'ENFORCEMENT': 'Suresh Patel',
-            'INSPECTION': 'Vikram Singh'
-        };
-        return names[role] || 'Officer';
-    };
-
-    const getMockDesignation = (role) => {
-        const designations = {
-            'DGO': 'District Groundwater Officer',
-            'SGWA': 'Technical Officer',
-            'ENFORCEMENT': 'Chief Engineer',
-            'INSPECTION': 'Field Inspector'
-        };
-        return designations[role] || 'Officer';
-    };
 
     return (
         <div style={{
@@ -151,15 +147,15 @@ const OfficerLogin = () => {
                         </select>
                     </div>
 
-                    {/* Email */}
+                    {/* Username */}
                     <div className="officer-form-group">
-                        <label className="officer-label required">Email Address</label>
+                        <label className="officer-label required">Username</label>
                         <input
-                            type="email"
+                            type="text"
                             className="officer-input"
-                            value={formData.email}
-                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                            placeholder="officer@sgwa.raj.in"
+                            value={formData.username}
+                            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                            placeholder="Enter your username"
                             required
                         />
                     </div>

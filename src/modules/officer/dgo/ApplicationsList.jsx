@@ -7,8 +7,7 @@ import '../shared/styles/officer-portal.css';
 
 const ApplicationsList = () => {
     const navigate = useNavigate();
-    const [allApplications, setAllApplications] = useState([]);
-    const [filteredApplications, setFilteredApplications] = useState([]);
+    const [applications, setApplications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({
         status: '',
@@ -16,90 +15,58 @@ const ApplicationsList = () => {
         search: ''
     });
 
-    // Expanded mock data - 15 applications across different districts and statuses
-    const mockApplications = [
-        { id: 'app-001', applicationNumber: 'RJ/CGWA/NOC/2026/001234', applicantName: 'Rajesh Kumar Sharma', projectName: 'ABC Textile Manufacturing Unit', projectType: 'Industrial', district: 'Jaipur', block: 'Sanganer', waterRequirement: 150.25, submittedDate: '2026-01-09T08:00:00Z', status: 'PENDING_VERIFICATION', daysInQueue: 2 },
-        { id: 'app-002', applicationNumber: 'RJ/CGWA/NOC/2026/001235', applicantName: 'Sunita Devi', projectName: 'XYZ Food Processing Plant', projectType: 'Industrial', district: 'Jaipur', block: 'Sanganer', waterRequirement: 85.50, submittedDate: '2026-01-08T10:30:00Z', status: 'UNDER_REVIEW', daysInQueue: 3 },
-        { id: 'app-003', applicationNumber: 'RJ/CGWA/NOC/2026/001236', applicantName: 'Green Valley Hotels Pvt Ltd', projectName: 'Luxury Resort Development', projectType: 'Commercial', district: 'Jaipur', block: 'Amber', waterRequirement: 200.00, submittedDate: '2026-01-07T09:15:00Z', status: 'PENDING_VERIFICATION', daysInQueue: 4 },
-        { id: 'app-004', applicationNumber: 'RJ/CGWA/NOC/2026/001237', applicantName: 'Sharma Industries', projectName: 'Chemical Processing Unit', projectType: 'Industrial', district: 'Jodhpur', block: 'Jodhpur City', waterRequirement: 175.00, submittedDate: '2026-01-06T11:00:00Z', status: 'QUERY_RAISED', daysInQueue: 5 },
-        { id: 'app-005', applicationNumber: 'RJ/CGWA/NOC/2026/001238', applicantName: 'Royal Farms Limited', projectName: 'Agricultural Processing', projectType: 'Agriculture', district: 'Udaipur', block: 'Bassi', waterRequirement: 120.00, submittedDate: '2026-01-05T14:30:00Z', status: 'UNDER_REVIEW', daysInQueue: 6 },
-        { id: 'app-006', applicationNumber: 'RJ/CGWA/NOC/2026/001239', applicantName: 'Anita Constructions', projectName: 'Residential Complex Phase 2', projectType: 'Construction', district: 'Jaipur', block: 'Jagatpura', waterRequirement: 95.00, submittedDate: '2026-01-04T09:00:00Z', status: 'APPROVED', daysInQueue: 7 },
-        { id: 'app-007', applicationNumber: 'RJ/CGWA/NOC/2026/001240', applicantName: 'Meena Beverages Co.', projectName: 'Soft Drink Bottling Plant', projectType: 'Industrial', district: 'Jodhpur', block: 'Pali Road', waterRequirement: 220.00, submittedDate: '2026-01-03T10:45:00Z', status: 'UNDER_REVIEW', daysInQueue: 8 },
-        { id: 'app-008', applicationNumber: 'RJ/CGWA/NOC/2026/001241', applicantName: 'Pradeep Kumar', projectName: 'Dairy Farm Expansion', projectType: 'Agriculture', district: 'Udaipur', block: 'Mavli', waterRequirement: 60.00, submittedDate: '2026-01-02T13:20:00Z', status: 'PENDING_VERIFICATION', daysInQueue: 9 },
-        { id: 'app-009', applicationNumber: 'RJ/CGWA/NOC/2026/001242', applicantName: 'Tech Park Developers', projectName: 'IT Park Development', projectType: 'Commercial', district: 'Jaipur', block: 'Sitapura', waterRequirement: 180.00, submittedDate: '2025-12-30T08:30:00Z', status: 'QUERY_RAISED', daysInQueue: 12 },
-        { id: 'app-010', applicationNumber: 'RJ/CGWA/NOC/2026/001243', applicantName: 'Sunrise Textiles', projectName: 'Fabric Dyeing Unit', projectType: 'Industrial', district: 'Jodhpur', block: 'Basni', waterRequirement: 140.00, submittedDate: '2025-12-29T11:15:00Z', status: 'REJECTED', daysInQueue: 13 },
-        { id: 'app-011', applicationNumber: 'RJ/CGWA/NOC/2026/001244', applicantName: 'Heritage Hotels Group', projectName: 'Boutique Hotel Renovation', projectType: 'Commercial', district: 'Udaipur', block: 'City', waterRequirement: 110.00, submittedDate: '2025-12-28T15:00:00Z', status: 'APPROVED', daysInQueue: 14 },
-        { id: 'app-012', applicationNumber: 'RJ/CGWA/NOC/2026/001245', applicantName: 'Agarwal Pharma Ltd', projectName: 'Pharmaceutical Manufacturing', projectType: 'Industrial', district: 'Jaipur', block: 'Kukas', waterRequirement: 165.00, submittedDate: '2025-12-27T09:45:00Z', status: 'UNDER_REVIEW', daysInQueue: 15 },
-        { id: 'app-013', applicationNumber: 'RJ/CGWA/NOC/2026/001246', applicantName: 'Green Energy Solutions', projectName: 'Solar Panel Manufacturing', projectType: 'Industrial', district: 'Jodhpur', block: 'Mandore', waterRequirement: 75.00, submittedDate: '2025-12-26T12:30:00Z', status: 'PENDING_VERIFICATION', daysInQueue: 16 },
-        { id: 'app-014', applicationNumber: 'RJ/CGWA/NOC/2026/001247', applicantName: 'Lakeview Resorts', projectName: 'Eco Tourism Resort', projectType: 'Commercial', district: 'Udaipur', block: 'Gogunda', waterRequirement: 130.00, submittedDate: '2025-12-25T10:00:00Z', status: 'QUERY_RAISED', daysInQueue: 17 },
-        { id: 'app-015', applicationNumber: 'RJ/CGWA/NOC/2026/001248', applicantName: 'Rajasthan Distilleries', projectName: 'Alcohol Manufacturing Plant', projectType: 'Industrial', district: 'Jaipur', block: 'Chomu', waterRequirement: 190.00, submittedDate: '2025-12-24T14:20:00Z', status: 'REJECTED', daysInQueue: 18 }
-    ];
-
     useEffect(() => {
-        fetchApplications();
-    }, []);
-
-    // Apply filters whenever filters change or data loads
-    useEffect(() => {
-        applyFilters();
-    }, [filters, allApplications]);
+        // Debounce search to avoid too many API calls
+        const timer = setTimeout(() => {
+            fetchApplications();
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [filters]);
 
     const fetchApplications = async () => {
         try {
             setLoading(true);
-            const response = await officerService.getApplications({});
+            const response = await officerService.getApplications(filters);
             if (response.success) {
-                setAllApplications(response.data.applications);
+                // Ensure we handle both array directly or nested in applications property
+                const appData = Array.isArray(response.data) ? response.data :
+                    (response.data.applications || []);
+                setApplications(appData);
             }
         } catch (error) {
             console.error('Error fetching applications:', error);
-            // Use mock data
-            setAllApplications(mockApplications);
+            // Fallback for demo/dev if API fails
+            setApplications([]);
         } finally {
             setLoading(false);
         }
     };
 
-    const applyFilters = () => {
-        let filtered = [...allApplications];
-
-        // Search filter - searches in application number, applicant name, and project name
-        if (filters.search.trim()) {
-            const searchLower = filters.search.toLowerCase();
-            filtered = filtered.filter(app =>
-                app.applicationNumber.toLowerCase().includes(searchLower) ||
-                app.applicantName.toLowerCase().includes(searchLower) ||
-                app.projectName.toLowerCase().includes(searchLower)
-            );
-        }
-
-        // Status filter
-        if (filters.status) {
-            filtered = filtered.filter(app => app.status === filters.status);
-        }
-
-        // District filter
-        if (filters.district) {
-            filtered = filtered.filter(app => app.district === filters.district);
-        }
-
-        setFilteredApplications(filtered);
-    };
-
     const getStatusBadge = (status) => {
         const statusMap = {
-            'PENDING_VERIFICATION': { label: 'Pending Verification', class: 'pending' },
-            'UNDER_REVIEW': { label: 'Under Review', class: 'under-review' },
-            'QUERY_RAISED': { label: 'Query Raised', class: 'query-raised' },
+            'SUBMITTED': { label: 'Submitted', class: 'pending' },
+            'PENDING_DGO_REVIEW': { label: 'Pending Review', class: 'pending' },
+            'UNDER_REVIEW_DGO': { label: 'Under Review', class: 'under-review' },
+            'QUERY_RAISED_DGO': { label: 'Query Raised', class: 'query-raised' },
+            'INSPECTION_SCHEDULED': { label: 'Inspection Scheduled', class: 'under-review' },
             'APPROVED': { label: 'Approved', class: 'approved' },
             'REJECTED': { label: 'Rejected', class: 'rejected' }
         };
-        const statusData = statusMap[status] || { label: status, class: '' };
+        const statusData = statusMap[status] || { label: status?.replace(/_/g, ' '), class: 'pending' };
         return (
             <span className={`officer-badge ${statusData.class}`}>
                 {statusData.label}
             </span>
         );
+    };
+
+    // Helper to calculate days since submission
+    const getDaysInQueue = (dateString) => {
+        if (!dateString) return 0;
+        const submitted = new Date(dateString);
+        const now = new Date();
+        const diffTime = Math.abs(now - submitted);
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     };
 
     const handleViewApplication = (applicationId) => {
@@ -108,6 +75,11 @@ const ApplicationsList = () => {
 
     const clearFilters = () => {
         setFilters({ status: '', district: '', search: '' });
+    };
+
+    // Helper to get nested value safely
+    const getNestedValue = (obj, path) => {
+        return path.split('.').reduce((acc, part) => acc && acc[part], obj);
     };
 
     if (loading) {
@@ -137,7 +109,7 @@ const ApplicationsList = () => {
                         <div className="officer-page-header">
                             <h1 className="officer-page-title">📋 All Applications</h1>
                             <p className="officer-page-subtitle">
-                                Showing {filteredApplications.length} of {allApplications.length} applications
+                                Showing {applications.length} applications
                             </p>
                         </div>
 
@@ -166,9 +138,11 @@ const ApplicationsList = () => {
                                     onChange={(e) => setFilters({ ...filters, status: e.target.value })}
                                 >
                                     <option value="">All Status</option>
-                                    <option value="PENDING_VERIFICATION">Pending Verification</option>
-                                    <option value="UNDER_REVIEW">Under Review</option>
-                                    <option value="QUERY_RAISED">Query Raised</option>
+                                    <option value="SUBMITTED">Submitted</option>
+                                    <option value="PENDING_DGO_REVIEW">Pending Review</option>
+                                    <option value="UNDER_REVIEW_DGO">Under Review</option>
+                                    <option value="QUERY_RAISED_DGO">Query Raised</option>
+                                    <option value="INSPECTION_SCHEDULED">Inspection Scheduled</option>
                                     <option value="APPROVED">Approved</option>
                                     <option value="REJECTED">Rejected</option>
                                 </select>
@@ -206,40 +180,43 @@ const ApplicationsList = () => {
                                         <th>Applicant Name</th>
                                         <th>Project Name</th>
                                         <th>Type</th>
-                                        <th>District</th>
-                                        <th>Water Req.</th>
-                                        <th>Submitted</th>
+                                        <th>Location</th>
+                                        <th>Date</th>
                                         <th>Status</th>
                                         <th>Days</th>
                                         <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredApplications.map((app) => (
-                                        <tr key={app.id}>
+                                    {applications.map((app) => (
+                                        <tr key={app._id || app.applicationId}>
                                             <td style={{ fontWeight: '600', color: 'var(--officer-primary)' }}>
                                                 {app.applicationNumber}
                                             </td>
-                                            <td>{app.applicantName}</td>
-                                            <td>{app.projectName}</td>
-                                            <td>{app.projectType}</td>
-                                            <td>{app.district}</td>
-                                            <td>{app.waterRequirement} m³/day</td>
-                                            <td>{new Date(app.submittedDate).toLocaleDateString()}</td>
+                                            <td>{getNestedValue(app, 'projectDetails.applicantName') || app.applicantName || 'N/A'}</td>
+                                            <td>{getNestedValue(app, 'projectDetails.projectName') || app.projectName || 'N/A'}</td>
+                                            <td>{app.sectorType || app.applicationSubType || 'N/A'}</td>
+                                            <td>
+                                                <div style={{ fontSize: '0.85rem' }}>
+                                                    {getNestedValue(app, 'location.village')}<br />
+                                                    <span style={{ color: '#666' }}>{getNestedValue(app, 'location.blockId')}</span>
+                                                </div>
+                                            </td>
+                                            <td>{app.submittedAt ? new Date(app.submittedAt).toLocaleDateString() : 'N/A'}</td>
                                             <td>{getStatusBadge(app.status)}</td>
                                             <td>
                                                 <span style={{
-                                                    color: app.daysInQueue > 3 ? 'var(--officer-danger)' : 'var(--officer-text-light)',
-                                                    fontWeight: app.daysInQueue > 3 ? '600' : '400'
+                                                    color: getDaysInQueue(app.submittedAt) > 3 ? 'var(--officer-danger)' : 'var(--officer-text-light)',
+                                                    fontWeight: getDaysInQueue(app.submittedAt) > 3 ? '600' : '400'
                                                 }}>
-                                                    {app.daysInQueue} days
+                                                    {getDaysInQueue(app.submittedAt)} days
                                                 </span>
                                             </td>
                                             <td>
                                                 <button
                                                     className="officer-btn officer-btn-primary"
                                                     style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
-                                                    onClick={() => handleViewApplication(app.id)}
+                                                    onClick={() => handleViewApplication(app.applicationId || app._id)}
                                                 >
                                                     View
                                                 </button>
@@ -250,7 +227,7 @@ const ApplicationsList = () => {
                             </table>
                         </div>
 
-                        {filteredApplications.length === 0 && (
+                        {applications.length === 0 && (
                             <div style={{
                                 textAlign: 'center',
                                 padding: '3rem',

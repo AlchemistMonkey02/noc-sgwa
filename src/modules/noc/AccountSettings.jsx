@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import CommonPlaceholder from './components/CommonPlaceholder';
+import API_BASE_URL from '../../config/apiConfig';
 
 const AccountSettings = () => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -62,7 +63,7 @@ const AccountSettings = () => {
                 return;
             }
 
-            const response = await fetch('http://localhost:3000/api/auth/change-password', {
+            const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

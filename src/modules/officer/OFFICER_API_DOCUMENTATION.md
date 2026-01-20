@@ -57,27 +57,88 @@ Responsible for initial review, site inspection, and technical recommendation.
 ---
 
 ## SGWA Module (State Ground Water Authority)
-Responsible for technical review, final recommendation, and conditional approval.
+Responsible for technical review, final recommendation, NOC issuance, and monitoring.
 
-### Dashboard
+### Dashboard & Statistics
 - **GET** `/officer/sgwa/dashboard`
-    - State-level statistics and approval queues.
+  - **Description**: Returns state-level statistics (pending, approved, rejected) and a list of recent applications.
+  - **Response**:
+    ```json
+    {
+      "success": true,
+      "data": {
+        "stats": { "totalApplications": 120, "pendingApproval": 15, ... },
+        "recentApplications": [ ... ]
+      }
+    }
+    ```
 
-### Applications
+### Applications Management
 - **GET** `/officer/sgwa/applications`
-    - Fetch applications forwarded by DGO.
-- **GET** `/officer/sgwa/applications/:id`
-    - View application with DGO recommendations.
+  - **Description**: Fetch all applications. Use filters to get specific views (e.g., Pending Review).
+  - **Query Params**:
+    - `status`: Filter by status (Use `APPROVED_DGO` for Pending Queue).
+    - `district`: Filter by district.
+  - **Response**: List of application summaries.
 
-### Actions
+- **GET** `/officer/sgwa/applications/:id`
+    - **Description**: Get full application details including SGWA specific Data (dgoRecommendation).
+    - **Response**: Detailed Application Object.
+
+- **GET** `/officer/sgwa/applications/technical-review`
+    - **Description**: Fetch applications pending technical assessment (hydrogeological review).
+
+### Actions & Workflow
 - **POST** `/officer/sgwa/applications/:id/approve`
-    - Recommend for NOC / Approve Technical Review.
-    - Payload: `{ "status": "RECOMMENDED", "conditions": ["..."], "remarks": "..." }`
+    - **Description**: Final Approval & Issue NOC.
+    - **Payload**:
+      ```json
+      {
+        "nocNumber": "RJ/SGWA/NOC/2026/001",
+        "validityDate": "2029-01-20",
+        "conditions": "Install flow meters...",
+        "waterAllocation": 250.00,
+        "remarks": "Approved based on technical report."
+      }
+      ```
+
 - **POST** `/officer/sgwa/applications/:id/reject`
-    - Reject application.
-    - Payload: `{ "reason": "..." }`
+    - **Description**: Reject Application.
+    - **Payload**:
+      ```json
+      {
+        "reasonCode": "OVEREXPLOITED_AREA",
+        "remarks": "Project located in critical zone."
+      }
+      ```
+
+- **POST** `/officer/sgwa/applications/:id/query`
+    - **Description**: Raise Query to Applicant.
+    - **Payload**:
+      ```json
+      {
+        "queryType": "TECHNICAL_INFORMATION",
+        "queryTitle": "Clarification on Borewell Depth",
+        "description": "Please provide details...",
+        "responseDeadline": "2026-02-15"
+      }
+      ```
+
+### Document Verification
+- **POST** `/officer/sgwa/verify-documents-bulk`
+    - **Description**: Verify multiple documents at once.
+    - **Payload**:
+      ```json
+      {
+        "documentIds": ["doc_123", "doc_456"],
+        "status": "ACCEPTED",
+        "remarks": "Verified by SGWA Officer"
+      }
+      ```
+
 - **POST** `/officer/sgwa/applications/:id/assign`
-    - Assign to specific technical officer.
+    - **Description**: Assign application to specific technical officer.
+    - **Payload**: `{ "officerId": "off_001", "remarks": "..." }`
 
 ---
 

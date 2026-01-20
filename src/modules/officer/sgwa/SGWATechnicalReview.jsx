@@ -21,72 +21,30 @@ const SGWATechnicalReview = () => {
     const fetchTechnicalReviewApplications = async () => {
         try {
             setLoading(true);
-            // Simulate fetching applications pending technical review
-            // In a real app, this would be an API call like officerService.getTechnicalReviewApplications()
+            const response = await officerService.getTechnicalReviewApplications();
 
-            // Mock data focusing on technical aspects
-            const mockData = [
-                {
-                    id: 'sgwa-015',
-                    applicationNumber: 'RJ/CGWA/NOC/2026/001250',
-                    applicantName: 'Mahindra Textiles Ltd',
-                    projectType: 'Industrial',
-                    waterRequirement: 250,
-                    technicalStatus: 'PENDING_REVIEW',
-                    dgoRecommendation: 'APPROVED',
-                    borewells: 5,
-                    depth: '150m',
-                    aquiferType: 'Alluvium',
-                    submittedDate: '2026-01-05',
-                    priority: 'HIGH'
-                },
-                {
-                    id: 'sgwa-016',
-                    applicationNumber: 'RJ/CGWA/NOC/2026/001251',
-                    applicantName: 'Sunshine Resorts & Spa',
-                    projectType: 'Commercial',
-                    waterRequirement: 120,
-                    technicalStatus: 'PENDING_REVIEW',
-                    dgoRecommendation: 'CONDITIONAL',
-                    borewells: 2,
-                    depth: '120m',
-                    aquiferType: 'Hard Rock',
-                    submittedDate: '2026-01-06',
-                    priority: 'MEDIUM'
-                },
-                {
-                    id: 'sgwa-017',
-                    applicationNumber: 'RJ/CGWA/NOC/2026/001252',
-                    applicantName: 'Global Tech Park',
-                    projectType: 'Infrastructure',
-                    waterRequirement: 450,
-                    technicalStatus: 'REVIEW_IN_PROGRESS',
-                    dgoRecommendation: 'APPROVED',
-                    borewells: 8,
-                    depth: '180m',
-                    aquiferType: 'Alluvium',
-                    submittedDate: '2026-01-04',
-                    priority: 'HIGH'
-                },
-                {
-                    id: 'sgwa-018',
-                    applicationNumber: 'RJ/CGWA/NOC/2026/001253',
-                    applicantName: 'Rajasthan Dairy Coop',
-                    projectType: 'Industrial',
-                    waterRequirement: 80,
-                    technicalStatus: 'QUERY_RAISED',
-                    dgoRecommendation: 'APPROVED',
-                    borewells: 1,
-                    depth: '100m',
-                    aquiferType: 'Hard Rock',
-                    submittedDate: '2026-01-07',
-                    priority: 'LOW'
-                }
-            ];
-
-            setApplications(mockData);
+            if (response.success && response.data) {
+                const rawData = Array.isArray(response.data) ? response.data : (response.data.applications || []);
+                const mappedData = rawData.map(app => ({
+                    id: app.id || app._id || app.applicationId,
+                    applicationNumber: app.applicationNumber,
+                    applicantName: app.applicantDetails?.name || app.projectDetails?.applicantName || 'N/A',
+                    projectType: app.projectDetails?.sector || app.projectType || 'N/A',
+                    waterRequirement: app.waterRequirement?.total || app.waterRequirement?.dailyRequirement || 0,
+                    technicalStatus: app.status || 'PENDING_SGWA_REVIEW',
+                    dgoRecommendation: app.dgoRecommendation || 'N/A',
+                    borewells: app.waterRequirement?.proposedExtraction?.numberOfBorewells || app.borewells || 0,
+                    depth: app.hydrogeologicalData?.waterTableDepth ? `${app.hydrogeologicalData.waterTableDepth}m` : 'N/A',
+                    aquiferType: app.hydrogeologicalData?.aquiferType || 'N/A',
+                    submittedDate: app.submittedDate,
+                    priority: app.priority || 'MEDIUM'
+                }));
+                setApplications(mappedData);
+            }
         } catch (error) {
             console.error('Error fetching applications:', error);
+            // Error handling - strictly alert user, no mock data
+            // alert('Failed to load technical review applications. Please try again.'); 
         } finally {
             setLoading(false);
         }

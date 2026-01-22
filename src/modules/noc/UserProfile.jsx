@@ -31,6 +31,7 @@ const UserProfile = () => {
 
     const [companyDetails, setCompanyDetails] = useState(null);
     const [userDetails, setUserDetails] = useState(null);
+    const [profilePictureUrl, setProfilePictureUrl] = useState(null);
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -74,6 +75,51 @@ const UserProfile = () => {
         fetchProfile();
     }, []);
 
+    // Fetch profile picture with authentication
+    useEffect(() => {
+        let isMounted = true;
+
+        const loadProfilePicture = async () => {
+            if (userDetails?.profilePictureId) {
+                try {
+                    const token = localStorage.getItem('authToken');
+                    const imageUrl = nocApplicationService.getDocumentUrl(userDetails.profilePictureId);
+                    console.log('Fetching profile picture from:', imageUrl);
+                    console.log('Using token:', token ? 'Token present' : 'NO TOKEN');
+
+                    const response = await fetch(imageUrl, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    console.log('Response status:', response.status);
+
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const url = URL.createObjectURL(blob);
+                        if (isMounted) {
+                            setProfilePictureUrl(url);
+                            console.log('✓ Profile picture loaded successfully');
+                        }
+                    } else {
+                        console.error('Failed to load profile picture:', response.status, response.statusText);
+                    }
+                } catch (error) {
+                    console.error('Error loading profile picture:', error);
+                }
+            } else {
+                console.log('No profilePictureId found in userDetails');
+            }
+        };
+
+        loadProfilePicture();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [userDetails?.profilePictureId]);
+
     const handleInputChange = (section, field, value) => {
         setFormData(prev => {
             if (section) {
@@ -92,10 +138,34 @@ const UserProfile = () => {
         });
     };
 
-    const handlePhotoUpload = (e) => {
+    const handlePhotoUpload = async (e) => {
         const file = e.target.files[0];
         if (file) {
-            setFormData(prev => ({ ...prev, profilePhoto: file }));
+            try {
+                // Upload immediately
+                const result = await nocApplicationService.uploadProfilePicture(file);
+                if (result.success && result.data) {
+                    console.log('Profile picture uploaded:', result.data);
+
+                    // Use base64 from response if available (it already has data:image prefix)
+                    if (result.data.base64) {
+                        setProfilePictureUrl(result.data.base64);
+                        console.log('Set profile picture from base64 (already has prefix)');
+                    }
+
+                    // Update userDetails with the new profilePictureId directly from response
+                    const profilePictureId = result.data.profilePicture;
+                    setUserDetails(prev => ({
+                        ...prev,
+                        profilePictureId: profilePictureId
+                    }));
+
+                    alert('Profile picture updated successfully!');
+                }
+            } catch (error) {
+                console.error('Failed to upload profile picture:', error);
+                alert('Failed to upload profile picture. Please try again.');
+            }
         }
     };
 
@@ -161,15 +231,21 @@ const UserProfile = () => {
                                     color: '#1e3a8a',
                                     border: '2px solid #e5e7eb'
                                 }}>
-                                    {formData.profilePhoto ? (
+                                    {profilePictureUrl ? (
                                         <img
-                                            src={URL.createObjectURL(formData.profilePhoto)}
+                                            src={profilePictureUrl}
                                             alt="Profile"
                                             style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                                            onError={(e) => {
+                                                console.error('Image failed to load:', profilePictureUrl);
+                                                e.target.style.display = 'none';
+                                                e.target.nextSibling.style.display = 'flex';
+                                            }}
                                         />
-                                    ) : (
-                                        <span>{formData.firstName?.[0]}{formData.lastName?.[0]}</span>
-                                    )}
+                                    ) : null}
+                                    <span style={{ display: profilePictureUrl ? 'none' : 'flex' }}>
+                                        {formData.firstName?.[0]}{formData.lastName?.[0]}
+                                    </span>
                                 </div>
                                 <div>
                                     <div className="file-upload-wrapper">

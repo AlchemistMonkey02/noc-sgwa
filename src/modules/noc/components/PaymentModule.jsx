@@ -15,7 +15,94 @@ const PaymentModule = ({ formData, onPaymentComplete }) => {
     const [receiptData, setReceiptData] = useState(null);
 
     useEffect(() => {
-        // PRIORITY: Use API-calculated fee structure if available
+        // PRIORITY: Use API-calculated fee calculation if available (new format)
+        if (formData.feeCalculation) {
+            const feeCalc = formData.feeCalculation;
+            
+            setFees({
+                baseFee: feeCalc.subtotalAfterDiscount || feeCalc.subtotal || feeCalc.baseFee,
+                gstAmount: feeCalc.gst?.amount || 0,
+                totalAmount: feeCalc.totalAmount
+            });
+
+            // Construct breakdown for UI from new API format
+            const details = [];
+            
+            // Base Fee
+            if (feeCalc.baseFee) {
+                details.push({
+                    label: 'Base Application Fee',
+                    value: formatCurrency(feeCalc.baseFee),
+                    description: feeCalc.baseFee === 750 ? 'Renewal Application' : 'New Application'
+                });
+            }
+
+            // Abstraction Charge
+            if (feeCalc.abstractionCharge) {
+                const abs = feeCalc.abstractionCharge;
+                details.push({
+                    label: 'Water Abstraction Charge',
+                    value: formatCurrency(abs.charge || 0),
+                    description: `${abs.dailyRequirement || 0} KL/day × ₹${abs.rate || 0} × 365 days = ₹${abs.annualRequirement || 0}`
+                });
+            }
+
+            // Borewell Fee
+            if (feeCalc.borewellFee && feeCalc.borewellFee.numberOfBorewells > 0) {
+                const bw = feeCalc.borewellFee;
+                details.push({
+                    label: 'Borewell Fee',
+                    value: formatCurrency(bw.totalFee || 0),
+                    description: `${bw.numberOfBorewells || 0} borewells × ₹${bw.feePerBorewell || 0} = ₹${bw.totalFee || 0}`
+                });
+            }
+
+            // Subtotal
+            if (feeCalc.subtotal) {
+                details.push({
+                    label: 'Subtotal',
+                    value: formatCurrency(feeCalc.subtotal),
+                    isSubtotal: true
+                });
+            }
+
+            // MSME Discount
+            if (feeCalc.discount && feeCalc.discount.discountAmount > 0) {
+                const disc = feeCalc.discount;
+                details.push({
+                    label: `MSME Discount (${disc.discountPercentage || 0}%)`,
+                    value: `-${formatCurrency(disc.discountAmount)}`,
+                    description: disc.isMSME ? 'MSME discount applied' : ''
+                });
+                details.push({
+                    label: 'Subtotal After Discount',
+                    value: formatCurrency(feeCalc.subtotalAfterDiscount),
+                    isSubtotal: true
+                });
+            }
+
+            // GST
+            if (feeCalc.gst) {
+                details.push({
+                    label: `GST (${feeCalc.gst.rate || 18}%)`,
+                    value: formatCurrency(feeCalc.gst.amount || 0),
+                    isSubtotal: true
+                });
+            }
+
+            // Total
+            details.push({
+                label: 'Total Amount',
+                value: formatCurrency(feeCalc.totalAmount),
+                isTotal: true
+            });
+
+            setChargeBreakdown({ details });
+            setAdvancedCharges(null); // Use API data, not local calc
+            return;
+        }
+
+        // FALLBACK: Use old feeStructure format if available
         if (formData.feeStructure && formData.feeStructure.totalEstimated) {
             const structure = formData.feeStructure;
             const gst = formData.gstAmount || (structure.totalEstimated - structure.totalBaseFee);

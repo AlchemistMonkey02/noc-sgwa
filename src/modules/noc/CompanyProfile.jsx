@@ -108,64 +108,75 @@ const CompanyProfile = () => {
                     }
                 } catch (e) { console.error("Error fetching states", e); }
 
-                // 3. Fetch Existing Company Profile
+                // 3. Fetch User Profile to get Company ID
                 try {
-                    const profileRes = await nocApplicationService.getCompanyProfile();
-                    if (profileRes.success && profileRes.data) {
-                        const company = profileRes.data;
-                        console.log("Loaded existing company:", company);
+                    const userProfileRes = await nocApplicationService.getUserProfile();
+                    if (userProfileRes.success && userProfileRes.data) {
+                        const user = userProfileRes.data;
+                        console.log("User profile loaded:", user);
 
-                        // Populate Form
-                        setFormData(prev => ({
-                            ...prev,
-                            companyName: company.companyName || '',
-                            companyType: company.companyType || '',
-                            incorporationDate: company.incorporationDate ? company.incorporationDate.split('T')[0] : '', // Format date if exists
-                            gstNumber: company.gstNumber || '',
-                            panNumber: company.panNumber || '',
-                            commAddress: {
-                                line1: company.registeredAddress?.addressLine1 || '',
-                                line2: '', // Map if available
-                                state: company.registeredAddress?.state || '',
-                                district: company.registeredAddress?.district || '',
-                                subDistrict: '',
-                                pincode: company.registeredAddress?.pincode || ''
-                            },
-                            regAddress: { // Assuming same as registered for now or mapped correctly
-                                line1: company.registeredAddress?.addressLine1 || '',
-                                line2: '',
-                                state: company.registeredAddress?.state || '',
-                                district: company.registeredAddress?.district || '',
-                                subDistrict: '',
-                                pincode: company.registeredAddress?.pincode || ''
-                            },
-                            contact: {
-                                mobile: company.phone || '',
-                                email: company.email || '',
-                                landline: '',
-                                fax: ''
-                            },
-                            authPerson: {
-                                name: company.authorizedPerson?.name || '',
-                                designation: company.authorizedPerson?.designation || '',
-                                mobile: '', // Map if available
-                                email: '', // Map if available
-                                aadhaar: ''
-                            }
-                        }));
+                        // If user has a company ID, fetch company details
+                        if (user.company && user.company.id) {
+                            const companyId = user.company.id;
+                            const companyRes = await nocApplicationService.getCompanyById(companyId);
 
-                        // Ensure User Context has companyId (Auto-fix context)
-                        const userStr = localStorage.getItem('nocUser');
-                        if (userStr) {
-                            const user = JSON.parse(userStr);
-                            if (!user.companyId && company.id) {
-                                user.companyId = company.id;
-                                localStorage.setItem('nocUser', JSON.stringify(user));
+                            if (companyRes.success && companyRes.data) {
+                                const company = companyRes.data;
+                                console.log("Loaded existing company:", company);
+
+                                // Populate Form
+                                setFormData(prev => ({
+                                    ...prev,
+                                    companyName: company.companyName || '',
+                                    companyType: company.companyType || '',
+                                    incorporationDate: company.incorporationDate ? company.incorporationDate.split('T')[0] : '',
+                                    gstNumber: company.gstNumber || '',
+                                    panNumber: company.panNumber || '',
+                                    commAddress: {
+                                        line1: company.registeredAddress?.addressLine1 || '',
+                                        line2: '',
+                                        state: company.registeredAddress?.state || '',
+                                        district: company.registeredAddress?.district || '',
+                                        subDistrict: '',
+                                        pincode: company.registeredAddress?.pincode || ''
+                                    },
+                                    regAddress: {
+                                        line1: company.registeredAddress?.addressLine1 || '',
+                                        line2: '',
+                                        state: company.registeredAddress?.state || '',
+                                        district: company.registeredAddress?.district || '',
+                                        subDistrict: '',
+                                        pincode: company.registeredAddress?.pincode || ''
+                                    },
+                                    contact: {
+                                        mobile: company.phone || '',
+                                        email: company.email || '',
+                                        landline: '',
+                                        fax: ''
+                                    },
+                                    authPerson: {
+                                        name: company.authorizedPerson?.name || '',
+                                        designation: company.authorizedPerson?.designation || '',
+                                        mobile: '',
+                                        email: '',
+                                        aadhaar: ''
+                                    }
+                                }));
+
+                                // Ensure User Context has companyId
+                                const userStr = localStorage.getItem('nocUser');
+                                if (userStr) {
+                                    const localUser = JSON.parse(userStr);
+                                    if (!localUser.companyId && company.id) {
+                                        localUser.companyId = company.id;
+                                        localStorage.setItem('nocUser', JSON.stringify(localUser));
+                                    }
+                                }
                             }
                         }
                     }
                 } catch (err) {
-                    console.log("No existing company profile found (fresh start):", err);
+                    console.log("No existing company profile found or user not associated with company:", err);
                 }
 
             } catch (error) {
@@ -414,7 +425,7 @@ const CompanyProfile = () => {
                                         value={formData.panNumber}
                                         onChange={(e) => handleInputChange(null, 'panNumber', e.target.value)}
                                         required
-                                        placeholder="e.g. ABCDE1234F"
+                                        placeholder=" ABCDE1234F"
                                     />
                                 </div>
                             </div>

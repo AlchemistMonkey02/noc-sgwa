@@ -46,6 +46,11 @@ const NOCApplication = () => {
     const [blockCategory, setBlockCategory] = useState(null);
     const [exemptionStatus, setExemptionStatus] = useState(null);
     const [successData, setSuccessData] = useState(null);
+    const [applicationId, setApplicationId] = useState(null);
+    const [isSaving, setIsSaving] = useState(false);
+    
+    // Check if any structure has meter installed (needed early for useEffect dependencies)
+    const hasMeterInstalled = existingStructures.some(s => s.hasMeter === 'Yes');
 
     // Fetch Master Data on Mount
     useEffect(() => {
@@ -77,47 +82,35 @@ const NOCApplication = () => {
         };
         fetchMasterData();
     }, []);
-    // Auto-calculate fees when entering Step 8
+    // Auto-calculate fees when entering Step 7 (no meter) or Step 8 (with meter)
     useEffect(() => {
         const calculateAutoFee = async () => {
-            if (currentStep === 8) {
+            const shouldCalculate = (hasMeterInstalled && currentStep === 8) || (!hasMeterInstalled && currentStep === 7);
+            
+            if (shouldCalculate && applicationId && !formData.feeCalculation) {
                 console.log("Auto-calculating fees...");
                 try {
-                    // Set loading state locally if needed, or rely on isSaving
-                    // But avoiding isSaving to prevent global loader if not desired
-                    // For now using feeStructure check to show loading UI
-
-                    const feePayload = {
-                        // Map applicationType: If contains 'New', use 'NEW', else pass as is
-                        applicationType: formData.applicationType?.toUpperCase().includes('NEW') ? 'NEW' : (formData.applicationType?.toUpperCase() || 'NEW'),
-                        // Use blockCategory from state/formData, fallback to 'SAFE' if undefined
-                        blockCategory: (formData.blockCategory?.category || formData.assessmentUnit || 'SAFE').toUpperCase(),
-                        waterRequirement: parseFloat(formData.dailyWaterRequirement || 0),
-                        industryType: formData.industryType || 'MANUFACTURING',
-                        gstRate: 18,
-                        // Use baseAmount if provided in formData (e.g. from manual override), else default to 10000
-                        baseAmount: parseFloat(formData.baseAmount || 10000)
-                    };
-
-                    const result = await nocApplicationService.calculateFee(feePayload);
-                    if (result.success) {
-                        const feeData = result.data;
-                        const breakdown = feeData.breakdown || {};
-
+                    const result = await nocApplicationService.calculateFee({ applicationId, id: applicationId });
+                    if (result.success && result.data?.feeCalculation) {
+                        const feeCalc = result.data.feeCalculation;
                         setFormData(prev => ({
                             ...prev,
+                            feeCalculation: feeCalc,
                             feeStructure: {
-                                ...feeData,
-                                // Flatten breakdown for UI compatibility
-                                baseAmount: breakdown.baseAmount,
-                                ecCharges: breakdown.ecCharges,
-                                processingFee: breakdown.processingFee,
-                                totalBaseFee: breakdown.subTotal,
-                                totalEstimated: feeData.totalAmount
+                                baseFee: feeCalc.baseFee,
+                                abstractionCharge: feeCalc.abstractionCharge,
+                                borewellFee: feeCalc.borewellFee,
+                                subtotal: feeCalc.subtotal,
+                                discount: feeCalc.discount,
+                                subtotalAfterDiscount: feeCalc.subtotalAfterDiscount,
+                                gst: feeCalc.gst,
+                                totalAmount: feeCalc.totalAmount,
+                                validityPeriod: feeCalc.validityPeriod,
+                                breakdown: feeCalc.breakdown
                             },
-                            totalAmount: feeData.totalAmount,
-                            applicationFee: breakdown.subTotal,
-                            gstAmount: breakdown.gst
+                            applicationFee: feeCalc.subtotalAfterDiscount,
+                            gstAmount: feeCalc.gst?.amount || 0,
+                            totalAmount: feeCalc.totalAmount
                         }));
                     }
                 } catch (err) {
@@ -127,7 +120,7 @@ const NOCApplication = () => {
         };
 
         calculateAutoFee();
-    }, [currentStep, formData.dailyWaterRequirement, formData.industryType]);
+    }, [currentStep, applicationId, hasMeterInstalled, formData.feeCalculation]);
 
     useEffect(() => {
         // Check if user is logged in
@@ -257,6 +250,50 @@ const NOCApplication = () => {
         fetchFlowMeterDependencies();
     }, [formData.flowMeterDetails?.manufacturer]);
 
+    // Helper function to get display label from options
+    const getDisplayLabel = (value, options) => {
+        if (!value) return 'Not provided';
+        const option = options.find(opt => {
+            if (typeof opt === 'object') {
+                return opt.code === value || opt.label === value || opt.value === value || opt.name === value;
+            }
+            return opt === value;
+        });
+        if (option) {
+            return typeof option === 'object' ? (option.label || option.name || option.value || option.code) : option;
+        }
+        return value; // Return as-is if not found in options
+    };
+
+    // Helper function to format display value
+    const formatDisplayValue = (value) => {
+        if (value === null || value === undefined || value === '') return 'Not provided';
+        return value;
+    };
+
+    // Dynamic form steps based on meter installation
+    const dynamicFormSteps = hasMeterInstalled ? [
+        { id: 1, title: 'Basic Details', description: 'Application type, project details, and MSME status' },
+        { id: 2, title: 'Location Details', description: 'Project location, land use, and coordinates' },
+        { id: 3, title: 'Water Requirement', description: 'Detailed water requirement breakdown' },
+        { id: 4, title: 'GW Structures', description: 'Existing and proposed groundwater structures' },
+        { id: 5, title: 'Meter Details', description: 'Water meter specifications and details' },
+        { id: 6, title: 'Documents Checklist', description: 'Checklist of required documents' },
+        { id: 7, title: 'Upload Documents', description: 'Upload all required documents and certificates' },
+        { id: 8, title: 'Fee Calculation', description: 'Application fee calculation' },
+        { id: 9, title: 'Payment Receipt', description: 'Upload payment receipt' },
+        { id: 10, title: 'Summary', description: 'Review and submit your application' }
+    ] : [
+        { id: 1, title: 'Basic Details', description: 'Application type, project details, and MSME status' },
+        { id: 2, title: 'Location Details', description: 'Project location, land use, and coordinates' },
+        { id: 3, title: 'Water Requirement', description: 'Detailed water requirement breakdown' },
+        { id: 4, title: 'GW Structures', description: 'Existing and proposed groundwater structures' },
+        { id: 5, title: 'Documents Checklist', description: 'Checklist of required documents' },
+        { id: 6, title: 'Upload Documents', description: 'Upload all required documents and certificates' },
+        { id: 7, title: 'Fee Calculation', description: 'Application fee calculation' },
+        { id: 8, title: 'Payment Receipt', description: 'Upload payment receipt' },
+        { id: 9, title: 'Summary', description: 'Review and submit your application' }
+    ];
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -341,28 +378,74 @@ const NOCApplication = () => {
                 stepErrors = validateStep3(formData);
                 break;
             case 4:
-                stepErrors = validateStep4(formData);
+                // Groundwater Structures
+                stepErrors = validateStep4({ ...formData, existingStructures });
                 break;
             case 5:
-                stepErrors = validateStep5({ ...formData, existingStructures });
+                if (hasMeterInstalled) {
+                    // Meter Details validation when meter is installed
+                    if (!formData.flowMeterDetails?.manufacturer) {
+                        stepErrors.manufacturer = 'Manufacturer is required';
+                    }
+                    if (!formData.flowMeterDetails?.modelNumber) {
+                        stepErrors.modelNumber = 'Model number is required';
+                    }
+                } else {
+                    // Documents Checklist - No validation when meter not installed
+                }
                 break;
             case 6:
-                // Validate Technical Compliance (Flow Meter/Piezometer)
-                stepErrors = validateStep6(formData);
+                if (hasMeterInstalled) {
+                    // Documents Checklist - No validation
+                } else {
+                    // Document Upload when meter not installed
+                    stepErrors = {};
+                    const docErrors = {};
+                    documentTypes.filter(d => d.required).forEach(doc => {
+                        if (!formData.uploadedDocuments[doc.id]) {
+                            docErrors[doc.id] = 'Document is required';
+                        }
+                    });
+                    stepErrors = docErrors;
+                }
                 break;
             case 7:
-                // Step 7: Document Upload
-                stepErrors = {};
-                const docErrors = {};
-
-                // Check mandatory documents
-                documentTypes.filter(d => d.required).forEach(doc => {
-                    if (!formData.uploadedDocuments[doc.id]) {
-                        docErrors[doc.id] = 'Document is required';
+                if (hasMeterInstalled) {
+                    // Document Upload when meter installed
+                    stepErrors = {};
+                    const docErrors = {};
+                    documentTypes.filter(d => d.required).forEach(doc => {
+                        if (!formData.uploadedDocuments[doc.id]) {
+                            docErrors[doc.id] = 'Document is required';
+                        }
+                    });
+                    stepErrors = docErrors;
+                } else {
+                    // Fee Calculation - No validation
+                }
+                break;
+            case 8:
+                if (hasMeterInstalled) {
+                    // Fee Calculation - No validation needed
+                } else {
+                    // Payment Receipt when meter not installed
+                    if (!formData.uploadedDocuments.paymentReceipt) {
+                        stepErrors.paymentReceipt = 'Payment receipt is required';
                     }
-                });
-
-                stepErrors = docErrors;
+                }
+                break;
+            case 9:
+                if (hasMeterInstalled) {
+                    // Payment Receipt when meter installed
+                    if (!formData.uploadedDocuments.paymentReceipt) {
+                        stepErrors.paymentReceipt = 'Payment receipt is required';
+                    }
+                } else {
+                // Summary - No validation for step 9 without meter
+                }
+                break;
+            case 10:
+                // Summary when meter installed - No validation needed
                 break;
             default:
                 break;
@@ -371,12 +454,6 @@ const NOCApplication = () => {
         setErrors(stepErrors);
         return Object.keys(stepErrors).length === 0;
     };
-
-    // State for API integration
-    const [applicationId, setApplicationId] = useState(null);
-    const [isSaving, setIsSaving] = useState(false);
-
-    // ... (existing effects remain the same) ...
 
     const handleNext = async () => {
         if (!validateCurrentStep()) return;
@@ -456,18 +533,20 @@ const NOCApplication = () => {
                     }
                 };
 
-                // If we already have an ID, we update, else create
+                // If we already have an ID, update section1, else create draft then save section1
                 if (applicationId) {
-                    // SKIP API Update for Step 1 to avoid validation errors on re-visit
-                    // User requested to "pass it to api at last"
-                    console.log("Skipping Step 1 API update (Local transition only)");
-                    response = { success: true };
+                    // Update section1 with current form data
+                    response = await nocApplicationService.saveStep1(applicationId, apiPayload);
                 } else {
-                    response = await nocApplicationService.createApplication(apiPayload);
-                    if (response.data && response.data.applicationId) {
-                        setApplicationId(response.data.applicationId);
-                    } else if (response.applicationId) {
-                        setApplicationId(response.applicationId);
+                    // Create draft first
+                    response = await nocApplicationService.createApplication({});
+                    const newAppId = response.data?.applicationId || response.applicationId || response.data?.id || response.id;
+                    if (newAppId) {
+                        setApplicationId(newAppId);
+                        // Then save section1 with all the form data
+                        response = await nocApplicationService.saveStep1(newAppId, apiPayload);
+                    } else {
+                        throw new Error("Failed to create application draft - no applicationId returned");
                     }
                 }
 
@@ -505,81 +584,109 @@ const NOCApplication = () => {
             } else if (currentStep === 3) {
                 if (!applicationId) throw new Error("Application ID missing for Step 3");
 
+                // Save Step 3 (Domestic/Drinking) data
                 const step3Payload = {
                     drinkingDomesticUse: {
-                        numberOfWorkers: parseInt(formData.numberOfWorkers),
-                        numberOfResidents: parseInt(formData.numberOfResidents),
+                        numberOfWorkers: parseInt(formData.numberOfWorkers || 0),
+                        numberOfResidents: parseInt(formData.numberOfResidents || 0),
                         dailyRequirementPerPerson: formData.dailyRequirementPerPerson
                     }
                 };
+                await nocApplicationService.saveStep3(applicationId, step3Payload.drinkingDomesticUse);
 
-                response = await nocApplicationService.saveStep3(applicationId, step3Payload.drinkingDomesticUse);
+                const waterActivities = [];
+                if (parseFloat(formData.waterReqDomestic || 0) > 0) waterActivities.push({ activityType: "Domestic/Drinking", quantity: parseFloat(formData.waterReqDomestic || 0) });
+                if (parseFloat(formData.waterReqIndustrial || 0) > 0) waterActivities.push({ activityType: "Industrial Process", quantity: parseFloat(formData.waterReqIndustrial || 0) });
+                if (parseFloat(formData.waterReqGreenBelt || 0) > 0) waterActivities.push({ activityType: "Greenbelt/Horticulture", quantity: parseFloat(formData.waterReqGreenBelt || 0) });
+                if (parseFloat(formData.waterReqOther || 0) > 0) waterActivities.push({ activityType: "Other", quantity: parseFloat(formData.waterReqOther || 0) });
 
-            } else if (currentStep === 4) {
-                if (!applicationId) throw new Error("Application ID missing for Step 4");
-                // Map waterRequirementBreakup from formData (if it exists, or construct if flat)
-                // Assuming user fills a table that populates waterActivities array
-
+                // ALSO Save Step 4 (Water Breakup) data as it's now part of Step 3 UI
                 const step4Payload = {
-                    waterRequirementBreakup: formData.waterActivities || [], // Ensure this is populated
+                    waterRequirementBreakup: waterActivities.length > 0 ? waterActivities : (formData.waterActivities || []),
                     stpEtpDetails: {
-                        stpCapacity: parseFloat(formData.stpCapacity),
-                        etpCapacity: parseFloat(formData.etpCapacity),
-                        // derive installed booleans if capacity > 0
-                        stpInstalled: parseFloat(formData.stpCapacity) > 0,
-                        etpInstalled: parseFloat(formData.etpCapacity) > 0
+                        stpCapacity: parseFloat(formData.stpCapacity || 0),
+                        etpCapacity: parseFloat(formData.etpCapacity || 0),
+                        stpInstalled: parseFloat(formData.stpCapacity || 0) > 0,
+                        etpInstalled: parseFloat(formData.etpCapacity || 0) > 0
                     },
                     waterRequirement: {
                         purpose: formData.groundWaterUtilizationFor,
-                        dailyRequirement: parseFloat(formData.dailyWaterRequirement),
-                        annualRequirement: parseFloat(formData.annualWaterRequirement)
+                        dailyRequirement: parseFloat(formData.dailyWaterRequirement || 0),
+                        annualRequirement: parseFloat(formData.annualWaterRequirement || 0),
+                        freshWaterRequirement: parseFloat(formData.waterReqFreshRequirement || 0),
+                        recycledWater: parseFloat(formData.waterReqRecycled || 0)
                     }
                 };
-
                 response = await nocApplicationService.saveStep4(applicationId, step4Payload);
 
-            } else if (currentStep === 5) {
-                if (!applicationId) throw new Error("Application ID missing for Step 5");
+            } else if (currentStep === 4) {
+                // Step 4: Groundwater Structures (Maps to Backend Step 5)
+                if (!applicationId) throw new Error("Application ID missing for Step 4");
 
                 const structures = existingStructures.map(s => ({
-                    structureType: s.type.toUpperCase().replace(/\s/g, '_'), // Map 'Borewell' to 'BOREWELL'
+                    structureType: s.type ? s.type.toUpperCase().replace(/\s/g, '_') : 'BOREWELL',
                     category: 'EXISTING',
-                    depth: parseFloat(s.depth),
-                    diameter: parseFloat(s.diameter),
-                    dischargeCapacity: parseFloat(s.discharge),
-                    depthToWaterLevel: parseFloat(s.depthToWaterLevel),
-                    fittedWithMeter: s.hasMeter === 'Yes'
+                    depth: parseFloat(s.depth || 0),
+                    diameter: parseFloat(s.diameter || 0),
+                    dischargeCapacity: parseFloat(s.discharge || 0),
+                    depthToWaterLevel: parseFloat(s.depthToWaterLevel || 0),
+                    fittedWithMeter: s.hasMeter === 'Yes',
+                    yearOfConstruction: parseInt(s.yearOfConstruction || 0),
+                    pumpDetails: {
+                        pumpType: s.pumpType,
+                        capacity: parseFloat(s.pumpCapacity || 0)
+                    }
                 }));
-
-                // Add proposed properties if they were individual objects, but formData has counts.
-                // The API expects a list of structure objects. If proposed are just counts, 
-                // we might need to create dummy objects or the API might expect counts elsewhere.
-                // User input showed: "groundWaterStructures": [ { "category": "PROPOSED", ... } ]
-                // We'll map the proposed counts to 'PROPOSED' entries if we had details, 
-                // but since we only have counts, we might just send the existing ones + metadata?
-                // The user's curl example shows FULL details for Proposed. 
-                // The UI only asks for counts. This is a mismatch. 
-                // RECOMMENDATION: We will send EXISTING structures detailing. 
-                // For PROPOSED, if the UI only has counts, we might technically be missing data 
-                // required by the strict API example. 
-                // I will send the Existing structures list as the API payload example.
 
                 const step5Payload = {
                     groundWaterStructures: structures,
+                    proposedStructures: {
+                        borewells: parseInt(formData.proposedBorewells || 0),
+                        tubewells: parseInt(formData.proposedTubewells || 0),
+                        dugwells: parseInt(formData.proposedDugwells || 0),
+                        pumps: parseInt(formData.proposedPumps || 0)
+                    },
                     hydrogeology: {
-                        aquiferType: "UNCONFINED", // Default or add field
+                        aquiferType: "UNCONFINED",
                         waterQualityType: formData.waterQualityType === 'Potable' ? 'POTABLE' : 'SALINE'
                     }
                 };
 
                 response = await nocApplicationService.saveStep5(applicationId, step5Payload);
 
-            } else if (currentStep === 7) {
-                if (!applicationId) throw new Error("Application ID missing for Step 7");
+            } else if (currentStep === 5 && hasMeterInstalled) {
+                // Step 5: Meter Details (only when meter is installed) - Save to flow-meter endpoint
+                if (!applicationId) throw new Error("Application ID missing for Step 5");
+
+                const meterPayload = {
+                    digitalFlowMeter: {
+                        meterType: formData.flowMeterDetails?.meterType || 'DIGITAL_FLOW_METER_WITH_TELEMETRY',
+                        manufacturer: formData.flowMeterDetails?.manufacturer,
+                        modelNumber: formData.flowMeterDetails?.modelNumber,
+                        serialNumber: formData.flowMeterDetails?.serialNumber,
+                        bisStandards: formData.flowMeterDetails?.bisStandard ? [formData.flowMeterDetails.bisStandard] : [],
+                        calibrationDate: formData.flowMeterDetails?.calibrationDate || new Date().toISOString().split('T')[0],
+                        telemetry: {
+                            enabled: formData.flowMeterDetails?.telemetryEnabled === 'Yes',
+                            serviceProvider: formData.flowMeterDetails?.telemetryProvider,
+                            proposedInstallationDate: formData.flowMeterDetails?.installationProposedDate
+                        }
+                    }
+                };
+
+                response = await nocApplicationService.saveFlowMeter(applicationId, meterPayload);
+
+            } else if (currentStep === 5) {
+                // Step 5: Documents Checklist - No API call, just local transition
+                response = { success: true };
+
+            } else if (currentStep === 6) {
+                // Step 6: Upload Documents (Maps to Backend Step 7)
+                if (!applicationId) throw new Error("Application ID missing for Step 6");
 
                 const documentsList = Object.entries(formData.uploadedDocuments).map(([key, file]) => ({
                     documentType: key.toUpperCase(),
-                    documentId: 'doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5), // Mock ID
+                    documentId: 'doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
                     fileName: file.name
                 }));
 
@@ -589,6 +696,89 @@ const NOCApplication = () => {
                 };
 
                 response = await nocApplicationService.saveStep7(applicationId, step7Payload);
+
+            } else if (currentStep === 7) {
+                // Step 7: Conditional logic based on meter installation
+                if (!applicationId) throw new Error("Application ID missing for Step 7");
+
+                if (hasMeterInstalled) {
+                    // If meter installed: Step 7 is Upload Documents
+                    const documentsList = Object.entries(formData.uploadedDocuments).map(([key, file]) => ({
+                        documentType: key.toUpperCase(),
+                        documentId: 'doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                        fileName: file.name
+                    }));
+
+                    const step7Payload = {
+                        documents: documentsList,
+                        documentsReviewed: true
+                    };
+                    response = await nocApplicationService.saveStep7(applicationId, step7Payload);
+                } else {
+                    // If no meter: Step 7 is Fee Calculation
+                    response = await nocApplicationService.calculateFee({ applicationId, id: applicationId });
+                    if (response.success && response.data?.feeCalculation) {
+                        const feeCalc = response.data.feeCalculation;
+                        setFormData(prev => ({
+                            ...prev,
+                            feeCalculation: feeCalc,
+                            feeStructure: {
+                                baseFee: feeCalc.baseFee,
+                                abstractionCharge: feeCalc.abstractionCharge,
+                                borewellFee: feeCalc.borewellFee,
+                                subtotal: feeCalc.subtotal,
+                                discount: feeCalc.discount,
+                                subtotalAfterDiscount: feeCalc.subtotalAfterDiscount,
+                                gst: feeCalc.gst,
+                                totalAmount: feeCalc.totalAmount,
+                                validityPeriod: feeCalc.validityPeriod,
+                                breakdown: feeCalc.breakdown
+                            },
+                            applicationFee: feeCalc.subtotalAfterDiscount,
+                            gstAmount: feeCalc.gst?.amount || 0,
+                            totalAmount: feeCalc.totalAmount
+                        }));
+                    }
+                }
+
+            } else if (currentStep === 8) {
+                // Step 8: Conditional logic based on meter installation
+                if (!applicationId) throw new Error("Application ID missing for Step 8");
+
+                if (hasMeterInstalled) {
+                    // If meter installed: Step 8 is Fee Calculation
+                    response = await nocApplicationService.calculateFee({ applicationId, id: applicationId });
+                    if (response.success && response.data?.feeCalculation) {
+                        const feeCalc = response.data.feeCalculation;
+                        setFormData(prev => ({
+                            ...prev,
+                            feeCalculation: feeCalc,
+                            feeStructure: {
+                                baseFee: feeCalc.baseFee,
+                                abstractionCharge: feeCalc.abstractionCharge,
+                                borewellFee: feeCalc.borewellFee,
+                                subtotal: feeCalc.subtotal,
+                                discount: feeCalc.discount,
+                                subtotalAfterDiscount: feeCalc.subtotalAfterDiscount,
+                                gst: feeCalc.gst,
+                                totalAmount: feeCalc.totalAmount,
+                                validityPeriod: feeCalc.validityPeriod,
+                                breakdown: feeCalc.breakdown
+                            },
+                            applicationFee: feeCalc.subtotalAfterDiscount,
+                            gstAmount: feeCalc.gst?.amount || 0,
+                            totalAmount: feeCalc.totalAmount
+                        }));
+                    }
+                } else {
+                    // If no meter: Step 8 is Payment Receipt upload (no API call needed, just transition)
+                    response = { success: true };
+                }
+
+            } else if (currentStep === 9) {
+                // Step 9: Payment Receipt (when meter installed) or Summary (when no meter)
+                // No API call needed, just transition
+                response = { success: true };
             }
 
             // If successful, move next
@@ -796,7 +986,7 @@ const NOCApplication = () => {
 
                     {/* Progress Steps */}
                     <ProgressSteps
-                        steps={formSteps}
+                        steps={dynamicFormSteps}
                         currentStep={currentStep}
                         onStepClick={handleStepClick}
                     />
@@ -1562,164 +1752,191 @@ const NOCApplication = () => {
                                     </select>
                                     {errors.geology && <span className="bhuneer-error">{errors.geology}</span>}
                                 </div>
+
+                                {/* Land Use Details Section - Added functionality */}
+                                <div style={{ marginTop: '20px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
+                                    <h4 style={{ marginBottom: '15px', color: 'var(--primary-color)' }}>Land Use Details (sq.m)</h4>
+                                    <div className="noc-form-row three-col">
+                                        <div className="noc-form-group">
+                                            <label className="bhuneer-label">Total Land Area</label>
+                                            <input
+                                                type="number"
+                                                name="landUseTotalArea"
+                                                className="bhuneer-input"
+                                                value={formData.landUseTotalArea}
+                                                onChange={handleChange}
+                                                placeholder="Total Area"
+                                                min="0"
+                                            />
+                                        </div>
+                                        <div className="noc-form-group">
+                                            <label className="bhuneer-label">Rooftop Area</label>
+                                            <input
+                                                type="number"
+                                                name="landUseRooftopArea"
+                                                className="bhuneer-input"
+                                                value={formData.landUseRooftopArea}
+                                                onChange={handleChange}
+                                                placeholder="Rooftop Area"
+                                                min="0"
+                                            />
+                                        </div>
+                                        <div className="noc-form-group">
+                                            <label className="bhuneer-label">Paved Area</label>
+                                            <input
+                                                type="number"
+                                                name="landUsePavedArea"
+                                                className="bhuneer-input"
+                                                value={formData.landUsePavedArea}
+                                                onChange={handleChange}
+                                                placeholder="Paved Area"
+                                                min="0"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="noc-form-row two-col">
+                                        <div className="noc-form-group">
+                                            <label className="bhuneer-label">Green Belt Area</label>
+                                            <input
+                                                type="number"
+                                                name="landUseGreenBeltArea"
+                                                className="bhuneer-input"
+                                                value={formData.landUseGreenBeltArea}
+                                                onChange={handleChange}
+                                                placeholder="Green Belt Area"
+                                                min="0"
+                                            />
+                                        </div>
+                                        <div className="noc-form-group">
+                                            <label className="bhuneer-label">Open Area</label>
+                                            <input
+                                                type="number"
+                                                name="landUseOpenArea"
+                                                className="bhuneer-input"
+                                                value={formData.landUseOpenArea}
+                                                onChange={handleChange}
+                                                placeholder="Open Area"
+                                                min="0"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         )}
 
-                        {/* Step 3: Drinking & Domestic */}
+                        {/* Step 3: Water Requirement Details (Consolidated) */}
                         {currentStep === 3 && (
                             <div>
-                                <h3 className="form-section-header">Drinking & Domestic Water Requirements</h3>
+                                <h3 className="form-section-header">Water Requirement Details (m³/day)</h3>
 
+                                <div className="bhuneer-info-box">
+                                    <p>Please provide the daily water requirement details for the project.</p>
+                                </div>
+
+                                <h4 style={{ color: 'var(--primary-color)', margin: '15px 0' }}>Total Requirement</h4>
+                                <div className="noc-form-row three-col">
+                                    <div className="noc-form-group">
+                                        <label className="bhuneer-label required">Fresh Water Requirement</label>
+                                        <input
+                                            type="number"
+                                            name="waterReqFreshRequirement"
+                                            className="bhuneer-input"
+                                            value={formData.waterReqFreshRequirement}
+                                            onChange={handleChange}
+                                            placeholder="Fresh Water"
+                                            min="0"
+                                        />
+                                    </div>
+                                    <div className="noc-form-group">
+                                        <label className="bhuneer-label">Recycled Water Used</label>
+                                        <input
+                                            type="number"
+                                            name="waterReqRecycled"
+                                            className="bhuneer-input"
+                                            value={formData.waterReqRecycled}
+                                            onChange={handleChange}
+                                            placeholder="Recycled Water"
+                                            min="0"
+                                        />
+                                    </div>
+                                    <div className="noc-form-group">
+                                        <label className="bhuneer-label">Total Requirement</label>
+                                        <input
+                                            type="number"
+                                            className="bhuneer-input"
+                                            value={(parseFloat(formData.waterReqFreshRequirement || 0) + parseFloat(formData.waterReqRecycled || 0)).toFixed(2)}
+                                            readOnly
+                                            disabled
+                                            style={{ backgroundColor: '#f0f0f0' }}
+                                        />
+                                        <span className="noc-form-help">Auto-calculated (Fresh + Recycled)</span>
+                                    </div>
+                                </div>
+
+                                <h4 style={{ color: 'var(--primary-color)', margin: '20px 0 15px 0' }}>Requirement Breakdown (Usage)</h4>
                                 <div className="noc-form-row two-col">
                                     <div className="noc-form-group">
-                                        <label className="bhuneer-label">Number of Workers</label>
+                                        <label className="bhuneer-label">Domestic Use</label>
                                         <input
                                             type="number"
-                                            name="numberOfWorkers"
+                                            name="waterReqDomestic"
                                             className="bhuneer-input"
-                                            value={formData.numberOfWorkers}
+                                            value={formData.waterReqDomestic}
                                             onChange={handleChange}
+                                            placeholder="Domestic"
                                             min="0"
-                                            placeholder="Total workers"
                                         />
                                     </div>
                                     <div className="noc-form-group">
-                                        <label className="bhuneer-label">Number of Residents</label>
+                                        <label className="bhuneer-label">Industrial Use</label>
                                         <input
                                             type="number"
-                                            name="numberOfResidents"
+                                            name="waterReqIndustrial"
                                             className="bhuneer-input"
-                                            value={formData.numberOfResidents}
+                                            value={formData.waterReqIndustrial}
                                             onChange={handleChange}
+                                            placeholder="Industrial"
                                             min="0"
-                                            placeholder="Total residents (if any)"
                                         />
                                     </div>
                                 </div>
-
-                                <div className="noc-form-group">
-                                    <label className="bhuneer-label">Daily Requirement per Person (Liters)</label>
-                                    <input
-                                        type="number"
-                                        className="bhuneer-input"
-                                        value={135}
-                                        readOnly
-                                        disabled
-                                        style={{ backgroundColor: '#f9f9f9', cursor: 'not-allowed' }}
-                                    />
-                                    <span className="noc-form-help">Standard value as per CGWA norms (135 LPCD)</span>
-                                </div>
-
-                                {/* Calculated Totals */}
-                                <div className="bhuneer-info-box" style={{ marginTop: '20px' }}>
-                                    <h4>📊 Estimated Domestic Requirement</h4>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '10px' }}>
-                                        <div>
-                                            <strong>Daily Total:</strong>
-                                            <div style={{ fontSize: '1.2rem', color: 'var(--cgwa-primary)', fontWeight: 'bold' }}>
-                                                {((parseInt(formData.numberOfWorkers || 0) + parseInt(formData.numberOfResidents || 0)) * 0.135).toFixed(2)} m³/day
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <strong>Annual Total:</strong>
-                                            <div style={{ fontSize: '1.2rem', color: 'var(--cgwa-primary)', fontWeight: 'bold' }}>
-                                                {((parseInt(formData.numberOfWorkers || 0) + parseInt(formData.numberOfResidents || 0)) * 0.135 * 365).toFixed(2)} m³/year
-                                            </div>
-                                        </div>
+                                <div className="noc-form-row two-col">
+                                    <div className="noc-form-group">
+                                        <label className="bhuneer-label">Green Belt / Horticulture</label>
+                                        <input
+                                            type="number"
+                                            name="waterReqGreenBelt"
+                                            className="bhuneer-input"
+                                            value={formData.waterReqGreenBelt}
+                                            onChange={handleChange}
+                                            placeholder="Green Belt"
+                                            min="0"
+                                        />
                                     </div>
-                                    <p style={{ marginTop: '10px', fontSize: '0.85rem', color: '#666' }}>
-                                        Note: This is an estimation. Please update the Water Requirement step if your actual requirement differs.
-                                    </p>
+                                    <div className="noc-form-group">
+                                        <label className="bhuneer-label">Other Uses</label>
+                                        <input
+                                            type="number"
+                                            name="waterReqOther"
+                                            className="bhuneer-input"
+                                            value={formData.waterReqOther}
+                                            onChange={handleChange}
+                                            placeholder="Others"
+                                            min="0"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* Step 4: Water Requirement Details (Moved from Step 3) */}
+                        {/* Step 4: Groundwater Structures (Moved from Step 5 & Enhanced) */}
                         {currentStep === 4 && (
                             <div>
-                                <h3 className="form-section-header">Water Requirement Details</h3>
-
-                                <div className="noc-form-row two-col">
-                                    <div className="noc-form-group">
-                                        <label className="bhuneer-label required">Daily Water Requirement (m³/day)</label>
-                                        <input
-                                            type="number"
-                                            name="dailyWaterRequirement"
-                                            className={`bhuneer-input ${errors.dailyWaterRequirement ? 'error' : ''}`}
-                                            value={formData.dailyWaterRequirement}
-                                            onChange={handleChange}
-                                            placeholder="Enter daily requirement"
-                                            min="0"
-                                            step="0.01"
-                                        />
-                                        {errors.dailyWaterRequirement && <span className="bhuneer-error">{errors.dailyWaterRequirement}</span>}
-                                    </div>
-
-                                    <div className="noc-form-group">
-                                        <label className="bhuneer-label required">Annual Water Requirement (m³/year)</label>
-                                        <input
-                                            type="number"
-                                            name="annualWaterRequirement"
-                                            className={`bhuneer-input ${errors.annualWaterRequirement ? 'error' : ''}`}
-                                            value={formData.annualWaterRequirement}
-                                            onChange={handleChange}
-                                            placeholder="Enter annual requirement"
-                                            min="0"
-                                            step="0.01"
-                                        />
-                                        {errors.annualWaterRequirement && <span className="bhuneer-error">{errors.annualWaterRequirement}</span>}
-                                    </div>
-                                </div>
-
-                                <div className="noc-form-row two-col">
-                                    <div className="noc-form-group">
-                                        <label className="bhuneer-label">Water Required for Greenbelt (m³/day)</label>
-                                        <input
-                                            type="number"
-                                            name="waterRequiredForGreenbelt"
-                                            className="bhuneer-input"
-                                            value={formData.waterRequiredForGreenbelt}
-                                            onChange={handleChange}
-                                            placeholder="Enter greenbelt requirement"
-                                            min="0"
-                                            step="0.01"
-                                        />
-                                    </div>
-
-                                    <div className="noc-form-group">
-                                        <label className="bhuneer-label">Green Belt Area (sq. m)</label>
-                                        <input
-                                            type="number"
-                                            name="greenbeltArea"
-                                            className="bhuneer-input"
-                                            value={formData.greenbeltArea}
-                                            onChange={handleChange}
-                                            placeholder="Enter greenbelt area"
-                                            min="0"
-                                            step="0.01"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="noc-form-group">
-                                    <label className="bhuneer-label">Wetland Areas Name (if any)</label>
-                                    <input
-                                        type="text"
-                                        name="wetlandAreasName"
-                                        className="bhuneer-input"
-                                        value={formData.wetlandAreasName}
-                                        onChange={handleChange}
-                                        placeholder="Enter wetland areas name if applicable"
-                                    />
-                                    <span className="noc-form-help">Leave blank if project is not near any wetland area</span>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Step 5: Groundwater Structures (Moved from Step 4) */}
-                        {currentStep === 5 && (
-                            <div>
                                 <h3 className="form-section-header">Groundwater Abstraction Structures</h3>
+
+                                <div className="bhuneer-info-box">
+                                    <p>Please provide details of all existing and proposed groundwater abstraction structures.</p>
+                                </div>
 
                                 {/* Existing Structures */}
                                 <div className="noc-card" style={{ marginBottom: '30px' }}>
@@ -1741,9 +1958,9 @@ const NOCApplication = () => {
                                             </p>
                                         ) : (
                                             existingStructures.map((structure, index) => (
-                                                <div key={structure.id} style={{ marginBottom: '20px', padding: '20px', border: '1px solid var(--cgwa-border-light)', borderRadius: '4px' }}>
+                                                <div key={structure.id} style={{ marginBottom: '20px', padding: '20px', border: '1px solid var(--cgwa-border-light)', borderRadius: '4px', backgroundColor: '#fafafa' }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
-                                                        <h4 style={{ margin: 0 }}>Structure #{index + 1}</h4>
+                                                        <h4 style={{ margin: 0, color: 'var(--primary-color)' }}>Structure #{index + 1}</h4>
                                                         <button
                                                             type="button"
                                                             onClick={() => removeExistingStructure(structure.id)}
@@ -1756,7 +1973,7 @@ const NOCApplication = () => {
 
                                                     <div className="noc-form-row three-col">
                                                         <div className="noc-form-group">
-                                                            <label className="bhuneer-label">Type of Structure</label>
+                                                            <label className="bhuneer-label required">Type of Structure</label>
                                                             <select
                                                                 className="bhuneer-input"
                                                                 value={structure.type}
@@ -1789,47 +2006,49 @@ const NOCApplication = () => {
                                                                 className="bhuneer-input"
                                                                 value={structure.depth}
                                                                 onChange={(e) => updateExistingStructure(structure.id, 'depth', e.target.value)}
-                                                                placeholder="Depth in meters"
+                                                                placeholder="Depth"
                                                                 min="0"
                                                                 step="0.01"
                                                             />
                                                         </div>
                                                     </div>
 
+                                                    {/* Pump Details */}
                                                     <div className="noc-form-row three-col">
                                                         <div className="noc-form-group">
-                                                            <label className="bhuneer-label">Diameter (mm)</label>
+                                                            <label className="bhuneer-label">Pump Type</label>
+                                                            <select
+                                                                className="bhuneer-input"
+                                                                value={structure.pumpType || ''}
+                                                                onChange={(e) => updateExistingStructure(structure.id, 'pumpType', e.target.value)}
+                                                            >
+                                                                <option value="">Select Pump Type</option>
+                                                                <option value="Submersible">Submersible</option>
+                                                                <option value="Centrifugal">Centrifugal</option>
+                                                                <option value="Jet">Jet Pump</option>
+                                                                <option value="Turbine">Turbine Pump</option>
+                                                            </select>
+                                                        </div>
+                                                        <div className="noc-form-group">
+                                                            <label className="bhuneer-label">Pump Capacity (HP)</label>
                                                             <input
                                                                 type="number"
                                                                 className="bhuneer-input"
-                                                                value={structure.diameter}
-                                                                onChange={(e) => updateExistingStructure(structure.id, 'diameter', e.target.value)}
-                                                                placeholder="Diameter in mm"
+                                                                value={structure.pumpCapacity}
+                                                                onChange={(e) => updateExistingStructure(structure.id, 'pumpCapacity', e.target.value)}
+                                                                placeholder="HP"
                                                                 min="0"
+                                                                step="0.5"
                                                             />
                                                         </div>
-
                                                         <div className="noc-form-group">
-                                                            <label className="bhuneer-label">Depth to Water Level (m)</label>
-                                                            <input
-                                                                type="number"
-                                                                className="bhuneer-input"
-                                                                value={structure.depthToWaterLevel}
-                                                                onChange={(e) => updateExistingStructure(structure.id, 'depthToWaterLevel', e.target.value)}
-                                                                placeholder="Meters below ground"
-                                                                min="0"
-                                                                step="0.01"
-                                                            />
-                                                        </div>
-
-                                                        <div className="noc-form-group">
-                                                            <label className="bhuneer-label">Discharge (m³/hour)</label>
+                                                            <label className="bhuneer-label">Discharge Rate (m³/hr)</label>
                                                             <input
                                                                 type="number"
                                                                 className="bhuneer-input"
                                                                 value={structure.discharge}
                                                                 onChange={(e) => updateExistingStructure(structure.id, 'discharge', e.target.value)}
-                                                                placeholder="Discharge rate"
+                                                                placeholder="Discharge"
                                                                 min="0"
                                                                 step="0.01"
                                                             />
@@ -1839,7 +2058,7 @@ const NOCApplication = () => {
                                                     <div className="noc-form-group">
                                                         <label className="bhuneer-label">Water Meter Fitted?</label>
                                                         <div className="noc-radio-group" style={{ flexDirection: 'row', gap: '20px' }}>
-                                                            <div className="noc-radio-item">
+                                                            <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
                                                                 <input
                                                                     type="radio"
                                                                     name={`hasMeter_${structure.id}`}
@@ -1847,9 +2066,9 @@ const NOCApplication = () => {
                                                                     checked={structure.hasMeter === 'Yes'}
                                                                     onChange={(e) => updateExistingStructure(structure.id, 'hasMeter', e.target.value)}
                                                                 />
-                                                                <label>Yes</label>
-                                                            </div>
-                                                            <div className="noc-radio-item">
+                                                                Yes
+                                                            </label>
+                                                            <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
                                                                 <input
                                                                     type="radio"
                                                                     name={`hasMeter_${structure.id}`}
@@ -1857,8 +2076,8 @@ const NOCApplication = () => {
                                                                     checked={structure.hasMeter === 'No'}
                                                                     onChange={(e) => updateExistingStructure(structure.id, 'hasMeter', e.target.value)}
                                                                 />
-                                                                <label>No</label>
-                                                            </div>
+                                                                No
+                                                            </label>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1901,33 +2120,6 @@ const NOCApplication = () => {
                                                     min="0"
                                                 />
                                             </div>
-
-                                            <div className="noc-form-group">
-                                                <label className="bhuneer-label">Number of Dugwells</label>
-                                                <input
-                                                    type="number"
-                                                    name="proposedDugwells"
-                                                    className="bhuneer-input"
-                                                    value={formData.proposedDugwells}
-                                                    onChange={handleChange}
-                                                    min="0"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="noc-form-row three-col">
-                                            <div className="noc-form-group">
-                                                <label className="bhuneer-label">Number of Dug cum Borewells</label>
-                                                <input
-                                                    type="number"
-                                                    name="proposedDugCumBorewells"
-                                                    className="bhuneer-input"
-                                                    value={formData.proposedDugCumBorewells}
-                                                    onChange={handleChange}
-                                                    min="0"
-                                                />
-                                            </div>
-
                                             <div className="noc-form-group">
                                                 <label className="bhuneer-label">Number of Pumps</label>
                                                 <input
@@ -1945,8 +2137,31 @@ const NOCApplication = () => {
                             </div>
                         )}
 
-                        {/* Step 6: Documents Required (NEW - Checklist) */}
-                        {currentStep === 6 && (
+
+
+                        {/* Step 5: Conditional - Meter Details OR Documents Checklist */}
+                        {currentStep === 5 && hasMeterInstalled && (
+                            <div>
+                                <h3 className="form-section-header">💧 Water Meter Details</h3>
+
+                                <div className="bhuneer-info-box" style={{ marginBottom: '30px' }}>
+                                    <p><strong>Note:</strong> Since you have indicated that meters are installed on your groundwater structures, please provide the meter specifications below.</p>
+                                </div>
+
+                                <FlowMeterCompliance
+                                    formData={formData}
+                                    onUpdate={(data) => setFormData(prev => ({ ...prev, ...data }))}
+                                    manufacturers={meterManufacturers}
+                                    meterModels={meterModels}
+                                    telemetryProviders={telemetryProviders}
+                                    bisStandards={bisStandards}
+                                    meterTypes={meterTypes}
+                                    meterSerialNumbers={meterSerialNumbers}
+                                />
+                            </div>
+                        )}
+
+                        {currentStep === 5 && !hasMeterInstalled && (
                             <div>
                                 <h3 className="form-section-header">📋 Documents Required for Your Application</h3>
 
@@ -2069,62 +2284,97 @@ const NOCApplication = () => {
                             </div>
                         )}
 
-                        {/* Step 7: Upload Documents */}
-                        {currentStep === 7 && (
+                        {/* Step 6/6: Conditional - Documents Checklist OR Upload Documents */}
+                        {currentStep === 6 && hasMeterInstalled && (
                             <div>
-                                <h3 className="form-section-header">Upload Documents</h3>
+                                <h3 className="form-section-header">📋 Documents Required for Your Application</h3>
 
-                                <div className="noc-alert noc-alert-info" style={{ marginBottom: '30px' }}>
-                                    <strong>â„¹ï¸ Compliance Requirements:</strong>
-                                    <p style={{ margin: '10px 0 0 0' }}>
-                                        As per SGWA regulations, all NOC holders must comply with technical requirements including piezometer installation (if applicable) and digital flow meter with telemetry.
-                                    </p>
+                                <div className="bhuneer-info-box" style={{ marginBottom: '30px' }}>
+                                    <h4 style={{ fontSize: '18px', marginBottom: '15px' }}>✅ Document Checklist</h4>
+                                    <p>Please ensure you have the following documents ready before proceeding to the upload step. All documents should be in PDF, JPG, or PNG format (max 5MB per file).</p>
                                 </div>
 
-                                {/* Piezometer Requirements */}
-                                <div style={{ marginBottom: '40px' }}>
-                                    <h4 style={{
-                                        padding: '12px 20px',
-                                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                        color: 'white',
-                                        borderRadius: '8px',
-                                        marginBottom: '20px'
-                                    }}>
-                                        1. Piezometer Requirements (Annexure-2)
-                                    </h4>
-                                    <PiezometerRequirements
-                                        formData={formData}
-                                        onUpdate={(data) => setFormData(prev => ({ ...prev, ...data }))}
-                                    />
-                                </div>
-
-                                {/* Flow Meter Compliance */}
-                                <div>
-                                    <h4 style={{
-                                        padding: '12px 20px',
-                                        background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                                        color: 'white',
-                                        borderRadius: '8px',
-                                        marginBottom: '20px'
-                                    }}>
-                                        2. Digital Flow Meter (MANDATORY for ALL)
-                                    </h4>
-                                    <FlowMeterCompliance
-                                        formData={formData}
-                                        onUpdate={(data) => setFormData(prev => ({ ...prev, ...data }))}
-                                        manufacturers={meterManufacturers}
-                                        meterModels={meterModels}
-                                        telemetryProviders={telemetryProviders}
-                                        bisStandards={bisStandards}
-                                        meterTypes={meterTypes}
-                                        meterSerialNumbers={meterSerialNumbers}
-                                    />
+                                {/* Copy documents checklist content from current Step 5 */}
+                                <div style={{ marginBottom: '30px' }}>
+                                    <h4 style={{ color: 'var(--primary-color)', marginBottom: '15px' }}>📄 Mandatory Documents</h4>
+                                    <div style={{ display: 'grid', gap: '15px' }}>
+                                        {documentTypes.filter(d => d.required).map(doc => (
+                                            <div key={doc.id} style={{
+                                                padding: '15px',
+                                                border: '2px solid var(--cgwa-border-light)',
+                                                borderRadius: '8px',
+                                                background: '#fafafa'
+                                            }}>
+                                                <div style={{ display: 'flex', alignItems: 'start', gap: '10px' }}>
+                                                    <span style={{ fontSize: '24px' }}>✅</span>
+                                                    <div>
+                                                        <h5 style={{ margin: '0 0 5px 0', color: 'var(--primary-color)' }}>
+                                                            {doc.name}
+                                                        </h5>
+                                                        <p style={{ margin: 0, color: '#6c757d', fontSize: '14px' }}>
+                                                            {doc.description}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* Step 7: Document Upload */}
-                        {currentStep === 7 && (
+                        {currentStep === 6 && !hasMeterInstalled && (
+                            <div>
+                                <h3 className="form-section-header">Upload Documents</h3>
+
+                                <div className="noc-alert noc-alert-info" style={{ marginBottom: '20px' }}>
+                                    <strong>Note:</strong> Please upload all required documents in PDF, JPEG, or PNG format. Maximum file size: 5MB per document.
+                                </div>
+
+                                {documentTypes.map(doc => (
+                                    <div key={doc.id} className="noc-card" style={{ marginBottom: '20px' }}>
+                                        <div className="noc-card-header">
+                                            {doc.name} {doc.required && <span style={{ color: 'var(--cgwa-danger)' }}>*</span>}
+                                        </div>
+                                        <div className="noc-card-body">
+                                            <p style={{ marginBottom: '15px', color: 'var(--cgwa-text-secondary)' }}>
+                                                {doc.description}
+                                            </p>
+
+                                            <div className="noc-file-upload">
+                                                <input
+                                                    type="file"
+                                                    id={`file_${doc.id}`}
+                                                    accept=".pdf,.jpg,.jpeg,.png"
+                                                    onChange={(e) => {
+                                                        if (e.target.files[0]) {
+                                                            handleFileUpload(doc.id, e.target.files[0]);
+                                                        }
+                                                    }}
+                                                />
+                                                <label htmlFor={`file_${doc.id}`} style={{ cursor: 'pointer' }}>
+                                                    <div className="noc-file-upload-icon">📎</div>
+                                                    <div className="noc-file-upload-text">
+                                                        {formData.uploadedDocuments[doc.id] ? (
+                                                            <span style={{ color: 'var(--cgwa-success)', fontWeight: '600' }}>
+                                                                ✓ {formData.uploadedDocuments[doc.id].name}
+                                                            </span>
+                                                        ) : (
+                                                            <span>Click to upload or drag and drop</span>
+                                                        )}
+                                                    </div>
+                                                </label>
+                                            </div>
+
+                                            {errors[doc.id] && <span className="bhuneer-error">{errors[doc.id]}</span>}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Step 7/7: Conditional - Upload Documents OR Fee Calculation */}
+                        {currentStep === 7 && hasMeterInstalled && (
                             <div>
                                 <h3 className="form-section-header">Document Upload</h3>
 
@@ -2174,8 +2424,7 @@ const NOCApplication = () => {
                             </div>
                         )}
 
-                        {/* Step 8: Fee Calculation */}
-                        {currentStep === 8 && (
+                        {currentStep === 7 && !hasMeterInstalled && (
                             <div>
                                 <h3 className="form-section-header">Application Fee Calculation</h3>
 
@@ -2186,7 +2435,7 @@ const NOCApplication = () => {
                                     <h4>Fee Estimator</h4>
                                     <p>Applicable fees based on your application details:</p>
 
-                                    {!formData.feeStructure ? (
+                                    {!formData.feeCalculation && !formData.feeStructure ? (
                                         <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
                                             <div className="spinner-border text-primary" role="status" style={{ marginRight: '10px' }}></div>
                                             Calculating applicable fees...
@@ -2201,8 +2450,49 @@ const NOCApplication = () => {
                             </div>
                         )}
 
-                        {/* Step 9: Payment Receipt Upload */}
-                        {currentStep === 9 && (
+                        {/* Step 8: Conditional - Fee Calculation (with meter) OR Payment Receipt (without meter) */}
+                        {currentStep === 8 && hasMeterInstalled && (
+                            <div>
+                                <h3 className="form-section-header">Application Fee Calculation</h3>
+
+                                <div className="bhuneer-card" style={{ marginBottom: '20px', padding: '20px' }}>
+                                    <h4>Fee Estimator</h4>
+                                    <p>Applicable fees based on your application details:</p>
+
+                                    {!formData.feeStructure ? (
+                                        <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+                                            <div className="spinner-border text-primary" role="status" style={{ marginRight: '10px' }}></div>
+                                            Calculating applicable fees...
+                                        </div>
+                                    ) : (
+                                        <div className="noc-card" style={{ marginTop: '20px' }}>
+                                            <div className="noc-card-header">Fee Breakdown</div>
+                                            <div className="noc-card-body">
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+                                                    <div><strong>Base Amount:</strong> ₹{formData.feeStructure?.baseAmount?.toLocaleString('en-IN') || 0}</div>
+                                                    <div><strong>Processing Fee:</strong> ₹{formData.feeStructure?.processingFee?.toLocaleString('en-IN') || 0}</div>
+                                                    <div><strong>EC Charges:</strong> ₹{formData.feeStructure?.ecCharges?.toLocaleString('en-IN') || 0}</div>
+                                                    <div><strong>Water Budget Charges:</strong> ₹{formData.feeStructure?.waterBudgetCharges?.toLocaleString('en-IN') || 0}</div>
+                                                    <div style={{ gridColumn: '1 / -1', borderTop: '2px solid #dee2e6', paddingTop: '15px', marginTop: '10px' }}>
+                                                        <strong style={{ fontSize: '1.2rem' }}>Total Fee:</strong>{' '}
+                                                        <span style={{ fontSize: '1.3rem', color: 'var(--cgwa-success)', fontWeight: 'bold' }}>
+                                                            ₹{formData.feeStructure?.totalBaseFee?.toLocaleString('en-IN') || formData.feeStructure?.totalEstimated?.toLocaleString('en-IN') || 0}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <PaymentModule
+                                    formData={formData}
+                                    onPaymentComplete={handlePaymentComplete}
+                                />
+                            </div>
+                        )}
+
+                        {currentStep === 8 && !hasMeterInstalled && (
                             <div>
                                 <h3 className="form-section-header">Upload Payment Receipt</h3>
 
@@ -2334,8 +2624,212 @@ const NOCApplication = () => {
                             </div>
                         )}
 
-                        {/* Step 10: Application Summary */}
-                        {currentStep === 10 && (
+                        {currentStep === 8 && !hasMeterInstalled && (
+                            <div>
+                                <h3 className="form-section-header">Upload Payment Receipt</h3>
+
+                                <div className="noc-alert noc-alert-warning" style={{ marginBottom: '20px' }}>
+                                    <strong>Important:</strong> Please upload the payment receipt from the previous step before proceeding to final submission.
+                                </div>
+
+                                {/* Payment Receipt Upload */}
+                                <div className="noc-card" style={{ marginBottom: '20px', border: '2px solid var(--cgwa-warning)' }}>
+                                    <div className="noc-card-header" style={{ background: 'var(--cgwa-warning)', color: 'white' }}>
+                                        Upload Payment Receipt * (MANDATORY)
+                                    </div>
+                                    <div className="noc-card-body">
+                                        <div className="noc-alert noc-alert-info" style={{ marginBottom: '20px' }}>
+                                            <strong>📤 Upload Required:</strong> Please upload the payment receipt you downloaded in the previous step. You cannot submit your application without uploading the payment proof.
+                                        </div>
+
+                                        <div className="noc-form-group">
+                                            <label className="bhuneer-label required">Payment Receipt (PDF/JPG/PNG)</label>
+                                            <input
+                                                type="file"
+                                                accept=".pdf,.jpg,.jpeg,.png"
+                                                onChange={(e) => {
+                                                    const file = e.target.files[0];
+                                                    if (file) {
+                                                        if (validateFileSize(file)) {
+                                                            handleFileUpload('paymentReceipt', file);
+                                                            setErrors(prev => ({ ...prev, paymentReceipt: '' }));
+                                                        } else {
+                                                            alert('File size must be less than 5MB');
+                                                        }
+                                                    }
+                                                }}
+                                                className="bhuneer-input"
+                                                style={{ padding: '10px' }}
+                                            />
+                                            <span className="noc-form-help">Accepted formats: PDF, JPG, PNG (Max 5MB)</span>
+                                            {errors.paymentReceipt && <span className="bhuneer-error">{errors.paymentReceipt}</span>}
+
+                                            {formData.uploadedDocuments.paymentReceipt && (
+                                                <div style={{
+                                                    marginTop: '15px',
+                                                    padding: '15px',
+                                                    background: 'linear-gradient(135deg, #d4edda 0%, #c3f0ca 100%)',
+                                                    borderRadius: '8px',
+                                                    border: '2px solid var(--cgwa-success)',
+                                                    color: '#155724'
+                                                }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                        <span style={{ fontSize: '1.5rem' }}>✓</span>
+                                                        <div>
+                                                            <strong>Receipt Uploaded Successfully!</strong>
+                                                            <p style={{ margin: '5px 0 0 0' }}>File: {formData.uploadedDocuments.paymentReceipt.name}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Submit Status Alert */}
+                                {!formData.uploadedDocuments.paymentReceipt && (
+                                    <div className="noc-alert noc-alert-danger">
+                                        <strong>❌ Cannot Submit Application</strong>
+                                        <p style={{ margin: '10px 0 0 0' }}>Please upload the payment receipt to enable the submit button.</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Step 9: Conditional - Payment Receipt (with meter) OR Summary (without meter) */}
+                        {currentStep === 9 && hasMeterInstalled && (
+                            <div>
+                                <h3 className="form-section-header">Upload Payment Receipt</h3>
+
+                                <div className="noc-alert noc-alert-warning" style={{ marginBottom: '20px' }}>
+                                    <strong>Important:</strong> Please upload the payment receipt from the previous step before proceeding to final submission.
+                                </div>
+
+                                {/* Summary Cards */}
+                                <div className="noc-card" style={{ marginBottom: '20px' }}>
+                                    <div className="noc-card-header">Application Summary</div>
+                                    <div className="noc-card-body">
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+                                            <div>
+                                                <strong>Application Type:</strong> {formData.applicationType}
+                                            </div>
+                                            <div>
+                                                <strong>Project Name:</strong> {formData.projectName}
+                                            </div>
+                                            <div>
+                                                <strong>State:</strong> {formData.state}
+                                            </div>
+                                            <div>
+                                                <strong>Daily Water Requirement:</strong> {formData.dailyWaterRequirement} m³/day
+                                            </div>
+                                            <div>
+                                                <strong>Applicant Name:</strong> {formData.applicantName}
+                                            </div>
+                                            <div>
+                                                <strong>Organization:</strong> {formData.organizationName}
+                                            </div>
+                                            {formData.paymentTransactionId && (
+                                                <>
+                                                    <div>
+                                                        <strong>Payment Status:</strong> <span style={{ color: 'var(--cgwa-success)', fontWeight: 'bold' }}>✓ PAID</span>
+                                                    </div>
+                                                    <div>
+                                                        <strong>Transaction ID:</strong> {formData.paymentTransactionId}
+                                                    </div>
+                                                    <div>
+                                                        <strong>Receipt Number:</strong> {formData.paymentReceiptNumber}
+                                                    </div>
+                                                    <div>
+                                                        <strong>Amount Paid:</strong> ₹{formData.totalAmount?.toLocaleString('en-IN')}
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Payment Receipt Upload */}
+                                <div className="noc-card" style={{ marginBottom: '20px', border: '2px solid var(--cgwa-warning)' }}>
+                                    <div className="noc-card-header" style={{ background: 'var(--cgwa-warning)', color: 'white' }}>
+                                        Upload Payment Receipt * (MANDATORY)
+                                    </div>
+                                    <div className="noc-card-body">
+                                        <div className="noc-alert noc-alert-info" style={{ marginBottom: '20px' }}>
+                                            <strong>📤 Upload Required:</strong> Please upload the payment receipt you downloaded in the previous step. You cannot submit your application without uploading the payment proof.
+                                        </div>
+
+                                        <div className="noc-form-group">
+                                            <label className="bhuneer-label required">Payment Receipt (PDF/JPG/PNG)</label>
+                                            <input
+                                                type="file"
+                                                accept=".pdf,.jpg,.jpeg,.png"
+                                                onChange={(e) => {
+                                                    const file = e.target.files[0];
+                                                    if (file) {
+                                                        if (validateFileSize(file)) {
+                                                            handleFileUpload('paymentReceipt', file);
+                                                            setErrors(prev => ({ ...prev, paymentReceipt: '' }));
+                                                        } else {
+                                                            alert('File size must be less than 5MB');
+                                                        }
+                                                    }
+                                                }}
+                                                className="bhuneer-input"
+                                                style={{ padding: '10px' }}
+                                            />
+                                            <span className="noc-form-help">Accepted formats: PDF, JPG, PNG (Max 5MB)</span>
+                                            {errors.paymentReceipt && <span className="bhuneer-error">{errors.paymentReceipt}</span>}
+
+                                            {formData.uploadedDocuments.paymentReceipt && (
+                                                <div style={{
+                                                    marginTop: '15px',
+                                                    padding: '15px',
+                                                    background: 'linear-gradient(135deg, #d4edda 0%, #c3f0ca 100%)',
+                                                    borderRadius: '8px',
+                                                    border: '2px solid var(--cgwa-success)',
+                                                    color: '#155724'
+                                                }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                        <span style={{ fontSize: '1.5rem' }}>✓</span>
+                                                        <div>
+                                                            <strong>Receipt Uploaded Successfully!</strong>
+                                                            <p style={{ margin: '5px 0 0 0' }}>File: {formData.uploadedDocuments.paymentReceipt.name}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Declaration */}
+                                <div className="noc-card" style={{ marginBottom: '20px' }}>
+                                    <div className="noc-card-header">Declaration</div>
+                                    <div className="noc-card-body">
+                                        <div className="noc-checkbox-item">
+                                            <input
+                                                type="checkbox"
+                                                id="declaration"
+                                                required
+                                            />
+                                            <label htmlFor="declaration">
+                                                I hereby declare that all the information provided in this application is true and correct to the best of my knowledge. I understand that any false information may lead to rejection of the application and legal action.
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Submit Status Alert */}
+                                {!formData.uploadedDocuments.paymentReceipt && (
+                                    <div className="noc-alert noc-alert-danger">
+                                        <strong>❌ Cannot Submit Application</strong>
+                                        <p style={{ margin: '10px 0 0 0' }}>Please upload the payment receipt to enable the submit button.</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {currentStep === 9 && !hasMeterInstalled && (
                             <div>
                                 <h3 className="form-section-header">📋 Application Summary</h3>
                                 <p style={{ textAlign: 'center', color: 'var(--text-light)', marginBottom: '30px' }}>
@@ -2348,29 +2842,39 @@ const NOCApplication = () => {
                                     <div className="noc-card-body">
                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
                                             <div>
-                                                <strong>Application Type:</strong> {formData.applicationType}
+                                                <strong>Application Type:</strong> {getDisplayLabel(formData.applicationType, appTypeOptions)}
                                             </div>
                                             <div>
-                                                <strong>Application Sub Type:</strong> {formData.applicationSubType}
+                                                <strong>Application Sub Type:</strong> {getDisplayLabel(formData.applicationSubType, appSubTypeOptions)}
                                             </div>
                                             <div>
-                                                <strong>Project Type:</strong> {formData.projectType}
+                                                <strong>Project Type:</strong> {getDisplayLabel(formData.projectType, projectTypeOptions)}
                                             </div>
                                             <div>
-                                                <strong>Water Quality Type:</strong> {formData.waterQualityType}
+                                                <strong>Water Quality Type:</strong> {getDisplayLabel(formData.waterQualityType, waterQualityOptions)}
                                             </div>
                                             <div>
-                                                <strong>Utilization Purpose:</strong> {formData.groundWaterUtilizationFor}
+                                                <strong>Utilization Purpose:</strong> {getDisplayLabel(formData.groundWaterUtilizationFor, utilizationPurposeOptions)}
                                             </div>
                                             {formData.industryType && (
                                                 <div>
-                                                    <strong>Industry Type:</strong> {formData.industryType}
+                                                    <strong>Industry Type:</strong> {formatDisplayValue(formData.industryType)}
                                                 </div>
                                             )}
                                             <div>
-                                                <strong>MSME Status:</strong> {formData.isMSME}
-                                                {formData.isMSME === 'Yes' && ` (${formData.msmeType})`}
+                                                <strong>MSME Status:</strong> {formatDisplayValue(formData.isMSME)}
+                                                {formData.isMSME === 'Yes' && formData.msmeType && ` (${getDisplayLabel(formData.msmeType, msmeTypeOptions)})`}
                                             </div>
+                                            {formData.dateOfCommencement && (
+                                                <div>
+                                                    <strong>Date of Commencement:</strong> {formatDisplayValue(formData.dateOfCommencement)}
+                                        </div>
+                                            )}
+                                            {formData.existingNOCStatus === 'Yes' && formData.oldNOCNo && (
+                                                <div>
+                                                    <strong>Old NOC Number:</strong> {formatDisplayValue(formData.oldNOCNo)}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -2381,20 +2885,30 @@ const NOCApplication = () => {
                                     <div className="noc-card-body">
                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
                                             <div>
-                                                <strong>Project Name:</strong> {formData.projectName}
+                                                <strong>Project Name:</strong> {formatDisplayValue(formData.projectName)}
                                             </div>
                                             <div>
-                                                <strong>State:</strong> {formData.state}
+                                                <strong>State:</strong> {getDisplayLabel(formData.state, stateOptions)}
                                             </div>
                                             <div>
-                                                <strong>District:</strong> {formData.district}
+                                                <strong>District:</strong> {formatDisplayValue(formData.district)}
                                             </div>
                                             <div>
-                                                <strong>Block:</strong> {formData.block}
+                                                <strong>Block:</strong> {formatDisplayValue(formData.block)}
                                             </div>
                                             {formData.tehsil && (
                                                 <div>
-                                                    <strong>Tehsil:</strong> {formData.tehsil}
+                                                    <strong>Tehsil:</strong> {formatDisplayValue(formData.tehsil)}
+                                                </div>
+                                            )}
+                                            {formData.projectAddress && (
+                                                <div style={{ gridColumn: '1 / -1' }}>
+                                                    <strong>Project Address:</strong> {formatDisplayValue(formData.projectAddress)}
+                                                </div>
+                                            )}
+                                            {(formData.latitude || formData.longitude) && (
+                                                <div>
+                                                    <strong>Coordinates:</strong> {formData.latitude && formData.longitude ? `${formData.latitude}, ${formData.longitude}` : 'Not provided'}
                                                 </div>
                                             )}
                                             {blockCategory && (
@@ -2415,19 +2929,35 @@ const NOCApplication = () => {
                                     <div className="noc-card-body">
                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
                                             <div>
-                                                <strong>Daily Requirement:</strong> {formData.dailyWaterRequirement} m³/day
+                                                <strong>Daily Requirement:</strong> {formatDisplayValue(formData.dailyWaterRequirement)} {formData.dailyWaterRequirement ? 'm³/day' : ''}
                                             </div>
                                             <div>
-                                                <strong>Annual Requirement:</strong> {formData.annualWaterRequirement} m³/year
+                                                <strong>Annual Requirement:</strong> {formatDisplayValue(formData.annualWaterRequirement)} {formData.annualWaterRequirement ? 'm³/year' : ''}
                                             </div>
                                             {formData.numberOfWorkers && (
                                                 <div>
-                                                    <strong>Number of Workers:</strong> {formData.numberOfWorkers}
+                                                    <strong>Number of Workers:</strong> {formatDisplayValue(formData.numberOfWorkers)}
+                                                </div>
+                                            )}
+                                            {formData.numberOfResidents && (
+                                                <div>
+                                                    <strong>Number of Residents:</strong> {formatDisplayValue(formData.numberOfResidents)}
                                                 </div>
                                             )}
                                             {formData.domesticTotalDaily > 0 && (
                                                 <div>
                                                     <strong>Domestic Water (Daily):</strong> {formData.domesticTotalDaily} m³/day
+                                                </div>
+                                            )}
+                                            {(formData.waterReqDomestic || formData.waterReqIndustrial || formData.waterReqGreenBelt || formData.waterReqOther) && (
+                                                <div style={{ gridColumn: '1 / -1', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #dee2e6' }}>
+                                                    <strong>Water Requirement Breakup:</strong>
+                                                    <ul style={{ marginTop: '5px', paddingLeft: '20px' }}>
+                                                        {formData.waterReqDomestic && <li>Domestic/Drinking: {formData.waterReqDomestic} m³/day</li>}
+                                                        {formData.waterReqIndustrial && <li>Industrial Process: {formData.waterReqIndustrial} m³/day</li>}
+                                                        {formData.waterReqGreenBelt && <li>Greenbelt/Horticulture: {formData.waterReqGreenBelt} m³/day</li>}
+                                                        {formData.waterReqOther && <li>Other: {formData.waterReqOther} m³/day</li>}
+                                                    </ul>
                                                 </div>
                                             )}
                                         </div>
@@ -2452,6 +2982,20 @@ const NOCApplication = () => {
                                                 <strong>Existing Structures:</strong> {existingStructures.length}
                                             </div>
                                         </div>
+                                        {existingStructures.length > 0 && (
+                                            <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #dee2e6' }}>
+                                                <strong>Existing Structure Details:</strong>
+                                                <ul style={{ marginTop: '10px', paddingLeft: '20px' }}>
+                                                    {existingStructures.map((struct, idx) => (
+                                                        <li key={idx}>
+                                                            {struct.type || 'Structure'} - Depth: {struct.depth || 'N/A'}m, 
+                                                            Diameter: {struct.diameter || 'N/A'}mm
+                                                            {struct.hasMeter === 'Yes' && ' (Meter Installed)'}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -2461,17 +3005,35 @@ const NOCApplication = () => {
                                     <div className="noc-card-body">
                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
                                             <div>
-                                                <strong>Applicant Name:</strong> {formData.applicantName}
+                                                <strong>Applicant Name:</strong> {formatDisplayValue(formData.applicantName)}
                                             </div>
                                             <div>
-                                                <strong>Organization:</strong> {formData.organizationName}
+                                                <strong>Organization:</strong> {formatDisplayValue(formData.organizationName)}
                                             </div>
                                             <div>
-                                                <strong>Email:</strong> {formData.applicantEmail}
+                                                <strong>Organization Type:</strong> {getDisplayLabel(formData.organizationType, organizationTypeOptions)}
                                             </div>
+                                            {formData.designation && (
                                             <div>
-                                                <strong>Mobile:</strong> {formData.applicantMobile}
+                                                    <strong>Designation:</strong> {formatDisplayValue(formData.designation)}
                                             </div>
+                                            )}
+                                            <div>
+                                                <strong>Email:</strong> {formatDisplayValue(formData.applicantEmail)}
+                                        </div>
+                                            <div>
+                                                <strong>Mobile:</strong> {formatDisplayValue(formData.applicantMobile)}
+                                            </div>
+                                            {formData.applicantAadhaar && (
+                                                <div>
+                                                    <strong>Aadhaar Number:</strong> {formatDisplayValue(formData.applicantAadhaar)}
+                                                </div>
+                                            )}
+                                            {formData.applicantPAN && (
+                                                <div>
+                                                    <strong>PAN Number:</strong> {formatDisplayValue(formData.applicantPAN)}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -2502,30 +3064,373 @@ const NOCApplication = () => {
                                     <div className="noc-card-body">
                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
                                             <div>
-                                                <strong>Application Fee:</strong> ₹{formData.applicationFee?.toLocaleString('en-IN')}
+                                                <strong>Application Fee:</strong> ₹{formData.applicationFee?.toLocaleString('en-IN') || '0'}
                                             </div>
                                             <div>
-                                                <strong>GST (18%):</strong> ₹{formData.gstAmount?.toLocaleString('en-IN')}
+                                                <strong>GST (18%):</strong> ₹{formData.gstAmount?.toLocaleString('en-IN') || '0'}
                                             </div>
                                             <div>
                                                 <strong>Total Amount:</strong>{' '}
                                                 <span style={{ fontSize: '1.2rem', color: 'var(--cgwa-success)', fontWeight: 'bold' }}>
-                                                    ₹{formData.totalAmount?.toLocaleString('en-IN')}
+                                                    ₹{formData.totalAmount?.toLocaleString('en-IN') || '0'}
                                                 </span>
                                             </div>
                                             <div>
                                                 <strong>Payment Status:</strong>{' '}
-                                                <span style={{ color: 'var(--cgwa-success)', fontWeight: 'bold' }}>
-                                                    ✅ PAID
+                                                <span style={{ color: formData.paymentStatus === 'paid' ? 'var(--cgwa-success)' : 'var(--cgwa-warning)', fontWeight: 'bold' }}>
+                                                    {formData.paymentStatus === 'paid' ? '✅ PAID' : '⏳ PENDING'}
                                                 </span>
                                             </div>
                                             {formData.paymentTransactionId && (
                                                 <>
                                                     <div>
-                                                        <strong>Transaction ID:</strong> {formData.paymentTransactionId}
+                                                        <strong>Transaction ID:</strong> {formatDisplayValue(formData.paymentTransactionId)}
                                                     </div>
                                                     <div>
-                                                        <strong>Receipt Number:</strong> {formData.paymentReceiptNumber}
+                                                        <strong>Receipt Number:</strong> {formatDisplayValue(formData.paymentReceiptNumber)}
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Exemption Status (if applicable) */}
+                                {exemptionStatus?.isExempt && (
+                                    <div className="noc-exemption-banner" style={{ marginBottom: '20px' }}>
+                                        <h4 style={{ margin: '0 0 10px 0' }}>✅ Exemption Status</h4>
+                                        <p><strong>Type:</strong> {exemptionStatus.exemptionType}</p>
+                                        <p><strong>Message:</strong> {exemptionStatus.message}</p>
+                                    </div>
+                                )}
+
+                                {/* Final Declaration */}
+                                <div className="noc-card" style={{ marginBottom: '20px', background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)', border: '2px solid var(--cgwa-primary)' }}>
+                                    <div className="noc-card-header" style={{ background: 'var(--cgwa-primary)', color: 'white' }}>
+                                        📜 Final Declaration
+                                    </div>
+                                    <div className="noc-card-body">
+                                        <p style={{ marginBottom: '15px', lineHeight: '1.6' }}>
+                                            I hereby declare that all the information provided in this application is true and correct
+                                            to the best of my knowledge and belief. I understand that if any information is found to be
+                                            false or misleading, my application may be rejected and/or the issued NOC may be cancelled.
+                                            I also undertake to comply with all the conditions specified by the State Groundwater Authority
+                                            and to adhere to all applicable laws and regulations related to groundwater extraction.
+                                        </p>
+                                        <div className="noc-checkbox-item">
+                                            <input
+                                                type="checkbox"
+                                                id="finalDeclaration"
+                                                required
+                                            />
+                                            <label htmlFor="finalDeclaration" style={{ fontWeight: 'bold' }}>
+                                                I agree to the above declaration and confirm that all information provided is accurate.
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Submit Alert */}
+                                <div className="noc-alert noc-alert-info">
+                                    <strong>ℹ️ Ready to Submit:</strong> Please review all the above information carefully.
+                                    Once submitted, you will not be able to make changes to your application.
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Step 10: Summary (only when meter is installed) */}
+                        {currentStep === 10 && hasMeterInstalled && (
+                            <div>
+                                <h3 className="form-section-header">📋 Application Summary</h3>
+                                <p style={{ textAlign: 'center', color: 'var(--text-light)', marginBottom: '30px' }}>
+                                    Review all your details before final submission
+                                </p>
+
+                                {/* Application Type Summary */}
+                                <div className="noc-card" style={{ marginBottom: '20px' }}>
+                                    <div className="noc-card-header">1. Application Type & Basic Details</div>
+                                    <div className="noc-card-body">
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+                                            <div>
+                                                <strong>Application Type:</strong> {getDisplayLabel(formData.applicationType, appTypeOptions)}
+                                            </div>
+                                            <div>
+                                                <strong>Application Sub Type:</strong> {getDisplayLabel(formData.applicationSubType, appSubTypeOptions)}
+                                            </div>
+                                            <div>
+                                                <strong>Project Type:</strong> {getDisplayLabel(formData.projectType, projectTypeOptions)}
+                                            </div>
+                                            <div>
+                                                <strong>Water Quality Type:</strong> {getDisplayLabel(formData.waterQualityType, waterQualityOptions)}
+                                            </div>
+                                            <div>
+                                                <strong>Utilization Purpose:</strong> {getDisplayLabel(formData.groundWaterUtilizationFor, utilizationPurposeOptions)}
+                                            </div>
+                                            {formData.industryType && (
+                                                <div>
+                                                    <strong>Industry Type:</strong> {formatDisplayValue(formData.industryType)}
+                                                </div>
+                                            )}
+                                            <div>
+                                                <strong>MSME Status:</strong> {formatDisplayValue(formData.isMSME)}
+                                                {formData.isMSME === 'Yes' && formData.msmeType && ` (${getDisplayLabel(formData.msmeType, msmeTypeOptions)})`}
+                                            </div>
+                                            {formData.dateOfCommencement && (
+                                                <div>
+                                                    <strong>Date of Commencement:</strong> {formatDisplayValue(formData.dateOfCommencement)}
+                                                </div>
+                                            )}
+                                            {formData.existingNOCStatus === 'Yes' && formData.oldNOCNo && (
+                                                <div>
+                                                    <strong>Old NOC Number:</strong> {formatDisplayValue(formData.oldNOCNo)}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Project & Location Summary */}
+                                <div className="noc-card" style={{ marginBottom: '20px' }}>
+                                    <div className="noc-card-header">2. Project & Location Details</div>
+                                    <div className="noc-card-body">
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+                                            <div>
+                                                <strong>Project Name:</strong> {formatDisplayValue(formData.projectName)}
+                                            </div>
+                                            <div>
+                                                <strong>State:</strong> {getDisplayLabel(formData.state, stateOptions)}
+                                            </div>
+                                            <div>
+                                                <strong>District:</strong> {formatDisplayValue(formData.district)}
+                                            </div>
+                                            <div>
+                                                <strong>Block:</strong> {formatDisplayValue(formData.block)}
+                                            </div>
+                                            {formData.tehsil && (
+                                                <div>
+                                                    <strong>Tehsil:</strong> {formatDisplayValue(formData.tehsil)}
+                                                </div>
+                                            )}
+                                            {formData.projectAddress && (
+                                                <div style={{ gridColumn: '1 / -1' }}>
+                                                    <strong>Project Address:</strong> {formatDisplayValue(formData.projectAddress)}
+                                                </div>
+                                            )}
+                                            {(formData.latitude || formData.longitude) && (
+                                                <div>
+                                                    <strong>Coordinates:</strong> {formData.latitude && formData.longitude ? `${formData.latitude}, ${formData.longitude}` : 'Not provided'}
+                                                </div>
+                                            )}
+                                            {blockCategory && (
+                                                <div style={{ gridColumn: '1 / -1' }}>
+                                                    <strong>Block Category:</strong>{' '}
+                                                    <span style={{ color: blockCategory.color, fontWeight: 'bold' }}>
+                                                        {blockCategory.name} (Validity: {blockCategory.validityYears} years)
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Water Requirement Summary */}
+                                <div className="noc-card" style={{ marginBottom: '20px' }}>
+                                    <div className="noc-card-header">3. Water Requirement Details</div>
+                                    <div className="noc-card-body">
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+                                            <div>
+                                                <strong>Daily Requirement:</strong> {formatDisplayValue(formData.dailyWaterRequirement)} {formData.dailyWaterRequirement ? 'm³/day' : ''}
+                                            </div>
+                                            <div>
+                                                <strong>Annual Requirement:</strong> {formatDisplayValue(formData.annualWaterRequirement)} {formData.annualWaterRequirement ? 'm³/year' : ''}
+                                            </div>
+                                            {formData.numberOfWorkers && (
+                                                <div>
+                                                    <strong>Number of Workers:</strong> {formatDisplayValue(formData.numberOfWorkers)}
+                                                </div>
+                                            )}
+                                            {formData.numberOfResidents && (
+                                                <div>
+                                                    <strong>Number of Residents:</strong> {formatDisplayValue(formData.numberOfResidents)}
+                                                </div>
+                                            )}
+                                            {formData.domesticTotalDaily > 0 && (
+                                                <div>
+                                                    <strong>Domestic Water (Daily):</strong> {formData.domesticTotalDaily} m³/day
+                                                </div>
+                                            )}
+                                            {(formData.waterReqDomestic || formData.waterReqIndustrial || formData.waterReqGreenBelt || formData.waterReqOther) && (
+                                                <div style={{ gridColumn: '1 / -1', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #dee2e6' }}>
+                                                    <strong>Water Requirement Breakup:</strong>
+                                                    <ul style={{ marginTop: '5px', paddingLeft: '20px' }}>
+                                                        {formData.waterReqDomestic && <li>Domestic/Drinking: {formData.waterReqDomestic} m³/day</li>}
+                                                        {formData.waterReqIndustrial && <li>Industrial Process: {formData.waterReqIndustrial} m³/day</li>}
+                                                        {formData.waterReqGreenBelt && <li>Greenbelt/Horticulture: {formData.waterReqGreenBelt} m³/day</li>}
+                                                        {formData.waterReqOther && <li>Other: {formData.waterReqOther} m³/day</li>}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Structures Summary */}
+                                <div className="noc-card" style={{ marginBottom: '20px' }}>
+                                    <div className="noc-card-header">4. Groundwater Structures</div>
+                                    <div className="noc-card-body">
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+                                            <div>
+                                                <strong>Proposed Borewells:</strong> {formData.proposedBorewells || 0}
+                                            </div>
+                                            <div>
+                                                <strong>Proposed Tubewells:</strong> {formData.proposedTubewells || 0}
+                                            </div>
+                                            <div>
+                                                <strong>Proposed Dugwells:</strong> {formData.proposedDugwells || 0}
+                                            </div>
+                                            <div>
+                                                <strong>Existing Structures:</strong> {existingStructures.length}
+                                            </div>
+                                        </div>
+                                        {existingStructures.length > 0 && (
+                                            <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #dee2e6' }}>
+                                                <strong>Existing Structure Details:</strong>
+                                                <ul style={{ marginTop: '10px', paddingLeft: '20px' }}>
+                                                    {existingStructures.map((struct, idx) => (
+                                                        <li key={idx}>
+                                                            {struct.type || 'Structure'} - Depth: {struct.depth || 'N/A'}m, 
+                                                            Diameter: {struct.diameter || 'N/A'}mm
+                                                            {struct.hasMeter === 'Yes' && ' (Meter Installed)'}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Flow Meter Summary */}
+                                {formData.flowMeterDetails && (
+                                    <div className="noc-card" style={{ marginBottom: '20px' }}>
+                                        <div className="noc-card-header">5. Flow Meter Details</div>
+                                        <div className="noc-card-body">
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+                                                <div>
+                                                    <strong>Manufacturer:</strong> {formData.flowMeterDetails.manufacturer}
+                                                </div>
+                                                <div>
+                                                    <strong>Model Number:</strong> {formData.flowMeterDetails.modelNumber}
+                                                </div>
+                                                <div>
+                                                    <strong>Serial Number:</strong> {formData.flowMeterDetails.serialNumber}
+                                                </div>
+                                                <div>
+                                                    <strong>Meter Type:</strong> {formData.flowMeterDetails.meterType}
+                                                </div>
+                                                {formData.flowMeterDetails.telemetryEnabled === 'Yes' && (
+                                                    <>
+                                                        <div>
+                                                            <strong>Telemetry Enabled:</strong> Yes
+                                                        </div>
+                                                        <div>
+                                                            <strong>Service Provider:</strong> {formData.flowMeterDetails.telemetryProvider}
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Applicant Details Summary */}
+                                <div className="noc-card" style={{ marginBottom: '20px' }}>
+                                    <div className="noc-card-header">6. Applicant Details</div>
+                                    <div className="noc-card-body">
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+                                            <div>
+                                                <strong>Applicant Name:</strong> {formatDisplayValue(formData.applicantName)}
+                                            </div>
+                                            <div>
+                                                <strong>Organization:</strong> {formatDisplayValue(formData.organizationName)}
+                                            </div>
+                                            <div>
+                                                <strong>Organization Type:</strong> {getDisplayLabel(formData.organizationType, organizationTypeOptions)}
+                                            </div>
+                                            {formData.designation && (
+                                                <div>
+                                                    <strong>Designation:</strong> {formatDisplayValue(formData.designation)}
+                                                </div>
+                                            )}
+                                            <div>
+                                                <strong>Email:</strong> {formatDisplayValue(formData.applicantEmail)}
+                                            </div>
+                                            <div>
+                                                <strong>Mobile:</strong> {formatDisplayValue(formData.applicantMobile)}
+                                            </div>
+                                            {formData.applicantAadhaar && (
+                                                <div>
+                                                    <strong>Aadhaar Number:</strong> {formatDisplayValue(formData.applicantAadhaar)}
+                                                </div>
+                                            )}
+                                            {formData.applicantPAN && (
+                                                <div>
+                                                    <strong>PAN Number:</strong> {formatDisplayValue(formData.applicantPAN)}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Documents Summary */}
+                                <div className="noc-card" style={{ marginBottom: '20px' }}>
+                                    <div className="noc-card-header">7. Document Uploads</div>
+                                    <div className="noc-card-body">
+                                        <p>
+                                            <strong>Total Documents Uploaded:</strong>{' '}
+                                            {Object.keys(formData.uploadedDocuments).length} documents
+                                        </p>
+                                        {Object.keys(formData.uploadedDocuments).length > 0 && (
+                                            <ul style={{ marginTop: '10px', paddingLeft: '20px' }}>
+                                                {Object.entries(formData.uploadedDocuments).map(([docId, file]) => (
+                                                    <li key={docId}>
+                                                        {file.name} ({(file.size / 1024).toFixed(2)} KB)
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Payment Summary */}
+                                <div className="noc-card" style={{ marginBottom: '20px' }}>
+                                    <div className="noc-card-header">8. Payment Details</div>
+                                    <div className="noc-card-body">
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+                                            <div>
+                                                <strong>Application Fee:</strong> ₹{formData.applicationFee?.toLocaleString('en-IN') || '0'}
+                                            </div>
+                                            <div>
+                                                <strong>GST (18%):</strong> ₹{formData.gstAmount?.toLocaleString('en-IN') || '0'}
+                                            </div>
+                                            <div>
+                                                <strong>Total Amount:</strong>{' '}
+                                                <span style={{ fontSize: '1.2rem', color: 'var(--cgwa-success)', fontWeight: 'bold' }}>
+                                                    ₹{formData.totalAmount?.toLocaleString('en-IN') || '0'}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <strong>Payment Status:</strong>{' '}
+                                                <span style={{ color: formData.paymentStatus === 'paid' ? 'var(--cgwa-success)' : 'var(--cgwa-warning)', fontWeight: 'bold' }}>
+                                                    {formData.paymentStatus === 'paid' ? '✅ PAID' : '⏳ PENDING'}
+                                                </span>
+                                            </div>
+                                            {formData.paymentTransactionId && (
+                                                <>
+                                                    <div>
+                                                        <strong>Transaction ID:</strong> {formatDisplayValue(formData.paymentTransactionId)}
+                                                    </div>
+                                                    <div>
+                                                        <strong>Receipt Number:</strong> {formatDisplayValue(formData.paymentReceiptNumber)}
                                                     </div>
                                                 </>
                                             )}
@@ -2580,11 +3485,11 @@ const NOCApplication = () => {
                     {/* Form Navigation */}
                     <FormNavigation
                         currentStep={currentStep}
-                        totalSteps={formSteps.length}
+                        totalSteps={dynamicFormSteps.length}
                         onPrevious={handlePrevious}
                         onNext={handleNext}
                         onSubmit={handleSubmit}
-                        isLastStep={currentStep === formSteps.length}
+                        isLastStep={currentStep === dynamicFormSteps.length}
                     />
                 </div>
             </div>
@@ -2651,4 +3556,7 @@ const NOCApplication = () => {
 };
 
 export default NOCApplication;
+
+
+
 

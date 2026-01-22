@@ -78,14 +78,20 @@ const PublicLanding = () => {
         { title: 'Rig Registration', icon: '🏗️', link: '/public/services/rig' },
         { title: 'Vendor Registration', icon: '⚙️', link: '/public/services/vendor' },
         { title: 'Know Your EC', icon: '💰', link: '/public/know-your-ec' },
-        { title: 'Water Calculator', icon: '🧮', link: '/noc/water-budget-calculator' },
+        { title: 'Water Calculator', icon: '🧮', link: 'https://rgwcma.geoplanetsolution.in/charges', external: true },
         { title: 'Application Status', icon: '📋', link: '/public/application-status' }
     ];
 
     const handleServiceCardClick = (service) => {
         if (service.link) {
-            navigate(service.link);
-            window.scrollTo(0, 0);
+            if (service.external) {
+                // Open external links in a new tab
+                window.open(service.link, '_blank', 'noopener,noreferrer');
+            } else {
+                // Navigate to internal routes
+                navigate(service.link);
+                window.scrollTo(0, 0);
+            }
         }
     };
 
@@ -167,40 +173,6 @@ const PublicLanding = () => {
                 </div>
             )}
 
-            {/* Header */}
-            <header className="portal-header">
-                <div className="header-top">
-                    <div className="header-brand">
-                        <div className="dept-logo">
-                            <div className="logo-circle">💧</div>
-                        </div>
-                        <div className="dept-info">
-                            <h1>GROUND WATER DEPARTMENT</h1>
-                            <p>Government of Rajasthan</p>
-                        </div>
-                    </div>
-                    <div className="header-right">
-                        <div className="search-box">
-                            <input type="text" placeholder="Search here" />
-                            <button>🔍</button>
-                        </div>
-                        <div className="helpline-info">
-                            <strong>Technical Helpline Number</strong>
-                            <p>10.00 AM - 6.00 PM (On all working days)</p>
-                        </div>
-                        <div className="raj-emblem">
-                            <div className="emblem-circle">🏛️</div>
-                        </div>
-                    </div>
-                </div>
-                <nav className="header-nav">
-                    <a href="#about">ABOUT DEPARTMENT</a>
-                    <a href="#services">SERVICES</a>
-                    <a href="#guidelines">GUIDELINES</a>
-                    <a href="#downloads">DOWNLOADS</a>
-                    <a href="#contact">CONTACT US</a>
-                </nav>
-            </header>
 
             {/* Main Content Area */}
             <div className="portal-main">
@@ -287,11 +259,11 @@ const PublicLanding = () => {
                                     >
                                         <option value="">— Select Service Type —</option>
                                         <option value="water_abstractor">Water Abstractor (Industries/Projects)</option>
-                                        <option value="rig_registration">Rig Registration & Operations</option>
+                                        {/* <option value="rig_registration">Rig Registration & Operations</option>
                                         <option value="vendor_registration">Vendor/Equipment Registration</option>
                                         <option value="dgo">District Groundwater Officer (DGO)</option>
                                         <option value="rsgwa">RSGWA Officer</option>
-                                        <option value="enforcement">Enforcement Officer</option>
+                                        <option value="enforcement">Enforcement Officer</option> */}
                                     </select>
                                 </div>
 
@@ -348,9 +320,9 @@ const PublicLanding = () => {
                             </form>
 
                             <div className="login-links">
-                                <a href="#forgot">Forgot Password?</a>
+                                <Link to="/forgot-password">Forgot Password?</Link>
                                 <div className="create-account-link">
-                                    Create <a href="#create" onClick={(e) => { e.preventDefault(); setShowRegisterModal(true); }}>New Account</a>
+                                    Create <Link to="/noc/register">New Account</Link>
                                 </div>
                             </div>
                         </>

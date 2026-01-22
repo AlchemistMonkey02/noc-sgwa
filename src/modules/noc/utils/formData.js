@@ -87,111 +87,46 @@ export const structureTypes = [
     'Dugwell',
     'Dug cum Borewell',
     'Open Well',
-    'Pump'
+    'Submersible Pump',
+    'Centrifugal Pump'
 ];
 
 export const documentTypes = [
     {
-        id: 'loa',
-        name: 'Authorization Letter / Letter of Authority (LOA)',
+        id: 'affidavit',
+        name: 'Affidavit - Land Ownership Document',
         required: true,
-        description: 'Authorized signatory letter on company letterhead'
+        description: 'Notarized affidavit regarding land ownership'
     },
     {
-        id: 'land_ownership',
-        name: 'Certificate/Affidavit of Land Ownership',
+        id: 'site_plan',
+        name: 'Site Plan / Layout Plan',
         required: true,
-        description: 'Sale deed, Jamabandi, or valid lease deed'
-    },
-    {
-        id: 'site_map',
-        name: 'Site Map / Plot Plan',
-        required: true,
-        description: 'Showing all existing/proposed wells with GPS coordinates'
-    },
-    {
-        id: 'water_balance',
-        name: 'Water Balance Chart / Flow Diagram',
-        required: true,
-        description: 'Detailed water usage and recycling flow'
-    },
-    {
-        id: 'dpr',
-        name: 'Detailed Project Report (DPR)',
-        required: true,
-        description: 'Comprehensive project report with water requirements'
-    },
-    {
-        id: 'cte',
-        name: 'Consent to Establish (CTE)',
-        required: false,
-        description: 'From State Pollution Control Board (for industries)'
-    },
-    {
-        id: 'cto',
-        name: 'Consent to Operate (CTO)',
-        required: false,
-        description: 'From State Pollution Control Board (for existing industries)'
-    },
-    {
-        id: 'gw_quality',
-        name: 'Ground Water Quality Report',
-        required: true,
-        description: 'Recent water quality test report from NABL lab'
-    },
-    {
-        id: 'rwh_plan',
-        name: 'Rainwater Harvesting Plan/Affidavit',
-        required: true,
-        description: 'Technical design for rainwater recharge structures'
-    },
-    {
-        id: 'msme_cert',
-        name: 'MSME Certificate',
-        required: false,
-        description: 'Udyam registration certificate (if MSME)'
-    },
-    {
-        id: 'previous_noc',
-        name: 'Previous NOC Copy',
-        required: false,
-        description: 'For renewal/amendment applications'
-    },
-    {
-        id: 'env_clearance',
-        name: 'Environmental Clearance',
-        required: false,
-        description: 'EC from MoEF (for projects above threshold)'
+        description: 'Detailed site map showing all structures'
     },
     {
         id: 'impact_assessment',
         name: 'Impact Assessment Report',
-        required: false,
-        description: 'For mining or large-scale dewatering projects'
+        required: false, // Mandatory if > 100 KLD
+        description: 'Required if total water requirement > 100 KLD'
     },
     {
-        id: 'bis_license',
-        name: 'BIS License Copy',
-        required: false,
-        description: 'For packaged drinking water industries'
+        id: 'gw_modelling',
+        name: 'Ground Water Modelling Report',
+        required: false, // Mandatory if > 100 KLD
+        description: 'Required if total water requirement > 100 KLD'
     },
     {
-        id: 'mining_lease',
-        name: 'Mining Lease Copy',
-        required: false,
-        description: 'Approved mining lease document'
-    },
-    {
-        id: 'affidavit',
-        name: 'Notarized Affidavit',
+        id: 'nabl_report',
+        name: 'NABL Approved Lab Report',
         required: true,
-        description: 'On ₹100 stamp paper as per prescribed format'
+        description: 'Water quality report from NABL accredited lab'
     },
     {
-        id: 'flow_meter',
-        name: 'Flow Meter Undertaking',
+        id: 'cto_cte',
+        name: 'CTO / CTE',
         required: true,
-        description: 'Proposal for digital flow meter installation with telemetry'
+        description: 'Consent to Operate / Establish (Mandatory)'
     }
 ];
 
@@ -253,40 +188,39 @@ export const initialFormData = {
     pincode: '',
     latitude: '',
     longitude: '',
-    totalLandArea: '',
-    greenBeltArea: '',
+    totalLandArea: '', // Kept for backward compatibility if needed, but Step 2 uses specific fields now
+    greenBeltArea: '', // Kept for backward compatibility
     isInWetland: false,
     wetlandName: '',
     geology: '',
 
-    // Drinking & Domestic Water
-    numberOfWorkers: '',
-    numberOfResidents: '',
-    dailyRequirementPerPerson: 135, // CGWA standard in liters
-    domesticTotalDaily: 0,
-    domesticTotalAnnual: 0,
+    // Step 2: Land Use Details
+    landUseTotalArea: '',
+    landUseRooftopArea: '',
+    landUsePavedArea: '',
+    landUseGreenBeltArea: '',
+    landUseOpenArea: '',
+
+    // Step 3: Water Requirement Details
+    waterReqTotalFresh: '', // Fresh Water
+    waterReqRecycled: '', // Recycled Water
+    waterReqTotal: '', // Fresh + Recycled (Calculated)
 
     // Water Requirement Breakup
-    waterActivities: [], // Array of {activity, total, freshGW, surface, recycled}
-    stpCapacity: '',
-    etpCapacity: '',
-    recycledWaterUsage: '',
-    netFreshWaterRequired: 0,
-    waterRequiredForGreenbelt: '',
-    greenbeltArea: '',
-    wetlandAreasName: '',
-    dailyWaterRequirement: '',
-    annualWaterRequirement: '',
+    waterReqDomestic: '',
+    waterReqIndustrial: '',
+    waterReqGreenBelt: '',
+    waterReqOther: '',
+    waterReqFreshRequirement: '', // Explicit field from user request
 
     // Existing Structures
     existingStructures: [],
 
-    // Proposed Structures
-    proposedBorewells: 0,
-    proposedTubewells: 0,
-    proposedDugwells: 0,
-    proposedDugCumBorewells: 0,
-    proposedPumps: 0,
+    // Proposed Structures (Step 4)
+    // We will use the existingStructures array model for proposed as well, or specific fields if simpler.
+    // User asked for "ask for water pump submersible centrifugal pump capacity hp" in GW structures.
+    // We'll add these to the structure object model, so no new top-level fields needed for structure details specifically,
+    // but we need to ensure the structure object has them.
 
     // Applicant Details
     applicantName: '',
@@ -347,45 +281,40 @@ export const formSteps = [
     {
         id: 2,
         title: 'Location Details',
-        description: 'Project location, coordinates, and land information'
+        description: 'Project location, land use, and coordinates'
     },
     {
         id: 3,
-        title: 'Drinking & Domestic',
-        description: 'Drinking and domestic water requirements'
+        title: 'Water Requirement',
+        description: 'Detailed water requirement breakdown'
     },
     {
         id: 4,
-        title: 'Water Requirement',
-        description: 'Activity-wise water breakup and sources'
-    },
-    {
-        id: 5,
         title: 'GW Structures',
         description: 'Existing and proposed groundwater structures'
     },
     {
-        id: 6,
-        title: 'Documents Required',
-        description: 'Checklist of required documents for your application'
+        id: 5,
+        title: 'Documents Checklist',
+        description: 'Checklist of required documents'
     },
     {
-        id: 7,
+        id: 6,
         title: 'Upload Documents',
         description: 'Upload all required documents and certificates'
     },
     {
-        id: 8,
+        id: 7,
         title: 'Fee Calculation',
-        description: 'Application fee calculation and payment gateway'
+        description: 'Application fee calculation'
+    },
+    {
+        id: 8,
+        title: 'Payment Receipt',
+        description: 'Upload payment receipt'
     },
     {
         id: 9,
-        title: 'Payment Receipt',
-        description: 'Upload payment receipt and transaction details'
-    },
-    {
-        id: 10,
         title: 'Summary',
         description: 'Review and submit your application'
     }

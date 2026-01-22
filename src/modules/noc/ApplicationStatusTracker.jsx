@@ -11,6 +11,7 @@ const ApplicationStatusTracker = () => {
     const [application, setApplication] = useState(null);
     const [timeline, setTimeline] = useState([]);
     const [estimate, setEstimate] = useState(null);
+    const [approvalFlow, setApprovalFlow] = useState(null);
 
     useEffect(() => {
         const fetchApplicationDetails = async () => {
@@ -51,6 +52,16 @@ const ApplicationStatusTracker = () => {
                         }
                     } catch (estErr) {
                         console.error("Error fetching estimates", estErr);
+                    }
+
+                    // Fetch Approval Flow
+                    try {
+                        const flowRes = await nocApplicationService.getApprovalFlow(data.applicationId || id);
+                        if (flowRes.success && flowRes.data) {
+                            setApprovalFlow(flowRes.data.approvalFlow);
+                        }
+                    } catch (flowErr) {
+                        console.error("Error fetching approval flow", flowErr);
                     }
 
                 } else {
@@ -132,6 +143,118 @@ const ApplicationStatusTracker = () => {
                         )}
                     </div>
                 </div>
+
+                {/* Approval Flow Card */}
+                {approvalFlow && (
+                    <div className="noc-card" style={{ marginBottom: '30px' }}>
+                        <div className="noc-card-header">Approval Workflow Status</div>
+                        <div className="noc-card-body">
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+                                {/* DGO Status */}
+                                <div style={{
+                                    padding: '20px',
+                                    borderRadius: '8px',
+                                    border: '2px solid',
+                                    borderColor: approvalFlow.dgo?.status === 'APPROVED' ? '#10b981' : approvalFlow.dgo?.status === 'REJECTED' ? '#ef4444' : '#94a3b8'
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+                                        <span style={{ fontSize: '1.5rem', marginRight: '10px' }}>🏛️</span>
+                                        <h4 style={{ margin: 0, color: '#1e293b' }}>DGO Review</h4>
+                                    </div>
+                                    <div style={{
+                                        display: 'inline-block',
+                                        padding: '6px 12px',
+                                        borderRadius: '20px',
+                                        fontSize: '0.85rem',
+                                        fontWeight: '600',
+                                        background: approvalFlow.dgo?.status === 'APPROVED' ? '#d1fae5' : approvalFlow.dgo?.status === 'REJECTED' ? '#fee2e2' : '#f1f5f9',
+                                        color: approvalFlow.dgo?.status === 'APPROVED' ? '#065f46' : approvalFlow.dgo?.status === 'REJECTED' ? '#991b1b' : '#475569'
+                                    }}>
+                                        {approvalFlow.dgo?.status || 'PENDING'}
+                                    </div>
+                                    {approvalFlow.dgo?.reviewedBy && (
+                                        <div style={{ marginTop: '12px', fontSize: '0.875rem', color: '#64748b' }}>
+                                            Reviewed by: <strong>{approvalFlow.dgo.reviewedBy}</strong>
+                                        </div>
+                                    )}
+                                    {approvalFlow.dgo?.documentsVerified && (
+                                        <div style={{ marginTop: '8px', fontSize: '0.875rem', color: '#10b981' }}>
+                                            ✓ Documents Verified
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* SGWA Status */}
+                                <div style={{
+                                    padding: '20px',
+                                    borderRadius: '8px',
+                                    border: '2px solid',
+                                    borderColor: approvalFlow.sgwa?.status === 'APPROVED' ? '#10b981' : approvalFlow.sgwa?.status === 'REJECTED' ? '#ef4444' : '#94a3b8'
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+                                        <span style={{ fontSize: '1.5rem', marginRight: '10px' }}>💧</span>
+                                        <h4 style={{ margin: 0, color: '#1e293b' }}>SGWA Review</h4>
+                                    </div>
+                                    <div style={{
+                                        display: 'inline-block',
+                                        padding: '6px 12px',
+                                        borderRadius: '20px',
+                                        fontSize: '0.85rem',
+                                        fontWeight: '600',
+                                        background: approvalFlow.sgwa?.status === 'APPROVED' ? '#d1fae5' : approvalFlow.sgwa?.status === 'REJECTED' ? '#fee2e2' : '#f1f5f9',
+                                        color: approvalFlow.sgwa?.status === 'APPROVED' ? '#065f46' : approvalFlow.sgwa?.status === 'REJECTED' ? '#991b1b' : '#475569'
+                                    }}>
+                                        {approvalFlow.sgwa?.status || 'PENDING'}
+                                    </div>
+                                    {approvalFlow.sgwa?.reviewedBy && (
+                                        <div style={{ marginTop: '12px', fontSize: '0.875rem', color: '#64748b' }}>
+                                            Reviewed by: <strong>{approvalFlow.sgwa.reviewedBy}</strong>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Enforcement Status */}
+                                <div style={{
+                                    padding: '20px',
+                                    borderRadius: '8px',
+                                    border: '2px solid',
+                                    borderColor: approvalFlow.enforcement?.status === 'APPROVED' ? '#10b981' : approvalFlow.enforcement?.status === 'REJECTED' ? '#ef4444' : '#94a3b8'
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+                                        <span style={{ fontSize: '1.5rem', marginRight: '10px' }}>⚖️</span>
+                                        <h4 style={{ margin: 0, color: '#1e293b' }}>Enforcement</h4>
+                                    </div>
+                                    <div style={{
+                                        display: 'inline-block',
+                                        padding: '6px 12px',
+                                        borderRadius: '20px',
+                                        fontSize: '0.85rem',
+                                        fontWeight: '600',
+                                        background: approvalFlow.enforcement?.status === 'APPROVED' ? '#d1fae5' : approvalFlow.enforcement?.status === 'REJECTED' ? '#fee2e2' : '#f1f5f9',
+                                        color: approvalFlow.enforcement?.status === 'APPROVED' ? '#065f46' : approvalFlow.enforcement?.status === 'REJECTED' ? '#991b1b' : '#475569'
+                                    }}>
+                                        {approvalFlow.enforcement?.status || 'PENDING'}
+                                    </div>
+                                    {approvalFlow.enforcement?.reviewedBy && (
+                                        <div style={{ marginTop: '12px', fontSize: '0.875rem', color: '#64748b' }}>
+                                            Reviewed by: <strong>{approvalFlow.enforcement.reviewedBy}</strong>
+                                        </div>
+                                    )}
+                                    {approvalFlow.enforcement?.nocNumber && (
+                                        <div style={{ marginTop: '8px', fontSize: '0.875rem', color: '#1e3a8a' }}>
+                                            <strong>NOC #:</strong> {approvalFlow.enforcement.nocNumber}
+                                        </div>
+                                    )}
+                                    {approvalFlow.enforcement?.remarks && (
+                                        <div style={{ marginTop: '8px', fontSize: '0.875rem', color: '#64748b', fontStyle: 'italic' }}>
+                                            "{approvalFlow.enforcement.remarks}"
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Visual Timeline */}
                 <div className="noc-card">

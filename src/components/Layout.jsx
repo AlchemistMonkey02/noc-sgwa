@@ -1,0 +1,30 @@
+import React from 'react';
+import { useLocation } from 'react-router-dom';
+import Header from '../header/Header';
+import PublicHeader from './PublicHeader';
+
+const Layout = ({ children }) => {
+    const location = useLocation();
+
+    // Define routes that should use PublicHeader
+    const publicRoutes = [
+        '/',
+        '/public',
+        '/forgot-password',
+        '/reset-password'
+    ];
+
+    // Check if current route should use PublicHeader
+    const usePublicHeader = publicRoutes.some(route =>
+        location.pathname === route || location.pathname.startsWith(route + '/')
+    );
+
+    return (
+        <>
+            {usePublicHeader ? <PublicHeader /> : <Header />}
+            {children}
+        </>
+    );
+};
+
+export default Layout;

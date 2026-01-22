@@ -122,6 +122,14 @@ export const validateStep2 = (formData) => {
         errors.state = 'State is required';
     }
 
+    if (!formData.district) {
+        errors.district = 'District is required';
+    }
+
+    if (!formData.block) {
+        errors.block = 'Block is required';
+    }
+
     if (!formData.assessmentUnit.trim()) {
         errors.assessmentUnit = 'Assessment unit is required';
     }
@@ -148,42 +156,39 @@ export const validateStep2 = (formData) => {
         errors.geology = 'Geology type is required';
     }
 
+    // Land Use Details Validation
+    if ((formData.landUseTotalArea && formData.landUseTotalArea < 0)) errors.landUseTotalArea = 'Cannot be negative';
+    if ((formData.landUseRooftopArea && formData.landUseRooftopArea < 0)) errors.landUseRooftopArea = 'Cannot be negative';
+    if ((formData.landUsePavedArea && formData.landUsePavedArea < 0)) errors.landUsePavedArea = 'Cannot be negative';
+    if ((formData.landUseGreenBeltArea && formData.landUseGreenBeltArea < 0)) errors.landUseGreenBeltArea = 'Cannot be negative';
+    if ((formData.landUseOpenArea && formData.landUseOpenArea < 0)) errors.landUseOpenArea = 'Cannot be negative';
+
+    // Basic consistency check (Total should be roughly sum of parts, but loose check for now)
+
     return errors;
 };
 
 export const validateStep3 = (formData) => {
-    // Step 3: Drinking & Domestic Water Requirements
+    // Step 3: Water Requirement Details (Consolidated)
     const errors = {};
 
-    // Basic range checks
-    if (formData.numberOfWorkers && parseInt(formData.numberOfWorkers) < 0) {
-        errors.numberOfWorkers = 'Cannot be negative';
+    // Validate Fresh Water Requirement
+    if (!formData.waterReqFreshRequirement || parseFloat(formData.waterReqFreshRequirement) <= 0) {
+        errors.waterReqFreshRequirement = 'Fresh water requirement must be greater than 0';
     }
 
-    if (formData.numberOfResidents && parseInt(formData.numberOfResidents) < 0) {
-        errors.numberOfResidents = 'Cannot be negative';
-    }
+    // Check breakdown totals vs Fresh Input (Optional strictness)
+    // For now just ensure they are non-negative
+    if (formData.waterReqDomestic < 0) errors.waterReqDomestic = 'Cannot be negative';
+    if (formData.waterReqIndustrial < 0) errors.waterReqIndustrial = 'Cannot be negative';
+    if (formData.waterReqGreenBelt < 0) errors.waterReqGreenBelt = 'Cannot be negative';
 
     return errors;
 };
 
 export const validateStep4 = (formData) => {
-    // Step 4: Water Requirement Details (Was Step 3)
-    const errors = {};
-
-    if (!formData.dailyWaterRequirement || formData.dailyWaterRequirement <= 0) {
-        errors.dailyWaterRequirement = 'Daily water requirement must be greater than 0';
-    }
-
-    if (!formData.annualWaterRequirement || formData.annualWaterRequirement <= 0) {
-        errors.annualWaterRequirement = 'Annual water requirement must be greater than 0';
-    }
-
-    return errors;
-};
-
-export const validateStep5 = (formData) => {
-    // Step 5: Groundwater Structures (Was Step 4)
+    // Step 4: Groundwater Structures (Was Step 5)
+    // Reusing the logic for structure validation
     const errors = {};
 
     const totalProposed =
@@ -201,6 +206,11 @@ export const validateStep5 = (formData) => {
     }
 
     return errors;
+};
+
+// Step 5 is now unused/renamed in this flow, but keeping empty for safety or future use
+export const validateStep5 = (formData) => {
+    return {};
 };
 
 export const validateStep6 = (formData) => {

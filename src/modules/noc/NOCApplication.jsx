@@ -48,7 +48,7 @@ const NOCApplication = () => {
     const [successData, setSuccessData] = useState(null);
     const [applicationId, setApplicationId] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
-    
+
     // Check if any structure has meter installed (needed early for useEffect dependencies)
     const hasMeterInstalled = existingStructures.some(s => s.hasMeter === 'Yes');
 
@@ -86,11 +86,23 @@ const NOCApplication = () => {
     useEffect(() => {
         const calculateAutoFee = async () => {
             const shouldCalculate = (hasMeterInstalled && currentStep === 8) || (!hasMeterInstalled && currentStep === 7);
-            
+
             if (shouldCalculate && applicationId && !formData.feeCalculation) {
-                console.log("Auto-calculating fees...");
+                console.log("Auto-calculating fees with query params...");
                 try {
-                    const result = await nocApplicationService.calculateFee({ applicationId, id: applicationId });
+                    // Use total daily requirement and block category from form data
+                    // REMOVED Fallback to 100 and Safe to ensure fee is based ONLY on user input
+                    const waterReq = parseFloat(formData.waterReqFreshRequirement || 0) + parseFloat(formData.waterReqRecycled || 0);
+                    const blockCat = blockCategory?.name || ''; // Send empty if not set, or let backend handle
+
+                    // Pass parameters to service call to generate the query string
+                    const result = await nocApplicationService.calculateFee({
+                        applicationId,
+                        id: applicationId,
+                        waterRequirement: waterReq,
+                        blockCategory: blockCat
+                    });
+
                     if (result.success && result.data?.feeCalculation) {
                         const feeCalc = result.data.feeCalculation;
                         setFormData(prev => ({
@@ -310,7 +322,7 @@ const NOCApplication = () => {
         }
     };
 
-    const handleFileUpload = (docId, file) => {
+    const handleFileUpload = async (docId, file) => {
         if (!validateFileSize(file)) {
             setErrors(prev => ({
                 ...prev,
@@ -327,18 +339,47 @@ const NOCApplication = () => {
             return;
         }
 
-        setFormData(prev => ({
-            ...prev,
-            uploadedDocuments: {
-                ...prev.uploadedDocuments,
-                [docId]: file
-            }
-        }));
+        // Optimistic UI update (optional, or just show loading)
+        // For now, consistent with user flow: Upload immediately
+        if (!applicationId) {
+            alert("Please complete Basic Details first to generate an Application ID before uploading documents.");
+            return;
+        }
 
-        setErrors(prev => ({
-            ...prev,
-            [docId]: ''
-        }));
+        try {
+            // Show some loading state if possible, or just trust the async process
+            // Here we use a temporary placeholder or toaster if available, but for now console log
+            console.log(`Uploading ${docId}...`);
+
+            // docId keys map to document types? Need to map docId (e.g., 'landOwnership') to enum/string expected by backend.
+            // Assuming docId IS the documentTypeCode or similar. If backend adds specific Enum, might need mapping.
+            // User request example used "documentType=OTHER", so likely flexible or needs mapping.
+            // Using docId.toUpperCase() as a safe bet for now or keys from documentTypes.
+
+            const response = await nocApplicationService.uploadDocument(file, docId.toUpperCase(), applicationId);
+
+            if (response.success) {
+                setFormData(prev => ({
+                    ...prev,
+                    uploadedDocuments: {
+                        ...prev.uploadedDocuments,
+                        [docId]: file // Keep file object for UI display (name, etc.)
+                        // If backend returns a URL or ID, store that too if needed for payload
+                    }
+                }));
+
+                setErrors(prev => ({
+                    ...prev,
+                    [docId]: ''
+                }));
+            }
+        } catch (error) {
+            console.error("Upload failed:", error);
+            setErrors(prev => ({
+                ...prev,
+                [docId]: 'Upload failed. Please try again.'
+            }));
+        }
     };
 
     const addExistingStructure = () => {
@@ -358,10 +399,37 @@ const NOCApplication = () => {
         setExistingStructures(existingStructures.filter(s => s.id !== id));
     };
 
-    const updateExistingStructure = (id, field, value) => {
-        setExistingStructures(existingStructures.map(s =>
+    const updateExistingStructure = async (id, field, value) => {
+        // Update local state first
+        const updatedStructures = existingStructures.map(s =>
             s.id === id ? { ...s, [field]: value } : s
-        ));
+        );
+        setExistingStructures(updatedStructures);
+
+        // Auto-calculate discharge if relevant fields change
+        if (field === 'pumpCapacity' || field === 'depth') {
+            const structure = updatedStructures.find(s => s.id === id);
+            const pumpCapacity = parseFloat(field === 'pumpCapacity' ? value : structure.pumpCapacity);
+            const depth = parseFloat(field === 'depth' ? value : structure.depth);
+
+            if (pumpCapacity > 0 && depth > 0) {
+                try {
+                    const response = await nocApplicationService.calculateDischarge({
+                        pumpCapacityHP: pumpCapacity,
+                        depthMeters: depth,
+                        efficiency: 0.6 // Default efficiency as per user request
+                    });
+
+                    if (response.success && response.data?.results?.dischargeM3Hr) {
+                        setExistingStructures(current => current.map(s =>
+                            s.id === id ? { ...s, discharge: response.data.results.dischargeM3Hr } : s
+                        ));
+                    }
+                } catch (error) {
+                    console.error("Failed to auto-calculate discharge:", error);
+                }
+            }
+        }
     };
 
     const validateCurrentStep = () => {
@@ -441,7 +509,7 @@ const NOCApplication = () => {
                         stepErrors.paymentReceipt = 'Payment receipt is required';
                     }
                 } else {
-                // Summary - No validation for step 9 without meter
+                    // Summary - No validation for step 9 without meter
                 }
                 break;
             case 10:
@@ -538,8 +606,8 @@ const NOCApplication = () => {
                     // Update section1 with current form data
                     response = await nocApplicationService.saveStep1(applicationId, apiPayload);
                 } else {
-                    // Create draft first
-                    response = await nocApplicationService.createApplication({});
+                    // Create draft first with initial payload
+                    response = await nocApplicationService.createApplication(apiPayload);
                     const newAppId = response.data?.applicationId || response.applicationId || response.data?.id || response.id;
                     if (newAppId) {
                         setApplicationId(newAppId);
@@ -566,7 +634,7 @@ const NOCApplication = () => {
                         relevantBlocks: formData.relevantBlocks,
                         projectAddress: formData.projectAddress,
                         pincode: formData.pincode,
-                        geology: formData.geology,
+                        geology: formData.geology === 'Other' ? formData.otherGeology : formData.geology,
                         latitude: parseFloat(formData.latitude),
                         longitude: parseFloat(formData.longitude)
                     },
@@ -600,6 +668,12 @@ const NOCApplication = () => {
                 if (parseFloat(formData.waterReqGreenBelt || 0) > 0) waterActivities.push({ activityType: "Greenbelt/Horticulture", quantity: parseFloat(formData.waterReqGreenBelt || 0) });
                 if (parseFloat(formData.waterReqOther || 0) > 0) waterActivities.push({ activityType: "Other", quantity: parseFloat(formData.waterReqOther || 0) });
 
+                // Calculate totals dynamically to ensure > 0 values
+                const freshReq = parseFloat(formData.waterReqFreshRequirement || 0);
+                const recycledReq = parseFloat(formData.waterReqRecycled || 0);
+                const totalDailyReq = freshReq + recycledReq;
+                const totalAnnualReq = totalDailyReq * 365; // Default to 365 days
+
                 // ALSO Save Step 4 (Water Breakup) data as it's now part of Step 3 UI
                 const step4Payload = {
                     waterRequirementBreakup: waterActivities.length > 0 ? waterActivities : (formData.waterActivities || []),
@@ -611,10 +685,10 @@ const NOCApplication = () => {
                     },
                     waterRequirement: {
                         purpose: formData.groundWaterUtilizationFor,
-                        dailyRequirement: parseFloat(formData.dailyWaterRequirement || 0),
-                        annualRequirement: parseFloat(formData.annualWaterRequirement || 0),
-                        freshWaterRequirement: parseFloat(formData.waterReqFreshRequirement || 0),
-                        recycledWater: parseFloat(formData.waterReqRecycled || 0)
+                        dailyRequirement: totalDailyReq,
+                        annualRequirement: totalAnnualReq,
+                        freshWaterRequirement: freshReq,
+                        recycledWater: recycledReq
                     }
                 };
                 response = await nocApplicationService.saveStep4(applicationId, step4Payload);
@@ -716,7 +790,17 @@ const NOCApplication = () => {
                     response = await nocApplicationService.saveStep7(applicationId, step7Payload);
                 } else {
                     // If no meter: Step 7 is Fee Calculation
-                    response = await nocApplicationService.calculateFee({ applicationId, id: applicationId });
+                    console.log("Calculating fee in Step 7 with query params...");
+                    const waterReq = parseFloat(formData.waterReqFreshRequirement || 0) + parseFloat(formData.waterReqRecycled || 0);
+                    const blockCat = blockCategory?.name || '';
+
+                    response = await nocApplicationService.calculateFee({
+                        applicationId,
+                        id: applicationId,
+                        waterRequirement: waterReq,
+                        blockCategory: blockCat
+                    });
+
                     if (response.success && response.data?.feeCalculation) {
                         const feeCalc = response.data.feeCalculation;
                         setFormData(prev => ({
@@ -747,7 +831,18 @@ const NOCApplication = () => {
 
                 if (hasMeterInstalled) {
                     // If meter installed: Step 8 is Fee Calculation
-                    response = await nocApplicationService.calculateFee({ applicationId, id: applicationId });
+                    // If meter installed: Step 8 is Fee Calculation
+                    console.log("Calculating fee in Step 8 with query params...");
+                    const waterReq = parseFloat(formData.waterReqFreshRequirement || 0) + parseFloat(formData.waterReqRecycled || 0);
+                    const blockCat = blockCategory?.name || '';
+
+                    response = await nocApplicationService.calculateFee({
+                        applicationId,
+                        id: applicationId,
+                        waterRequirement: waterReq,
+                        blockCategory: blockCat
+                    });
+
                     if (response.success && response.data?.feeCalculation) {
                         const feeCalc = response.data.feeCalculation;
                         setFormData(prev => ({
@@ -1656,31 +1751,7 @@ const NOCApplication = () => {
                                     </div>
                                 </div>
 
-                                <div className="noc-form-row two-col">
-                                    <div className="noc-form-group">
-                                        <label className="bhuneer-label">Relevant Blocks</label>
-                                        <input
-                                            type="text"
-                                            name="relevantBlocks"
-                                            className="bhuneer-input"
-                                            value={formData.relevantBlocks}
-                                            onChange={handleChange}
-                                            placeholder="Enter relevant blocks"
-                                        />
-                                    </div>
 
-                                    <div className="noc-form-group">
-                                        <label className="bhuneer-label">Tehsil</label>
-                                        <input
-                                            type="text"
-                                            name="tehsil"
-                                            className="bhuneer-input"
-                                            value={formData.tehsil}
-                                            onChange={handleChange}
-                                            placeholder="Enter tehsil"
-                                        />
-                                    </div>
-                                </div>
 
                                 <div className="noc-form-group">
                                     <label className="bhuneer-label required">Project Address</label>
@@ -1738,19 +1809,33 @@ const NOCApplication = () => {
                                 </div>
 
                                 <div className="noc-form-group">
-                                    <label className="bhuneer-label required">Geology</label>
+                                    <label className="bhuneer-label required">Aquifer Type</label>
                                     <select
                                         name="geology"
                                         className={`bhuneer-input ${errors.geology ? 'error' : ''}`}
                                         value={formData.geology}
                                         onChange={handleChange}
                                     >
-                                        <option value="">Select Geology Type</option>
+                                        <option value="">Select Aquifer Type</option>
                                         {geologyTypes.map(type => (
                                             <option key={type} value={type}>{type}</option>
                                         ))}
                                     </select>
                                     {errors.geology && <span className="bhuneer-error">{errors.geology}</span>}
+
+                                    {formData.geology === 'Other' && (
+                                        <div style={{ marginTop: '10px' }}>
+                                            <input
+                                                type="text"
+                                                name="otherGeology"
+                                                className={`bhuneer-input ${errors.otherGeology ? 'error' : ''}`}
+                                                value={formData.otherGeology}
+                                                onChange={handleChange}
+                                                placeholder="Please specify aquifer type"
+                                            />
+                                            {errors.otherGeology && <span className="bhuneer-error">{errors.otherGeology}</span>}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Land Use Details Section - Added functionality */}
@@ -2868,7 +2953,7 @@ const NOCApplication = () => {
                                             {formData.dateOfCommencement && (
                                                 <div>
                                                     <strong>Date of Commencement:</strong> {formatDisplayValue(formData.dateOfCommencement)}
-                                        </div>
+                                                </div>
                                             )}
                                             {formData.existingNOCStatus === 'Yes' && formData.oldNOCNo && (
                                                 <div>
@@ -2988,7 +3073,7 @@ const NOCApplication = () => {
                                                 <ul style={{ marginTop: '10px', paddingLeft: '20px' }}>
                                                     {existingStructures.map((struct, idx) => (
                                                         <li key={idx}>
-                                                            {struct.type || 'Structure'} - Depth: {struct.depth || 'N/A'}m, 
+                                                            {struct.type || 'Structure'} - Depth: {struct.depth || 'N/A'}m,
                                                             Diameter: {struct.diameter || 'N/A'}mm
                                                             {struct.hasMeter === 'Yes' && ' (Meter Installed)'}
                                                         </li>
@@ -3014,13 +3099,13 @@ const NOCApplication = () => {
                                                 <strong>Organization Type:</strong> {getDisplayLabel(formData.organizationType, organizationTypeOptions)}
                                             </div>
                                             {formData.designation && (
-                                            <div>
+                                                <div>
                                                     <strong>Designation:</strong> {formatDisplayValue(formData.designation)}
-                                            </div>
+                                                </div>
                                             )}
                                             <div>
                                                 <strong>Email:</strong> {formatDisplayValue(formData.applicantEmail)}
-                                        </div>
+                                            </div>
                                             <div>
                                                 <strong>Mobile:</strong> {formatDisplayValue(formData.applicantMobile)}
                                             </div>
@@ -3298,7 +3383,7 @@ const NOCApplication = () => {
                                                 <ul style={{ marginTop: '10px', paddingLeft: '20px' }}>
                                                     {existingStructures.map((struct, idx) => (
                                                         <li key={idx}>
-                                                            {struct.type || 'Structure'} - Depth: {struct.depth || 'N/A'}m, 
+                                                            {struct.type || 'Structure'} - Depth: {struct.depth || 'N/A'}m,
                                                             Diameter: {struct.diameter || 'N/A'}mm
                                                             {struct.hasMeter === 'Yes' && ' (Meter Installed)'}
                                                         </li>

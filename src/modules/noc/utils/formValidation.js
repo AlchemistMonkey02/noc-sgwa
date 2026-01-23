@@ -154,6 +154,8 @@ export const validateStep2 = (formData) => {
 
     if (!formData.geology) {
         errors.geology = 'Geology type is required';
+    } else if (formData.geology === 'Other' && (!formData.otherGeology || !formData.otherGeology.trim())) {
+        errors.otherGeology = 'Please specify the aquifer type';
     }
 
     // Land Use Details Validation

@@ -121,11 +121,11 @@ export const nocApplicationService = {
         return handleResponse(response);
     },
 
-    registerCompany: async (formData) => {
+    registerCompany: async (payload) => {
         const response = await fetch(`${API_BASE_URL}/companies/register`, {
             method: 'POST',
-            headers: getHeaders(true),
-            body: formData
+            headers: getHeaders(), // default is application/json
+            body: JSON.stringify(payload)
         });
         return handleResponse(response);
     },
@@ -165,8 +165,7 @@ export const nocApplicationService = {
         // New canonical flow: POST /api/applications/noc (creates draft + returns applicationId)
         return tryFetch(
             [
-                `${API_BASE_URL}/applications/noc`,
-                `${API_BASE_URL}/noc/applications/draft` // legacy fallback
+                `${API_BASE_URL}/applications/noc`
             ],
             {
                 method: 'POST',
@@ -176,12 +175,23 @@ export const nocApplicationService = {
         );
     },
 
+    getApplication: async (applicationId) => {
+        return tryFetch(
+            [
+                `${API_BASE_URL}/applications/noc/${applicationId}/summary`
+            ],
+            {
+                method: 'GET',
+                headers: getHeaders()
+            }
+        );
+    },
+
     saveStep1: async (appId, payload) => {
         // Section 1: Basic Details
         return tryFetch(
             [
-                `${API_BASE_URL}/applications/noc/${appId}/section1`,
-                `${API_BASE_URL}/noc/applications/${appId}/step/1` // legacy fallback
+                `${API_BASE_URL}/applications/noc/${appId}/section1`
             ],
             {
                 method: 'PUT',
@@ -195,8 +205,7 @@ export const nocApplicationService = {
         // Section 2: Location Details
         return tryFetch(
             [
-                `${API_BASE_URL}/applications/noc/${appId}/section2`,
-                `${API_BASE_URL}/noc/applications/${appId}/step/2` // legacy fallback
+                `${API_BASE_URL}/applications/noc/${appId}/section2`
             ],
             {
                 method: 'PUT',
@@ -211,8 +220,7 @@ export const nocApplicationService = {
         const normalized = payload && payload.drinkingDomesticUse ? payload : { drinkingDomesticUse: payload };
         return tryFetch(
             [
-                `${API_BASE_URL}/applications/noc/${appId}/section3`,
-                `${API_BASE_URL}/noc/applications/${appId}/step/3` // legacy fallback
+                `${API_BASE_URL}/applications/noc/${appId}/section3`
             ],
             {
                 method: 'PUT',
@@ -225,8 +233,7 @@ export const nocApplicationService = {
         // Section 4: Water Requirement Breakup
         return tryFetch(
             [
-                `${API_BASE_URL}/applications/noc/${appId}/section4`,
-                `${API_BASE_URL}/noc/applications/${appId}/step/4` // legacy fallback
+                `${API_BASE_URL}/applications/noc/${appId}/section4`
             ],
             {
                 method: 'PUT',
@@ -239,8 +246,7 @@ export const nocApplicationService = {
         // Section 5: Ground Water Structures
         return tryFetch(
             [
-                `${API_BASE_URL}/applications/noc/${appId}/section5`,
-                `${API_BASE_URL}/noc/applications/${appId}/step/5` // legacy fallback
+                `${API_BASE_URL}/applications/noc/${appId}/section5`
             ],
             {
                 method: 'PUT',
@@ -253,8 +259,7 @@ export const nocApplicationService = {
         // Section 6: Document Attachments Acknowledgement
         return tryFetch(
             [
-                `${API_BASE_URL}/applications/noc/${appId}/section6`,
-                `${API_BASE_URL}/noc/applications/${appId}/step/6` // legacy fallback
+                `${API_BASE_URL}/applications/noc/${appId}/section6`
             ],
             {
                 method: 'PUT',
@@ -267,8 +272,7 @@ export const nocApplicationService = {
         // Frontend uses this for document acknowledgement; map to section6 for the new flow.
         return tryFetch(
             [
-                `${API_BASE_URL}/applications/noc/${appId}/section6`,
-                `${API_BASE_URL}/noc/applications/${appId}/step/7` // legacy fallback
+                `${API_BASE_URL}/applications/noc/${appId}/section6`
             ],
             {
                 method: 'PUT',
@@ -282,8 +286,7 @@ export const nocApplicationService = {
         // Section 9: Digital Flow Meter (PUT /api/applications/noc/:id/flow-meter)
         return tryFetch(
             [
-                `${API_BASE_URL}/applications/noc/${appId}/flow-meter`,
-                `${API_BASE_URL}/noc/applications/${appId}/flow-meter` // legacy fallback
+                `${API_BASE_URL}/applications/noc/${appId}/flow-meter`
             ],
             {
                 method: 'PUT',
@@ -300,11 +303,11 @@ export const nocApplicationService = {
         // 2. POST /calculate-fees (manual override with payload)
         // 3. GET /calculate-fees?queryParams (manual override via query string)
         const applicationId = payload?.applicationId || payload?.id;
-        
+
         if (applicationId) {
             // Check if manual inputs are provided (POST method)
             const hasManualInputs = payload?.waterRequirement || payload?.blockCategory || payload?.sectorType;
-            
+
             if (hasManualInputs && Object.keys(payload).length > 2) {
                 // POST method: Manual override
                 const manualPayload = {
@@ -316,7 +319,7 @@ export const nocApplicationService = {
                     isMSME: payload.isMSME,
                     numberOfBorewells: payload.numberOfBorewells
                 };
-                
+
                 return tryFetch(
                     [
                         `${API_BASE_URL}/applications/noc/${applicationId}/calculate-fees`
@@ -334,10 +337,10 @@ export const nocApplicationService = {
                 if (payload.blockCategory) queryParams.append('blockCategory', payload.blockCategory);
                 if (payload.sectorType) queryParams.append('sectorType', payload.sectorType);
                 if (payload.isMSME !== undefined) queryParams.append('isMSME', payload.isMSME);
-                
+
                 const queryString = queryParams.toString();
                 const url = `${API_BASE_URL}/applications/noc/${applicationId}/calculate-fees${queryString ? '?' + queryString : ''}`;
-                
+
                 return tryFetch(
                     [url],
                     { method: 'GET', headers: getHeaders() }
@@ -370,8 +373,7 @@ export const nocApplicationService = {
         try {
             return await tryFetch(
                 [
-                    `${API_BASE_URL}/applications/noc/${appId}/payment`,
-                    `${API_BASE_URL}/noc/applications/${appId}/payment`
+                    `${API_BASE_URL}/applications/noc/${appId}/payment`
                 ],
                 {
                     method: 'POST',
@@ -390,13 +392,43 @@ export const nocApplicationService = {
         // New canonical submit: POST /api/applications/noc/:id/submit
         return tryFetch(
             [
-                `${API_BASE_URL}/applications/noc/${appId}/submit`,
-                `${API_BASE_URL}/noc/applications/${appId}/submit` // legacy fallback
+                `${API_BASE_URL}/applications/noc/${appId}/submit`
             ],
             {
                 method: 'POST',
                 headers: getHeaders(),
                 body: JSON.stringify(payload || {})
+            }
+        );
+    },
+
+    calculateDischarge: async (payload) => {
+        return tryFetch(
+            [
+                `${API_BASE_URL}/applications/noc/calculate-discharge`
+            ],
+            {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(payload || {})
+            }
+        );
+    },
+
+    uploadDocument: async (file, documentType, applicationId) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('documentType', documentType);
+        formData.append('applicationId', applicationId);
+
+        return tryFetch(
+            [
+                `${API_BASE_URL}/documents/upload/single`
+            ],
+            {
+                method: 'POST',
+                headers: getHeaders(true), // isMultipart = true
+                body: formData
             }
         );
     },
@@ -429,6 +461,22 @@ export const nocApplicationService = {
         // Assuming user meant fetching AVAILABLE serials (stock?) or just allowing input.
         // For now, return empty or mock if needed
         return { success: true, data: [] };
+    },
+
+    // Document helper methods
+    getDocumentUrl: (documentId) => {
+        return `${API_BASE_URL}/documents/${documentId}/view`;
+    },
+
+    getDocumentWithAuth: (documentId) => {
+        const url = `${API_BASE_URL}/documents/${documentId}/view`;
+        const token = getAuthToken();
+        return {
+            url,
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        };
     }
 };
 

@@ -52,6 +52,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
             submenu: [
                 { path: '/noc/user-profile', icon: '👤', label: 'User Profile' },
                 { path: '/noc/company-profile', icon: '🏢', label: 'Company Profile' },
+                { path: '/noc/company-documents', icon: '📄', label: 'Company Documents' },
                 { path: '/noc/account-settings?tab=password', icon: '🔑', label: 'Change Password' },
                 { path: '/noc/account-settings?tab=security', icon: '🔒', label: 'Security Settings' }
             ]

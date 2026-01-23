@@ -78,7 +78,8 @@ export const geologyTypes = [
     'Hard Rock',
     'Semi-Consolidated',
     'Coastal',
-    'Mixed'
+    'Mixed',
+    'Other'
 ];
 
 export const structureTypes = [
@@ -193,6 +194,7 @@ export const initialFormData = {
     isInWetland: false,
     wetlandName: '',
     geology: '',
+    otherGeology: '',
 
     // Step 2: Land Use Details
     landUseTotalArea: '',

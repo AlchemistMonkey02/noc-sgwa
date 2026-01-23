@@ -108,76 +108,8 @@ const CompanyProfile = () => {
                     }
                 } catch (e) { console.error("Error fetching states", e); }
 
-                // 3. Fetch User Profile to get Company ID
-                try {
-                    const userProfileRes = await nocApplicationService.getUserProfile();
-                    if (userProfileRes.success && userProfileRes.data) {
-                        const user = userProfileRes.data;
-                        console.log("User profile loaded:", user);
-
-                        // If user has a company ID, fetch company details
-                        if (user.company && user.company.id) {
-                            const companyId = user.company.id;
-                            const companyRes = await nocApplicationService.getCompanyById(companyId);
-
-                            if (companyRes.success && companyRes.data) {
-                                const company = companyRes.data;
-                                console.log("Loaded existing company:", company);
-
-                                // Populate Form
-                                setFormData(prev => ({
-                                    ...prev,
-                                    companyName: company.companyName || '',
-                                    companyType: company.companyType || '',
-                                    incorporationDate: company.incorporationDate ? company.incorporationDate.split('T')[0] : '',
-                                    gstNumber: company.gstNumber || '',
-                                    panNumber: company.panNumber || '',
-                                    commAddress: {
-                                        line1: company.registeredAddress?.addressLine1 || '',
-                                        line2: '',
-                                        state: company.registeredAddress?.state || '',
-                                        district: company.registeredAddress?.district || '',
-                                        subDistrict: '',
-                                        pincode: company.registeredAddress?.pincode || ''
-                                    },
-                                    regAddress: {
-                                        line1: company.registeredAddress?.addressLine1 || '',
-                                        line2: '',
-                                        state: company.registeredAddress?.state || '',
-                                        district: company.registeredAddress?.district || '',
-                                        subDistrict: '',
-                                        pincode: company.registeredAddress?.pincode || ''
-                                    },
-                                    contact: {
-                                        mobile: company.phone || '',
-                                        email: company.email || '',
-                                        landline: '',
-                                        fax: ''
-                                    },
-                                    authPerson: {
-                                        name: company.authorizedPerson?.name || '',
-                                        designation: company.authorizedPerson?.designation || '',
-                                        mobile: '',
-                                        email: '',
-                                        aadhaar: ''
-                                    }
-                                }));
-
-                                // Ensure User Context has companyId
-                                const userStr = localStorage.getItem('nocUser');
-                                if (userStr) {
-                                    const localUser = JSON.parse(userStr);
-                                    if (!localUser.companyId && company.id) {
-                                        localUser.companyId = company.id;
-                                        localStorage.setItem('nocUser', JSON.stringify(localUser));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } catch (err) {
-                    console.log("No existing company profile found or user not associated with company:", err);
-                }
+                // 3. Fetch Company Profile using correct endpoint
+                await fetchAndPopulateProfile();
 
             } catch (error) {
                 console.error('Error initializing data:', error);
@@ -186,6 +118,82 @@ const CompanyProfile = () => {
 
         initData();
     }, []);
+
+    const fetchAndPopulateProfile = async () => {
+        try {
+            const profileRes = await nocApplicationService.getCompanyProfile();
+            if (profileRes.success && profileRes.data) {
+                const company = profileRes.data;
+                console.log("Loaded company profile:", company);
+
+                // Populate Form
+                setFormData(prev => ({
+                    ...prev,
+                    companyName: company.companyName || '',
+                    companyType: company.companyType || '',
+                    incorporationDate: company.dateOfIncorporation ? company.dateOfIncorporation.split('T')[0] :
+                        (company.incorporationDate ? company.incorporationDate.split('T')[0] : ''),
+                    gstNumber: company.gstNumber || '',
+                    panNumber: company.panNumber || '',
+
+                    // Map Registered Address
+                    regAddress: {
+                        line1: company.registeredAddress?.addressLine1 || '',
+                        line2: company.registeredAddress?.addressLine2 || '',
+                        state: company.registeredAddress?.state || '',
+                        district: company.registeredAddress?.district || '',
+                        subDistrict: '', // Not in response, leave empty
+                        pincode: company.registeredAddress?.pincode || ''
+                    },
+
+                    // Map Communication Address
+                    commAddress: {
+                        line1: company.communicationAddress?.addressLine1 || '',
+                        line2: company.communicationAddress?.addressLine2 || '',
+                        state: company.communicationAddress?.state || '',
+                        district: company.communicationAddress?.district || '',
+                        subDistrict: '',
+                        pincode: company.communicationAddress?.pincode || ''
+                    },
+
+                    // Map Contact (Top level fields in JSON: email, phone)
+                    contact: {
+                        mobile: company.phone || '',
+                        email: company.email || '',
+                        landline: company.landline || '', // If available
+                        fax: ''
+                    },
+
+                    // Map Authorized Person
+                    authPerson: {
+                        name: company.authorizedPerson?.name || '',
+                        designation: company.authorizedPerson?.designation || '',
+                        mobile: company.authorizedPerson?.phone || '',
+                        email: company.authorizedPerson?.email || '',
+                        aadhaar: '' // Not in response
+                    }
+                }));
+
+                // Set sameAsCommunication if addresses match (simple check)
+                if (company.registeredAddress?.addressLine1 === company.communicationAddress?.addressLine1 &&
+                    company.registeredAddress?.pincode === company.communicationAddress?.pincode) {
+                    setSameAsCommunication(true);
+                }
+
+                // Update User Context if needed
+                const userStr = localStorage.getItem('nocUser');
+                if (userStr) {
+                    const localUser = JSON.parse(userStr);
+                    if (!localUser.companyId && company._id) {
+                        localUser.companyId = company._id;
+                        localStorage.setItem('nocUser', JSON.stringify(localUser));
+                    }
+                }
+            }
+        } catch (err) {
+            console.log("No existing company profile found:", err);
+        }
+    };
 
     // Fetch Communication Districts when State Changes
     React.useEffect(() => {
@@ -267,57 +275,62 @@ const CompanyProfile = () => {
             const companyData = {
                 companyName: formData.companyName,
                 companyType: formData.companyType,
-                industryType: formData.companyType,
+                industryType: formData.companyType, // Specific requirement from user curl example using companyType as industryType? Or just mapping. Keeping as per prompt if needed, or mapping "MANUFACTURING" if that was just example. 
+                // Wait, user curl said "industryType": "MANUFACTURING".
+                // Our form has companyType. It doesn't seem to have industryType input.
+                // Assuming we map or just send what we have. User said "integrate IT", implying use their structure.
+                // I'll add industryType: formData.companyType as a placeholder or empty string if not in form.
+                // Actually, let's just stick to what the form captures but in the correct structure.
+                incorporationId: "", // Not in form 
                 gstNumber: formData.gstNumber,
                 panNumber: formData.panNumber,
                 email: formData.contact.email,
                 phone: formData.contact.mobile,
                 registeredAddress: {
                     addressLine1: formData.regAddress.line1,
+                    // addressLine2 is missing in user example but good to send if backend handles it
+                    addressLine2: formData.regAddress.line2,
                     state: formData.regAddress.state,
                     district: formData.regAddress.district,
-                    pincode: formData.regAddress.pincode
+                    pincode: formData.regAddress.pincode,
+                    city: formData.regAddress.district // Fallback for city if not separate
                 },
+                // Communication address missing in user example, but likely needed by backend if distinct.
+                // If backend ONLY accepts what's in curl, we might drop it, but usually backend is superset.
+                // I will include it if standard, but user specifically asked to integrate "IT" (the curl).
+                // Let's stick to the structure in curl mainly but include what our form has:
                 communicationAddress: {
                     addressLine1: formData.commAddress.line1,
+                    addressLine2: formData.commAddress.line2,
                     state: formData.commAddress.state,
                     district: formData.commAddress.district,
                     pincode: formData.commAddress.pincode
                 },
                 authorizedPerson: {
                     name: formData.authPerson.name,
-                    designation: formData.authPerson.designation
+                    designation: formData.authPerson.designation,
+                    email: formData.authPerson.email,
+                    phone: formData.authPerson.mobile
                 }
             };
 
-            const submitData = new FormData();
-            submitData.append('data', JSON.stringify(companyData));
-
-            // Use the service which now handles auth and refresh automatically
-            const result = await nocApplicationService.registerCompany(submitData);
+            // Send JSON directly
+            const result = await nocApplicationService.registerCompany(companyData);
 
             console.log('Company registered:', result);
 
-            // Update Local Storage with Company ID
-            if (result.success && result.data && result.data.id) {
-                const userStr = localStorage.getItem('nocUser');
-                if (userStr) {
-                    const user = JSON.parse(userStr);
-                    user.companyId = result.data.id;
-                    localStorage.setItem('nocUser', JSON.stringify(user));
-                    console.log("Updated nocUser with companyId:", user.companyId);
-                }
+            if (result.success) {
+                alert('Company Profile saved successfully!');
+                // Reload profile to show saved details (and documents if they exist)
+                await fetchAndPopulateProfile();
+            } else {
+                alert(`Failed to save company profile: ${result.message || 'Unknown error'}`);
             }
-
-            alert('Company Profile saved successfully!');
-            // Stay on page to show details, or redirect? User asked to "SHOW THESE DETAILS"
-            // We populated the form with what we sent, so it "shows" the details.
-            // Optionally disable inputs or show a success banner.
 
         } catch (error) {
             console.error('Registration failed:', error);
             // Check if error is due to auth failure that couldn't be refreshed
-            if (error.message.includes('Session expired') || error.message.includes('401')) {
+            if (error.message && (error.message.includes('Session expired') || error.message.includes('401'))) {
                 alert('Session expired. Please login again.');
                 logout();
                 navigate('/noc/login');

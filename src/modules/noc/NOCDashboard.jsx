@@ -21,6 +21,10 @@ const NOCDashboard = () => {
                 setDashboardLoading(true);
                 const response = await nocApplicationService.getDashboardData();
                 if (response.success) {
+                    console.log("Dashboard Data received:", response.data);
+                    if (response.data?.recentApplications?.length > 0) {
+                        console.log("First Application Structure:", response.data.recentApplications[0]);
+                    }
                     setDashboardData(response.data);
                 }
             } catch (error) {
@@ -93,6 +97,8 @@ const NOCDashboard = () => {
         submittedDate: formatDate(app.updatedAt),
         status: formatStatus(app.status),
         statusClass: getStatusClass(app.status),
+        uuid: app.uuid,
+        applicationId: app.applicationId || app.id || app.trackingId,
         _id: app._id
     }));
 
@@ -323,7 +329,11 @@ const NOCDashboard = () => {
                                                 <td>
                                                     <button
                                                         className="table-action-btn"
-                                                        onClick={() => navigate(`/noc/application/${app._id}`)}
+                                                        onClick={() => {
+                                                            // Use MongoDB _id as that's what the /summary endpoint expects
+                                                            const targetId = app._id;
+                                                            navigate(`/noc/application/${targetId}`);
+                                                        }}
                                                     >
                                                         View
                                                     </button>

@@ -68,6 +68,83 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
     const [verifyingMobileOTP, setVerifyingMobileOTP] = useState(false);
     const [verifyingEmailOTP, setVerifyingEmailOTP] = useState(false);
 
+    // File Upload State
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadError, setUploadError] = useState('');
+    const [uploadSuccess, setUploadSuccess] = useState(false);
+
+    const handleFileUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Reset status
+        setUploadError('');
+        setUploadSuccess(false);
+        setIsUploading(true);
+
+        // Validation (Max 5MB, PDF/Image)
+        if (file.size > 5 * 1024 * 1024) {
+            setUploadError('File size exceeds 5MB limit');
+            setIsUploading(false);
+            return;
+        }
+
+        const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+        if (!validTypes.includes(file.type)) {
+            setUploadError('Invalid file type. Please upload PDF, JPG, or PNG.');
+            setIsUploading(false);
+            return;
+        }
+
+        try {
+            const formDataUpload = new FormData();
+            formDataUpload.append('file', file);
+
+            // Map document type
+            let docType = 'OTHER';
+            const selectedType = formData.applicantInfo.idProofType;
+            if (selectedType === 'Aadhaar') docType = 'AADHAR';
+            else if (selectedType === 'PAN') docType = 'PAN';
+            else if (selectedType === 'VoterID') docType = 'VOTER_ID';
+
+            formDataUpload.append('documentType', docType);
+
+            const response = await fetch(`${API_BASE_URL}/documents/upload/single`, {
+                method: 'POST',
+                // Note: Do NOT set Content-Type header for FormData, browser does it automatically with boundary
+                body: formDataUpload
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('Document upload success:', result);
+
+                if (result.success && result.data && result.data.documentId) {
+                    setUploadSuccess(true);
+                    // Update main form data with document ID
+                    setFormData(prev => ({
+                        ...prev,
+                        applicantInfo: {
+                            ...prev.applicantInfo,
+                            idProofDocumentId: result.data.documentId,
+                            idProofFile: file // Keep file ref if needed for UI, but rely on ID for submit
+                        }
+                    }));
+                } else {
+                    setUploadError('Upload failed: Invalid server response');
+                }
+            } else {
+                const errorData = await response.json();
+                setUploadError(errorData.message || 'Document upload failed');
+            }
+        } catch (error) {
+            console.error('Error uploading document:', error);
+            setUploadError('Network error during upload');
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
     // Generate captcha on mount
     useEffect(() => {
         generateCaptcha();
@@ -176,7 +253,8 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                 alert(`OTP sent successfully to your ${type}. It will expire in ${expiresIn} seconds.`);
             } else {
                 const errorData = await response.json();
-                alert(`Failed to send OTP: ${errorData.message || 'Please try again'}`);
+                // Show specific error from API
+                alert(errorData.message || `Failed to send OTP to ${type}. Please try again.`);
             }
         } catch (error) {
             console.error(`Error sending OTP to ${type}:`, error);
@@ -216,8 +294,9 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                 alert(`${type.charAt(0).toUpperCase() + type.slice(1)} verified successfully!`);
             } else {
                 const errorData = await response.json();
-                setErrors(prev => ({ ...prev, [`applicantInfo.${type}OTP`]: errorData.message || 'Invalid OTP' }));
-                alert(`OTP verification failed: ${errorData.message || 'Invalid OTP'}`);
+                const errorMessage = errorData.message || 'Invalid OTP';
+                setErrors(prev => ({ ...prev, [`applicantInfo.${type}OTP`]: errorMessage }));
+                alert(errorMessage);
             }
         } catch (error) {
             console.error(`Error verifying ${type} OTP:`, error);
@@ -384,7 +463,8 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                         idProofNumber: formData.applicantInfo.idProofNumber,
                         uidNumber: formData.applicantInfo.idProofNumber, // Using same as idProofNumber
                         mobileNumber: formData.applicantInfo.mobileNumber,
-                        emailId: formData.applicantInfo.emailId
+                        emailId: formData.applicantInfo.emailId,
+                        idProofDocumentId: formData.applicantInfo.idProofDocumentId // Include uploaded document ID
                     },
                     communicationAddress: {
                         addressLine1: formData.communicationAddress.addressLine1,
@@ -428,7 +508,15 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                 } else {
                     const errorData = await response.json();
                     console.error('Registration failed:', errorData);
-                    alert(`Registration failed: ${errorData.message || 'Please check your details and try again'}`);
+
+                    // Check for specific "already registered" messages to highlight them
+                    const msg = errorData.message || 'Registration failed. Please checking your details.';
+
+                    if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('duplicate')) {
+                        alert(`⚠️ Registration Error:\n\n${msg}`);
+                    } else {
+                        alert(msg);
+                    }
                 }
 
             } catch (error) {
@@ -719,11 +807,12 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                                 <div className="reg-row" style={{ gridTemplateColumns: '1fr 1fr' }}>
                                     <div className="form-group">
                                         <label className="reg-label">Mobile Number <span className="required">*</span></label>
-                                        <div style={{ display: 'flex', gap: '10px' }}>
+                                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                                             <input
                                                 type="text"
                                                 name="applicantInfo.mobileNumber"
                                                 className="reg-input"
+                                                style={{ flex: 1 }}
                                                 value={formData.applicantInfo.mobileNumber}
                                                 onChange={handleChange}
                                                 placeholder="10-digit Mobile Number"
@@ -731,7 +820,7 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                                                 readOnly={mobileVerified}
                                             />
                                             {!mobileVerified && (
-                                                <button type="button" onClick={() => sendOTP('mobile')} className="btn-primary" style={{ padding: '0 15px', whiteSpace: 'nowrap' }}>
+                                                <button type="button" onClick={() => sendOTP('mobile')} className="btn-primary" style={{ padding: '0 15px', whiteSpace: 'nowrap', height: '45px', flexShrink: 0 }}>
                                                     {sendingMobileOTP ? 'Sending...' : 'Send OTP'}
                                                 </button>
                                             )}
@@ -739,27 +828,36 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                                         </div>
                                         {errors['applicantInfo.mobileNumber'] && <span className="error-message" style={{ color: 'red', fontSize: '0.875rem', display: 'block', marginTop: '5px' }}>{errors['applicantInfo.mobileNumber']}</span>}
                                         {!mobileVerified && sendingMobileOTP && (
-                                            <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
-                                                <input type="text" name="applicantInfo.mobileOTP" value={formData.applicantInfo.mobileOTP} onChange={handleChange} placeholder="Enter OTP" className="reg-input" />
-                                                <button type="button" onClick={() => verifyOTP('mobile')} className="btn-primary">Verify</button>
+                                            <div style={{ marginTop: '10px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                                <input
+                                                    type="text"
+                                                    name="applicantInfo.mobileOTP"
+                                                    value={formData.applicantInfo.mobileOTP}
+                                                    onChange={handleChange}
+                                                    placeholder="Enter OTP"
+                                                    className="reg-input"
+                                                    style={{ flex: 1 }}
+                                                />
+                                                <button type="button" onClick={() => verifyOTP('mobile')} className="btn-primary" style={{ padding: '0 15px', whiteSpace: 'nowrap', height: '45px', flexShrink: 0 }}>Verify</button>
                                             </div>
                                         )}
                                     </div>
 
                                     <div className="form-group">
                                         <label className="reg-label">Email ID <span className="required">*</span></label>
-                                        <div style={{ display: 'flex', gap: '10px' }}>
+                                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                                             <input
                                                 type="email"
                                                 name="applicantInfo.emailId"
                                                 className="reg-input"
+                                                style={{ flex: 1 }}
                                                 value={formData.applicantInfo.emailId}
                                                 onChange={handleChange}
                                                 placeholder="Email Address"
                                                 readOnly={emailVerified}
                                             />
                                             {!emailVerified && (
-                                                <button type="button" onClick={() => sendOTP('email')} className="btn-primary" style={{ padding: '0 15px', whiteSpace: 'nowrap' }}>
+                                                <button type="button" onClick={() => sendOTP('email')} className="btn-primary" style={{ padding: '0 15px', whiteSpace: 'nowrap', height: '45px', flexShrink: 0 }}>
                                                     {sendingEmailOTP ? 'Sending...' : 'Send OTP'}
                                                 </button>
                                             )}
@@ -767,9 +865,17 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                                         </div>
                                         {errors['applicantInfo.emailId'] && <span className="error-message" style={{ color: 'red', fontSize: '0.875rem', display: 'block', marginTop: '5px' }}>{errors['applicantInfo.emailId']}</span>}
                                         {!emailVerified && sendingEmailOTP && (
-                                            <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
-                                                <input type="text" name="applicantInfo.emailOTP" value={formData.applicantInfo.emailOTP} onChange={handleChange} placeholder="Enter OTP" className="reg-input" />
-                                                <button type="button" onClick={() => verifyOTP('email')} className="btn-primary">Verify</button>
+                                            <div style={{ marginTop: '10px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                                <input
+                                                    type="text"
+                                                    name="applicantInfo.emailOTP"
+                                                    value={formData.applicantInfo.emailOTP}
+                                                    onChange={handleChange}
+                                                    placeholder="Enter OTP"
+                                                    className="reg-input"
+                                                    style={{ flex: 1 }}
+                                                />
+                                                <button type="button" onClick={() => verifyOTP('email')} className="btn-primary" style={{ padding: '0 15px', whiteSpace: 'nowrap', height: '45px', flexShrink: 0 }}>Verify</button>
                                             </div>
                                         )}
                                     </div>
@@ -785,7 +891,22 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                                         </select>
                                         <input type="text" name="applicantInfo.idProofNumber" value={formData.applicantInfo.idProofNumber} onChange={handleChange} placeholder="ID Number" className="reg-input" />
                                     </div>
-                                    <input type="file" name="applicantInfo.idProofFile" onChange={handleChange} className="reg-input" />
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <input
+                                                type="file"
+                                                name="applicantInfo.idProofFile"
+                                                onChange={handleFileUpload}
+                                                className="reg-input"
+                                                accept=".pdf,.jpg,.jpeg,.png"
+                                                disabled={isUploading}
+                                            />
+                                            {isUploading && <span style={{ color: '#3b82f6', fontSize: '0.9rem' }}>Uploading...</span>}
+                                            {uploadSuccess && <span style={{ color: 'green', fontSize: '1.2rem' }}>✓</span>}
+                                        </div>
+                                        {uploadError && <span className="error-message" style={{ color: 'red', fontSize: '0.875rem' }}>{uploadError}</span>}
+                                        {formData.applicantInfo.idProofDocumentId && <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Document ID: {formData.applicantInfo.idProofDocumentId}</span>}
+                                    </div>
                                 </div>
                             </div>
                         )}

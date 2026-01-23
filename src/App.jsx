@@ -65,9 +65,11 @@ import ViewInspectionReport from './modules/officer/inspection/ViewInspectionRep
 import NOCLogin from './modules/noc/NOCLogin';
 import NOCRegister from './modules/noc/NOCRegister';
 import CompanyProfile from './modules/noc/CompanyProfile';
+import CompanyDocuments from './modules/noc/CompanyDocuments';
 import UserProfile from './modules/noc/UserProfile';
 import NOCDashboard from './modules/noc/NOCDashboard';
 import NOCApplication from './modules/noc/NOCApplication';
+import ApplicationDetail from './modules/noc/ApplicationDetail';
 import EligibilityChecker from './modules/noc/EligibilityChecker';
 import ApplicationSummary from './modules/noc/ApplicationSummary';
 import NOCCertificatePage from './modules/noc/NOCCertificatePage';
@@ -112,8 +114,10 @@ function App() {
             <Route path="/noc/register" element={<NOCRegister />} />
             <Route path="/noc/dashboard" element={<NOCDashboard />} />
             <Route path="/noc/company-profile" element={<CompanyProfile />} />
+            <Route path="/noc/company-documents" element={<CompanyDocuments />} />
             <Route path="/noc/user-profile" element={<UserProfile />} />
             <Route path="/noc/application" element={<NOCApplication />} />
+            <Route path="/noc/application/:id" element={<ApplicationDetail />} />
             <Route path="/noc/application/summary" element={<ApplicationSummary />} />
             <Route path="/noc/certificate/:nocNumber" element={<NOCCertificatePage />} />
             <Route path="/noc/payment-details" element={<PaymentDetails />} />

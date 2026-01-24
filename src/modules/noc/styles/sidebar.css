@@ -5,17 +5,19 @@
 /* Sidebar Container */
 .sidebar {
     position: fixed;
-    top: 0;
+    top: 160px;
+    /* Adjust based on actual header height */
     left: 0;
     width: 280px;
-    height: 100vh;
+    height: calc(100vh - 160px);
     /* Clean government style - solid white */
     background: #ffffff;
     /* Simple border instead of shadow */
     border-right: 1px solid #e5e7eb;
     /* Minimal shadow for subtle depth */
     box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
-    z-index: 999;
+    z-index: 900;
+    /* Lower than header (1000) */
     display: flex;
     flex-direction: column;
     transition: transform 0.3s ease;
@@ -88,6 +90,9 @@
     justify-content: center;
     transition: all 0.2s ease;
     font-size: 1rem;
+    position: relative;
+    z-index: 1002;
+    /* Ensure clickable above potential overlaps */
 }
 
 .sidebar-toggle:hover {
@@ -360,20 +365,76 @@
     }
 }
 
-/* Collapsed State (Optional for future) */
+/* Collapsed State */
 .sidebar.collapsed {
     width: 80px;
 }
 
-.sidebar.collapsed .sidebar-logo-text,
+.sidebar.collapsed .sidebar-header {
+    justify-content: center;
+    padding: 24px 10px;
+}
+
+.sidebar.collapsed .sidebar-logo {
+    display: none;
+}
+
+.sidebar.collapsed .sidebar-toggle {
+    margin: 0 auto;
+}
+
 .sidebar.collapsed .nav-label,
 .sidebar.collapsed .nav-chevron,
-.sidebar.collapsed .submenu,
 .sidebar.collapsed .sidebar-help-card {
     display: none;
+}
+
+.sidebar.collapsed .sidebar-nav {
+    padding: 10px 0;
 }
 
 .sidebar.collapsed .nav-link {
     justify-content: center;
     padding: 14px;
+    width: auto;
+    margin: 4px;
+}
+
+.sidebar.collapsed .nav-icon {
+    width: 24px;
+    margin: 0;
+}
+
+/* Submenu Behavior in Collapsed State */
+.sidebar.collapsed .nav-section {
+    position: relative;
+}
+
+.sidebar.collapsed .submenu {
+    display: none;
+    /* Hide submenu in collapsed mode initially */
+    position: absolute;
+    left: 100%;
+    top: 0;
+    width: 200px;
+    background: white;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 5px 0;
+    max-height: none;
+    z-index: 1001;
+}
+
+/* Show submenu on hover if needed, or keep hidden */
+.sidebar.collapsed .nav-section:hover .submenu {
+    display: block;
+}
+
+.sidebar.collapsed .submenu-link {
+    padding: 10px 16px;
+}
+
+.sidebar.collapsed .submenu-link::before {
+    left: 8px;
 }

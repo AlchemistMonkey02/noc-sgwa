@@ -59,7 +59,7 @@ export const validateStep1 = (formData) => {
         errors.groundWaterUtilizationFor = 'Ground water utilization purpose is required';
     }
 
-    if (!formData.dateOfCommencement) {
+    if (formData.existingNOCStatus === 'Yes' && !formData.dateOfCommencement) {
         errors.dateOfCommencement = 'Date of commencement is required';
     }
 

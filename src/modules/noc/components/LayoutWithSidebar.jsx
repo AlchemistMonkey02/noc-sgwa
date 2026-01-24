@@ -12,11 +12,15 @@ import '../styles/noc-portal.css';
  */
 const LayoutWithSidebar = ({ children, showSidebar = true }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(false);
     const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
 
     useEffect(() => {
         const handleResize = () => {
             setIsDesktop(window.innerWidth >= 1024);
+            if (window.innerWidth < 1024) {
+                setIsCollapsed(false);
+            }
         };
 
         window.addEventListener('resize', handleResize);
@@ -30,9 +34,11 @@ const LayoutWithSidebar = ({ children, showSidebar = true }) => {
                     <Sidebar
                         isOpen={sidebarOpen}
                         onToggle={() => setSidebarOpen(!sidebarOpen)}
+                        isCollapsed={isCollapsed}
+                        onCollapse={() => setIsCollapsed(!isCollapsed)}
                     />
 
-                    {/* Sidebar Toggle Button */}
+                    {/* Sidebar Toggle Button (Mobile) */}
                     <button
                         className="sidebar-toggle-btn"
                         onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -48,9 +54,10 @@ const LayoutWithSidebar = ({ children, showSidebar = true }) => {
             <div
                 className="main-content"
                 style={{
-                    marginLeft: showSidebar && isDesktop ? '280px' : '0',
+                    marginLeft: showSidebar && isDesktop ? (isCollapsed ? '80px' : '280px') : '0',
                     transition: 'margin-left 0.3s',
-                    minHeight: 'calc(100vh - 200px)'
+                    minHeight: 'calc(100vh - 200px)',
+                    marginTop: '160px' // Adjust for fixed header height
                 }}
             >
                 {children}

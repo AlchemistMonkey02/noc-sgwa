@@ -11,7 +11,10 @@ const Layout = ({ children }) => {
         '/',
         '/public',
         '/forgot-password',
-        '/reset-password'
+        '/reset-password',
+        '/noc/login',
+        '/noc/register',
+        '/noc/track-status'
     ];
 
     // Check if current route should use PublicHeader

@@ -17,7 +17,8 @@ const ApplicationStatusTracker = () => {
         const fetchApplicationDetails = async () => {
             try {
                 // Determine if we are tracking by DB ID (UUID) or Application Number (NOC/...)
-                const response = await nocApplicationService.trackApplication(encodeURIComponent(id));
+                // Passing id directly as per user request to match curl format with slashes
+                const response = await nocApplicationService.trackApplication(id);
 
                 if (response.success && response.data) {
                     const data = response.data;

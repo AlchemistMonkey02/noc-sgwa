@@ -5,43 +5,67 @@ import './PublicHeader.css';
 const PublicHeader = () => {
     return (
         <header className="public-portal-header">
-            <div className="public-header-top">
+            {/* Top Bar - Optional for Gov sites */}
+            <div className="public-top-bar">
                 <div className="public-header-container">
-                    <div className="public-header-brand">
-                        <div className="public-dept-logo">
-                            <div className="public-logo-circle">
-                                <img src="/logos/logo-black.png" alt="Department Logo" />
-                            </div>
-                        </div>
-                        <div className="public-dept-info">
-                            <h1>GROUND WATER DEPARTMENT</h1>
-                            <p>Government of Rajasthan</p>
-                        </div>
-                    </div>
-                    <div className="public-header-right">
-                        <div className="public-search-box">
-                            <input type="text" placeholder="Search here" />
-                            <button>🔍</button>
-                        </div>
-                        <div className="public-helpline-info">
-                            <strong>Technical Helpline Number</strong>
-                            <p>10.00 AM - 6.00 PM (On all working days)</p>
-                        </div>
-                        <div className="public-raj-emblem">
-                            <div className="public-emblem-circle">
-                                <img src="/logos/india-emblem.png" alt="Government Emblem" />
-                            </div>
-                        </div>
+                    <span>Government of Rajasthan</span>
+                    <div className="public-top-links">
+                        <a href="#">Skip to Main Content</a>
+                        <span>|</span>
+                        <a href="#">Screen Reader Access</a>
                     </div>
                 </div>
             </div>
+
+            {/* Main Header Area */}
+            <div className="public-header-main">
+                <div className="public-header-container">
+                    <div className="public-brand-area">
+                        <img
+                            src="/logos/logo.png"
+                            alt="Department Logo"
+                            className="header-dept-logo"
+                            onError={(e) => e.target.style.display = 'none'}
+                        />
+                        <div className="public-brand-text">
+                            <h1>Rajasthan Ground Water (Conservation and Management) Authority</h1>
+                            <p>Government of Rajasthan</p>
+                        </div>
+                    </div>
+
+                    <div className="public-header-actions">
+                        <div className="public-search-wrapper">
+                            <input type="text" placeholder="Search here..." />
+                            <button><i className="fas fa-search"></i> 🔍</button>
+                        </div>
+
+                        <div className="header-helpline">
+                            <span className="helpline-label">Technical Helpline Number</span>
+                            <span className="helpline-time">10:00 AM - 6:00 PM (Working Days)</span>
+                        </div>
+
+                        <img
+                            src="/logos/india-emblem.png"
+                            alt="State Emblem"
+                            className="header-emblem"
+                            onError={(e) => e.target.style.display = 'none'}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Navigation Bar */}
             <nav className="public-header-nav">
                 <div className="public-header-container">
-                    <a href="https://rgwcma.geoplanetsolution.in/about" target="_blank" rel="noopener noreferrer">ABOUT DEPARTMENT</a>
-                    <a href="https://rgwcma.geoplanetsolution.in/services" target="_blank" rel="noopener noreferrer">SERVICES</a>
-                    <a href="https://rgwcma.geoplanetsolution.in/guidelines" target="_blank" rel="noopener noreferrer">GUIDELINES</a>
-                    <a href="https://rgwcma.geoplanetsolution.in/downloads" target="_blank" rel="noopener noreferrer">DOWNLOADS</a>
-                    <a href="https://rgwcma.geoplanetsolution.in/contact" target="_blank" rel="noopener noreferrer">CONTACT US</a>
+                    <div className="nav-links-wrapper">
+                        <a href="https://rgwcma.geoplanetsolution.in/about" target="_blank" rel="noopener noreferrer">ABOUT DEPARTMENT</a>
+                        <a href="https://rgwcma.geoplanetsolution.in/services" target="_blank" rel="noopener noreferrer">SERVICES</a>
+                        <a href="https://rgwcma.geoplanetsolution.in/guidelines" target="_blank" rel="noopener noreferrer">GUIDELINES</a>
+                        <a href="https://rgwcma.geoplanetsolution.in/downloads" target="_blank" rel="noopener noreferrer">DOWNLOADS</a>
+                        <a href="https://rgwcma.geoplanetsolution.in/contact" target="_blank" rel="noopener noreferrer">CONTACT US</a>
+                        <Link to="/noc/login" className="nav-btn-link">LOGIN</Link>
+                        <Link to="/noc/register" className="nav-btn-link">REGISTER</Link>
+                    </div>
                 </div>
             </nav>
         </header>

@@ -22,6 +22,7 @@ const CompanyProfile = () => {
     const [formData, setFormData] = useState({
         companyName: '',
         companyType: '',
+        incorporationId: '',
         incorporationDate: '',
         gstNumber: '',
         panNumber: '',
@@ -131,6 +132,7 @@ const CompanyProfile = () => {
                     ...prev,
                     companyName: company.companyName || '',
                     companyType: company.companyType || '',
+                    incorporationId: company.incorporationId || '',
                     incorporationDate: company.dateOfIncorporation ? company.dateOfIncorporation.split('T')[0] :
                         (company.incorporationDate ? company.incorporationDate.split('T')[0] : ''),
                     gstNumber: company.gstNumber || '',
@@ -277,11 +279,9 @@ const CompanyProfile = () => {
                 companyType: formData.companyType,
                 industryType: formData.companyType, // Specific requirement from user curl example using companyType as industryType? Or just mapping. Keeping as per prompt if needed, or mapping "MANUFACTURING" if that was just example. 
                 // Wait, user curl said "industryType": "MANUFACTURING".
-                // Our form has companyType. It doesn't seem to have industryType input.
-                // Assuming we map or just send what we have. User said "integrate IT", implying use their structure.
-                // I'll add industryType: formData.companyType as a placeholder or empty string if not in form.
                 // Actually, let's just stick to what the form captures but in the correct structure.
-                incorporationId: "", // Not in form 
+                incorporationId: formData.incorporationId,
+                incorporationDate: formData.incorporationDate,
                 gstNumber: formData.gstNumber,
                 panNumber: formData.panNumber,
                 email: formData.contact.email,
@@ -418,6 +418,17 @@ const CompanyProfile = () => {
                                         className="form-control"
                                         value={formData.incorporationDate}
                                         onChange={(e) => handleInputChange(null, 'incorporationDate', e.target.value)}
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Incorporation ID <span className="required">*</span></label>
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        value={formData.incorporationId}
+                                        onChange={(e) => handleInputChange(null, 'incorporationId', e.target.value)}
+                                        required
+                                        placeholder="e.g. U12345RJ2023PTC123456"
                                     />
                                 </div>
                                 <div className="form-group">

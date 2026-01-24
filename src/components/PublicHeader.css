@@ -10,175 +10,166 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* ===== HEADER TOP SECTION ===== */
-.public-header-top {
-    background: white;
-    border-bottom: 1px solid #e5e7eb;
+/* ===== HEADER TOP BAR (Gov Style) ===== */
+.public-top-bar {
+    background: #f1f1f1;
+    font-size: 12px;
+    color: #333;
+    padding: 5px 0;
+    border-bottom: 1px solid #ddd;
 }
 
-.public-header-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 2rem;
-}
-
-.public-header-top .public-header-container {
+.public-top-bar .public-header-container {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 2rem;
 }
 
-/* Header Brand (Logo + Title) */
-.public-header-brand {
+.public-top-links {
     display: flex;
-    align-items: center;
-    gap: 1rem;
+    gap: 10px;
 }
 
-.public-dept-logo .public-logo-circle {
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
-    background: #f3f4f6;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid #e5e7eb;
-    overflow: hidden;
+.public-top-links a {
+    color: #333;
+    text-decoration: none;
 }
 
-.public-dept-logo .public-logo-circle img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    padding: 8px;
-}
-
-.public-dept-info h1 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #1e3a8a;
-    margin: 0;
-    line-height: 1.3;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-}
-
-.public-dept-info p {
-    font-size: 0.875rem;
-    color: #6b7280;
-    margin: 4px 0 0 0;
-    font-weight: 500;
-}
-
-/* Header Right Section */
-.public-header-right {
-    display: flex;
-    align-items: center;
-    gap: 2rem;
-}
-
-/* Search Box */
-.public-search-box {
-    display: flex;
-    align-items: center;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    overflow: hidden;
+/* ===== MAIN HEADER AREA ===== */
+.public-header-main {
     background: white;
+    padding: 15px 0;
+    width: 100%;
 }
 
-.public-search-box input {
+.public-header-main .public-header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.public-brand-area {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.header-dept-logo {
+    height: 70px;
+    width: 70px;
+    object-fit: contain;
+}
+
+.header-emblem {
+    height: 60px;
+    width: auto;
+    object-fit: contain;
+}
+
+.public-brand-text h1 {
+    color: #1a237e;
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.2;
+    text-transform: none;
+}
+
+.public-brand-text p {
+    color: #555;
+    font-size: 14px;
+    margin: 4px 0 0;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.public-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.public-search-wrapper {
+    display: flex;
+    align-items: center;
+    border: 1px solid #d1d5db;
+    background: white;
+    padding: 0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.public-search-wrapper input {
     border: none;
     outline: none;
-    padding: 10px 15px;
+    padding: 8px 12px;
+    width: 200px;
     font-size: 14px;
-    width: 220px;
-    color: #1f2937;
+    color: #374151;
 }
 
-.public-search-box input::placeholder {
-    color: #9ca3af;
-}
-
-.public-search-box button {
-    background: #1e3a8a;
+.public-search-wrapper button {
+    background: #1a237e;
+    color: white;
     border: none;
-    padding: 10px 15px;
+    padding: 8px 15px;
     cursor: pointer;
-    font-size: 18px;
-    transition: background 0.3s;
+    font-size: 14px;
 }
 
-.public-search-box button:hover {
-    background: #1e40af;
-}
-
-/* Helpline Info */
-.public-helpline-info {
+.header-helpline {
+    display: flex;
+    flex-direction: column;
     text-align: right;
+    font-size: 12px;
+    margin-right: 10px;
 }
 
-.public-helpline-info strong {
-    display: block;
+.helpline-label {
+    font-weight: bold;
+    color: #1a237e;
     font-size: 13px;
-    color: #1e3a8a;
-    font-weight: 600;
     margin-bottom: 2px;
 }
 
-.public-helpline-info p {
+.helpline-time {
+    color: #666;
     font-size: 11px;
-    color: #6b7280;
-    margin: 0;
-}
-
-/* Rajasthan Emblem */
-.public-raj-emblem .public-emblem-circle {
-    width: 65px;
-    height: 65px;
-    border-radius: 50%;
-    background: #f3f4f6;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid #e5e7eb;
-    overflow: hidden;
-}
-
-.public-raj-emblem .public-emblem-circle img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    padding: 5px;
 }
 
 /* ===== NAVIGATION BAR ===== */
 .public-header-nav {
-    background: #1e3a8a;
-    padding: 0;
+    background: #1a237e;
+    /* Navy Blue */
+    width: 100%;
 }
 
 .public-header-nav .public-header-container {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 0;
+    justify-content: flex-start;
     padding: 0;
+}
+
+.nav-links-wrapper {
+    display: flex;
+    width: 100%;
+    /* justify-content: flex-end; Optional: if you want nav to right */
 }
 
 .public-header-nav a {
     color: white;
     text-decoration: none;
-    padding: 14px 30px;
+    padding: 12px 20px;
     font-size: 14px;
     font-weight: 500;
-    letter-spacing: 0.5px;
-    transition: all 0.3s;
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
-    position: relative;
-    text-transform: uppercase;
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+    display: inline-block;
+    transition: background 0.3s;
+}
+
+.public-header-nav a:hover {
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .public-header-nav a:last-child {

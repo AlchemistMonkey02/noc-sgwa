@@ -2,18 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import NOCRegister from '../noc/NOCRegister';
+import PublicHeader from '../../components/PublicHeader';
 import './styles/public-landing.css';
 
 const PublicLanding = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { login, selectUserType, user } = useAuth();
+    // ... existing state ...
     const [formData, setFormData] = useState({
         userType: '',
         username: '',
         password: '',
         captcha: ''
     });
+    // ... rest of state ...
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -38,6 +41,7 @@ const PublicLanding = () => {
         setError('');
     };
 
+    // ... handleSubmit ...
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -79,7 +83,7 @@ const PublicLanding = () => {
         { title: 'Vendor Registration', icon: '⚙️', link: '/public/services/vendor' },
         { title: 'Know Your EC', icon: '💰', link: '/public/know-your-ec' },
         { title: 'Water Calculator', icon: '🧮', link: 'https://rgwcma.geoplanetsolution.in/charges', external: true },
-        { title: 'Application Status', icon: '📋', link: '/public/application-status' }
+        { title: 'Application Status', icon: '📋', link: '/noc/track-status' }
     ];
 
     const handleServiceCardClick = (service) => {
@@ -105,6 +109,8 @@ const PublicLanding = () => {
 
     return (
         <div className="gov-portal">
+            <PublicHeader />
+
             {/* Flash Message Modal */}
             {flashMessage && (
                 <div style={{
@@ -185,8 +191,8 @@ const PublicLanding = () => {
                             <li><Link to="/public/services/rig">➤ Rig Registration</Link></li>
                             <li><Link to="/public/services/vendor">➤ Vendor Registration</Link></li>
                             {/* NOC Renewal likely needs login/dashboard access */}
-                            <li><Link to="/noc/login">➤ NOC Renewal</Link></li>
-                            <li><Link to="/public/application-status">➤ Track Application</Link></li>
+                            <li><Link to="/noc/login">➤ NOC Renewal (Login Required)</Link></li>
+                            <li><Link to="/noc/track-status">➤ Track Application</Link></li>
                         </ul>
                     </div>
                     <div className="sidebar-section">

@@ -11,26 +11,40 @@ export const AuthProvider = ({ children }) => {
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     useEffect(() => {
-        // Check for existing session on mount
-        const userData = localStorage.getItem('nocUser');
-        const token = localStorage.getItem('authToken');
-        const savedUserType = localStorage.getItem('userType');
+        const initAuth = () => {
+            try {
+                // Check for existing session on mount
+                const userData = localStorage.getItem('nocUser');
+                const token = localStorage.getItem('authToken');
+                const savedUserType = localStorage.getItem('userType');
 
-        if (userData && token) {
-            setUser(JSON.parse(userData));
-        } else {
-            // If checking fails (no token), clear partially existing data to force clean state
-            localStorage.removeItem('nocUser');
-            localStorage.removeItem('authToken');
-            setUser(null);
-        }
+                if (userData && token) {
+                    try {
+                        setUser(JSON.parse(userData));
+                    } catch (e) {
+                        console.error("Failed to parse user data", e);
+                        localStorage.removeItem('nocUser');
+                        setUser(null);
+                    }
+                } else {
+                    // If checking fails (no token), clear partially existing data to force clean state
+                    localStorage.removeItem('nocUser');
+                    localStorage.removeItem('authToken');
+                    setUser(null);
+                }
 
-        if (savedUserType) {
-            setUserType(savedUserType);
-        }
+                if (savedUserType) {
+                    setUserType(savedUserType);
+                }
+            } catch (error) {
+                console.error("Auth initialization error:", error);
+            } finally {
+                setIsLoggingOut(false);
+                setLoading(false);
+            }
+        };
 
-        setIsLoggingOut(false);
-        setLoading(false);
+        initAuth();
     }, []);
 
     const login = async (username, password, type) => {

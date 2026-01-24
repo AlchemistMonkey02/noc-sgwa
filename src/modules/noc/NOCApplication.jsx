@@ -569,7 +569,7 @@ const NOCApplication = () => {
                     projectType: formData.projectType || 'New', // Fallback
                     waterQualityType: formData.waterQualityType === 'Potable' ? 'FRESH' : 'SALINE',
                     groundWaterUtilizationFor: formData.groundWaterUtilizationFor || 'Industry', // Fallback
-                    dateOfCommencement: formData.dateOfCommencement || new Date().toISOString().split('T')[0], // Fallback to today
+                    dateOfCommencement: (formData.existingNOCStatus === 'Yes' && formData.dateOfCommencement) ? formData.dateOfCommencement : new Date().toISOString().split('T')[0],
                     existingNOCStatus: formData.existingNOCStatus === 'Yes' ? 'YES' : 'NO',
                     oldNOCNumber: formData.oldNOCNo,
 
@@ -933,7 +933,7 @@ const NOCApplication = () => {
                     sectorType: (formData.groundWaterUtilizationFor === 'Industry') ? 'INDUSTRIAL' : 'INFRASTRUCTURE',
                     waterQualityType: formData.waterQualityType === 'Potable' ? 'FRESH' : 'SALINE',
                     groundWaterUtilizationFor: formData.groundWaterUtilizationFor || 'Industry',
-                    dateOfCommencement: formData.dateOfCommencement || new Date().toISOString().split('T')[0],
+                    dateOfCommencement: (formData.existingNOCStatus === 'Yes' && formData.dateOfCommencement) ? formData.dateOfCommencement : new Date().toISOString().split('T')[0],
                     existingNOCStatus: formData.existingNOCStatus === 'Yes' ? 'YES' : 'NO',
                     oldNOCNumber: formData.oldNOCNo,
 
@@ -1193,17 +1193,19 @@ const NOCApplication = () => {
                                         {errors.groundWaterUtilizationFor && <span className="bhuneer-error">{errors.groundWaterUtilizationFor}</span>}
                                     </div>
 
-                                    <div className="noc-form-group">
-                                        <label className="bhuneer-label required">Date of Commencement</label>
-                                        <input
-                                            type="date"
-                                            name="dateOfCommencement"
-                                            className={`bhuneer-input ${errors.dateOfCommencement ? 'error' : ''}`}
-                                            value={formData.dateOfCommencement}
-                                            onChange={handleChange}
-                                        />
-                                        {errors.dateOfCommencement && <span className="bhuneer-error">{errors.dateOfCommencement}</span>}
-                                    </div>
+                                    {formData.existingNOCStatus === 'Yes' && (
+                                        <div className="noc-form-group">
+                                            <label className="bhuneer-label required">Date of Commencement</label>
+                                            <input
+                                                type="date"
+                                                name="dateOfCommencement"
+                                                className={`bhuneer-input ${errors.dateOfCommencement ? 'error' : ''}`}
+                                                value={formData.dateOfCommencement}
+                                                onChange={handleChange}
+                                            />
+                                            {errors.dateOfCommencement && <span className="bhuneer-error">{errors.dateOfCommencement}</span>}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Dynamic Industry/Mining/Other Dropdown */}

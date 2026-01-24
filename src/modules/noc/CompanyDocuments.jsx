@@ -51,10 +51,33 @@ const CompanyDocuments = () => {
     }, []);
 
     const fetchDocuments = async (compId) => {
-        // API call removed as per request (deprecated URL)
-        console.log('Document fetch skipped for company:', compId);
-        setDocuments([]);
-        setIsLoading(false);
+        setIsLoading(true);
+        try {
+            const token = localStorage.getItem('authToken');
+            const response = await fetch(`${API_BASE_URL}/companies/${compId}/documents`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('Fetched documents:', result);
+                if (result.success && Array.isArray(result.data)) {
+                    setDocuments(result.data);
+                } else {
+                    setDocuments([]);
+                }
+            } else {
+                console.error('Failed to fetch documents');
+                setDocuments([]); // Fallback to empty on error
+            }
+        } catch (error) {
+            console.error('Error fetching documents:', error);
+            setDocuments([]);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleFileUpload = async (e, docType) => {
@@ -218,12 +241,13 @@ const CompanyDocuments = () => {
     };
 
     const getDocumentsByType = (type) => {
-        return documents.filter(doc => doc.documentType === type);
+        if (!Array.isArray(documents)) return [];
+        return documents.filter(doc => doc && doc.documentType === type);
     };
 
     // Calculate statistics
-    const totalDocuments = documents.length;
-    const totalSize = documents.reduce((acc, doc) => acc + (doc.fileSize || 0), 0);
+    const totalDocuments = Array.isArray(documents) ? documents.length : 0;
+    const totalSize = Array.isArray(documents) ? documents.reduce((acc, doc) => acc + (doc?.fileSize || 0), 0) : 0;
     const categoryCount = documentTypes.filter(type => getDocumentsByType(type.type).length > 0).length;
 
     return (
@@ -298,7 +322,12 @@ const CompanyDocuments = () => {
                     ) : (
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '18px' }}>
                             {documentTypes.map((docCategory) => {
-                                const categoryDocs = getDocumentsByType(docCategory.type);
+                                const allCategoryDocs = getDocumentsByType(docCategory.type);
+                                // Sort by uploadedAt desc and take only the latest one
+                                const categoryDocs = allCategoryDocs
+                                    .sort((a, b) => new Date(b.uploadedAt || 0) - new Date(a.uploadedAt || 0))
+                                    .slice(0, 1);
+
                                 const isUploading = uploadingFiles[docCategory.type];
 
                                 return (

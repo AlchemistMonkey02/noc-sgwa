@@ -60,10 +60,21 @@ const KnowYourEC = () => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+
+        setFormData(prev => {
+            const newData = {
+                ...prev,
+                [name]: value
+            };
+
+            // Auto-calculate Annual Extraction if Daily Extraction changes
+            if (name === 'dailyExtraction') {
+                const daily = parseFloat(value) || 0;
+                newData.annualExtraction = (daily * 365).toFixed(2);
+            }
+
+            return newData;
+        });
         setError('');
         setResult(null);
     };

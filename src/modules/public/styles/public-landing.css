@@ -41,7 +41,8 @@ body {
     grid-template-columns: 280px 1fr 320px;
     gap: 2rem;
     max-width: 1400px;
-    margin: 2rem auto;
+    margin: 180px auto 2rem;
+    /* Adjusted for Fixed Header */
     padding: 0 1rem;
     width: 100%;
     box-sizing: border-box;

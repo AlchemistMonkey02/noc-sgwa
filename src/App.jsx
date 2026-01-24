@@ -96,7 +96,7 @@ function App() {
             {/* Root redirect to Public Landing Page */}
             <Route path="/" element={<PublicLanding />} />
             <Route path="/public/know-your-ec" element={<KnowYourEC />} />
-            <Route path="/public/application-status" element={<ApplicationStatus />} />
+            <Route path="/application-status" element={<ApplicationStatus />} />
 
             {/* New Service Info Routes */}
             <Route path="/public/services/noc" element={<GroundwaterServices />} />

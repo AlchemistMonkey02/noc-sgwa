@@ -3,11 +3,11 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import '../styles/sidebar.css';
 
-const Sidebar = ({ isOpen, onToggle }) => {
+const Sidebar = ({ isOpen, onToggle, isCollapsed, onCollapse }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { logout } = useAuth();
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    // Internal state removed, using props
     const [expandedSections, setExpandedSections] = useState({
         accountSettings: false,
         applications: false,
@@ -22,7 +22,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
     };
 
     const toggleCollapse = () => {
-        setIsCollapsed(!isCollapsed);
+        if (onCollapse) onCollapse();
     };
 
     const toggleSection = (section) => {

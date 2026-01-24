@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import './ResetPassword.css';
 
+import API_BASE_URL from '../../config/apiConfig';
+
 const ResetPassword = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
@@ -35,7 +37,7 @@ const ResetPassword = () => {
 
         try {
             // TODO: Replace with actual API call
-            const response = await fetch(`/api/auth/validate-reset-token?token=${token}`);
+            const response = await fetch(`${API_BASE_URL}/auth/validate-reset-token?token=${token}`);
 
             if (response.ok) {
                 setTokenValid(true);
@@ -110,7 +112,7 @@ const ResetPassword = () => {
 
         try {
             // TODO: Replace with actual API call
-            const response = await fetch('/api/auth/reset-password', {
+            const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './ForgotPassword.css';
 
+import API_BASE_URL from '../../config/apiConfig';
+
 const ForgotPassword = () => {
     const [step, setStep] = useState(1); // 1: Basic Info, 2: Verification, 3: Success
     const [formData, setFormData] = useState({
@@ -64,7 +66,7 @@ const ForgotPassword = () => {
 
         try {
             // TODO: Replace with actual API call
-            const response = await fetch('/api/auth/forgot-password', {
+            const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

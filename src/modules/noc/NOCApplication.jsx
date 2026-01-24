@@ -391,6 +391,9 @@ const NOCApplication = () => {
             diameter: '',
             depthToWaterLevel: '',
             discharge: '',
+            pumpCapacity: '',
+            operatingHours: '',
+            efficiency: '0.6',
             hasMeter: 'No'
         }]);
     };
@@ -407,28 +410,42 @@ const NOCApplication = () => {
         setExistingStructures(updatedStructures);
 
         // Auto-calculate discharge if relevant fields change
-        if (field === 'pumpCapacity' || field === 'depth') {
+        if (['pumpCapacity', 'depth', 'operatingHours'].includes(field)) {
             const structure = updatedStructures.find(s => s.id === id);
-            const pumpCapacity = parseFloat(field === 'pumpCapacity' ? value : structure.pumpCapacity);
-            const depth = parseFloat(field === 'depth' ? value : structure.depth);
+            // Wait for brief debounce or check if all fields are present?
+            // For now, trigger if we have enough info
+            if (structure.pumpCapacity && structure.depth && structure.operatingHours) {
+                await calculateStructureDischarge(id, structure);
+            }
+        }
+    };
 
-            if (pumpCapacity > 0 && depth > 0) {
-                try {
-                    const response = await nocApplicationService.calculateDischarge({
-                        pumpCapacityHP: pumpCapacity,
-                        depthMeters: depth,
-                        efficiency: 0.6 // Default efficiency as per user request
-                    });
+    // Calculate Discharge Rate
+    const calculateStructureDischarge = async (structureId, structureData) => {
+        const { pumpCapacity, depth, operatingHours, efficiency } = structureData;
 
-                    if (response.success && response.data?.results?.dischargeM3Hr) {
-                        setExistingStructures(current => current.map(s =>
-                            s.id === id ? { ...s, discharge: response.data.results.dischargeM3Hr } : s
-                        ));
-                    }
-                } catch (error) {
-                    console.error("Failed to auto-calculate discharge:", error);
+        try {
+            const payload = {
+                pumpCapacityHP: parseFloat(pumpCapacity),
+                depthMeters: parseFloat(depth),
+                operatingHours: parseFloat(operatingHours),
+                efficiency: parseFloat(efficiency) || 0.6 // Default to 0.6 if not provided
+            };
+
+            const response = await nocApplicationService.calculateDischarge(payload);
+            if (response.success && response.data) {
+                // Update the structure with calculated discharge
+                // Note: dischargeRate might be returned as 'discharge' or 'dischargeRate'
+                const dischargeVal = response.data.discharge || response.data.dischargeRate || response.data.results?.dischargeM3Hr;
+
+                if (dischargeVal !== undefined) {
+                    setExistingStructures(current => current.map(s =>
+                        s.id === structureId ? { ...s, discharge: dischargeVal } : s
+                    ));
                 }
             }
+        } catch (error) {
+            console.error('Failed to calculate discharge:', error);
         }
     };
 
@@ -2129,16 +2146,33 @@ const NOCApplication = () => {
                                                             />
                                                         </div>
                                                         <div className="noc-form-group">
+                                                            <label className="bhuneer-label">Operating Hours</label>
+                                                            <input
+                                                                type="number"
+                                                                className="bhuneer-input"
+                                                                value={structure.operatingHours}
+                                                                onChange={(e) => updateExistingStructure(structure.id, 'operatingHours', e.target.value)}
+                                                                placeholder="Hours/Day"
+                                                                min="0"
+                                                                max="24"
+                                                                step="0.5"
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="noc-form-row three-col">
+                                                        <div className="noc-form-group">
                                                             <label className="bhuneer-label">Discharge Rate (m³/hr)</label>
                                                             <input
                                                                 type="number"
                                                                 className="bhuneer-input"
                                                                 value={structure.discharge}
                                                                 onChange={(e) => updateExistingStructure(structure.id, 'discharge', e.target.value)}
-                                                                placeholder="Discharge"
-                                                                min="0"
-                                                                step="0.01"
+                                                                placeholder="Auto-calculated"
+                                                                readOnly
+                                                                style={{ backgroundColor: '#e9ecef', cursor: 'not-allowed' }}
                                                             />
+                                                            <span className="noc-form-help">Calculated based on pump details (Eff: 60%)</span>
                                                         </div>
                                                     </div>
 

@@ -393,19 +393,15 @@ const NOCDashboard = () => {
                     </div>
                     <div className="card-content-area">
                         <div className="utility-tools-grid">
-                            <Link to="/noc/water-budget-calculator" className="utility-tool-card">
-                                <div className="utility-icon">💧</div>
-                                <div className="utility-name">Water Budget Calculator</div>
-                            </Link>
-                            <Link to="/noc/abstraction-calculator" className="utility-tool-card">
+                            <a href="https://rgwcma.geoplanetsolution.in/charges" target="_blank" rel="noopener noreferrer" className="utility-tool-card" style={{ textDecoration: 'none' }}>
                                 <div className="utility-icon">💰</div>
                                 <div className="utility-name">Abstraction Charges</div>
-                            </Link>
+                            </a>
                             <Link to="/noc/check-eligibility" className="utility-tool-card">
                                 <div className="utility-icon">✅</div>
                                 <div className="utility-name">Eligibility Checker</div>
                             </Link>
-                            <Link to="/noc/document-requirements" className="utility-tool-card">
+                            <Link to="/tools/document-checklist" className="utility-tool-card">
                                 <div className="utility-icon">📋</div>
                                 <div className="utility-name">Document Checklist</div>
                             </Link>

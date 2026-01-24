@@ -24,6 +24,10 @@ import PublicGuidelines from './modules/public/pages/PublicGuidelines';
 import ForgotPassword from './modules/auth/ForgotPassword';
 import ResetPassword from './modules/auth/ResetPassword';
 
+// Tools Module
+import ToolsDashboard from './modules/public/ToolsDashboard';
+import DocumentChecklist from './modules/public/DocumentChecklist';
+
 // Officer Module
 import OfficerLogin from './modules/officer/OfficerLogin';
 import ProtectedRoute from './modules/officer/shared/components/ProtectedRoute';
@@ -137,6 +141,10 @@ function App() {
             <Route path="/noc/reports" element={<NOCReports />} />
             <Route path="/noc/utilities" element={<NOCUtilities />} />
             <Route path="/noc/help" element={<NOCHelp />} />
+
+            {/* Tools Routes */}
+            <Route path="/tools" element={<ToolsDashboard />} />
+            <Route path="/tools/document-checklist" element={<DocumentChecklist />} />
 
             {/* Officer Portal Routes */}
             <Route path="/officer" element={<Navigate to="/officer/login" replace />} />

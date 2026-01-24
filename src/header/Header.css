@@ -354,3 +354,38 @@
         font-size: 10px;
     }
 }
+
+/* Auth Navigation Styles */
+.auth-nav-items {
+    margin-left: auto;
+    display: flex;
+    gap: 10px;
+    padding-right: 20px;
+}
+
+.auth-btn {
+    background: var(--white);
+    color: var(--gov-blue-primary) !important;
+    padding: 8px 16px !important;
+    border-radius: 4px;
+    font-weight: 600 !important;
+    text-decoration: none;
+    transition: all 0.2s ease-in-out;
+    border: 1px solid transparent;
+}
+
+.auth-btn:hover {
+    background: #f3f4f6 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.auth-btn.register-btn {
+    border: 1px solid var(--white);
+    background: transparent;
+    color: var(--white) !important;
+}
+
+.auth-btn.register-btn:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+}

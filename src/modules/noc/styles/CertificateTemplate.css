@@ -1,0 +1,235 @@
+.noc-certificate-container {
+    width: 100%;
+    margin: 0 auto;
+    background: white;
+    padding: 20px;
+}
+
+.certificate-wrapper {
+    font-family: Arial, sans-serif;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #000;
+}
+
+/* Header Grid */
+.header-table {
+    width: 100%;
+    border-bottom: 2px solid #000;
+    margin-bottom: 5px;
+}
+
+.header-table td {
+    vertical-align: top;
+    padding: 5px;
+}
+
+.header-left {
+    width: 40%;
+    font-weight: bold;
+    font-size: 10px;
+    text-align: left;
+}
+
+.header-center {
+    width: 20%;
+    text-align: center;
+}
+
+.header-center img {
+    height: 60px;
+    display: block;
+    margin: 0 auto;
+}
+
+.header-right {
+    width: 40%;
+    text-align: right;
+}
+
+.qr-code {
+    height: 80px;
+    width: 80px;
+}
+
+/* Titles */
+.noc-title-hindi {
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+.noc-title-eng {
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-bottom: 15px;
+}
+
+/* General Table Styles */
+.certificate-wrapper table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 5px;
+}
+
+.certificate-wrapper td,
+.certificate-wrapper th {
+    border: 1px solid #ccc;
+    padding: 4px;
+}
+
+.outer-border {
+    border: 1px solid #000;
+}
+
+/* Project Details Table */
+.details-table td {
+    border: 1px solid #ccc;
+}
+
+.label {
+    color: #666;
+    font-size: 10px;
+    text-transform: uppercase;
+}
+
+.value {
+    font-weight: bold;
+    font-size: 11px;
+}
+
+/* Numbered Grid (1. NOC No, etc) */
+.numbered-table td {
+    vertical-align: top;
+    width: 50%;
+}
+
+.num-label {
+    color: #666;
+    margin-right: 5px;
+}
+
+.num-value {
+    font-weight: bold;
+}
+
+/* Blue Headers */
+.blue-header {
+    background-color: #1f4e79;
+    color: white;
+    padding: 5px;
+    font-weight: bold;
+    font-size: 12px;
+    margin-top: 10px;
+}
+
+/* Technical Tables */
+.tech-table th {
+    background-color: #1f4e79;
+    color: white;
+    text-align: center;
+    border: 1px solid white;
+    font-weight: normal;
+}
+
+.tech-table td {
+    text-align: center;
+    border: 1px solid #ccc;
+}
+
+.tech-table .row-total {
+    font-weight: bold;
+}
+
+.footer-note {
+    font-size: 10px;
+    color: #666;
+    margin-top: 5px;
+    font-style: italic;
+}
+
+.conditions {
+    margin-top: 10px;
+}
+
+.conditions h4 {
+    margin: 10px 0 5px 0;
+    font-size: 11px;
+}
+
+.conditions ol {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.conditions li {
+    margin-bottom: 4px;
+}
+
+/* Watermark-like footer */
+.watermark {
+    text-align: right;
+    font-size: 9px;
+    color: #999;
+    margin-top: 20px;
+}
+
+@media print {
+    .no-print,
+    .noc-header-container,
+    .rgwa-header-container,
+    .noc-footer,
+    .page-gradient-header,
+    button,
+    .bhuneer-secondary-btn,
+    .bhuneer-submit-btn,
+    nav,
+    header,
+    footer,
+    .officer-sidebar,
+    /* Fallback if viewed in officer layout */
+    .officer-header
+
+    /* Fallback */
+        {
+        display: none !important;
+    }
+
+    body,
+    #root,
+    .noc-portal,
+    .main-content,
+    .content-container {
+        background: white !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    .noc-certificate-container {
+        padding: 0;
+        margin: 0;
+        border: none;
+        width: 100%;
+        max-width: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+
+    /* Ensure certificate tables fit on page */
+    .certificate-wrapper {
+        font-size: 10px;
+        width: 100%;
+    }
+
+    @page {
+        margin: 0.5cm;
+        size: auto;
+    }
+}

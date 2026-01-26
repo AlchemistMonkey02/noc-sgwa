@@ -73,27 +73,21 @@ const Sidebar = ({ isOpen, onToggle, isCollapsed, onCollapse }) => {
             label: 'Track Application Status',
             single: true
         },
+        /*
         {
             path: '/noc/self-compliance',
             icon: '✅',
             label: 'Self Compliance',
             single: true
         },
+        */
         {
             path: '/noc/queries',
             icon: '❓',
             label: 'Evaluation Officer Raised Query',
             single: true
         },
-        {
-            section: 'eac',
-            icon: '👥',
-            label: 'EAC',
-            submenu: [
-                { path: '/noc/eac', icon: '📤', label: 'Submit EAC Request' },
-                { path: '/noc/eac?tab=track', icon: '📊', label: 'Track EAC Status' }
-            ]
-        },
+
         {
             path: '/noc/issue-reporting',
             icon: '🚩',

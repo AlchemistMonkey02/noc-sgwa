@@ -1,5 +1,5 @@
-import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import NOCHeader from './components/NOCHeader';
 import NOCFooter from './components/NOCFooter';
 import NOCCertificate from './components/NOCCertificate';
@@ -9,33 +9,46 @@ import './styles/noc-certificate.css';
 const NOCCertificatePage = () => {
     const { nocNumber } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // Auto-trigger print if requested
+    useEffect(() => {
+        if (location.state?.autoPrint) {
+            // Small delay to ensure rendering
+            setTimeout(() => {
+                window.print();
+            }, 500);
+        }
+    }, [location.state]);
 
     // Mock data - replace with API call
     const nocData = {
+        companyName: 'ABC Industries Pvt Ltd',
+        projectAddress: 'Plot No. 123, RIICO Industrial Area, Sanganer, Jaipur - 302029',
+        pinCode: '302029',
+        state: 'Rajasthan',
+        district: 'Jaipur',
+        town: 'Jaipur',
+        block: 'Sanganer',
+        communicationAddress: 'Registered Office: 45, Civil Lines, Jaipur',
+
         nocNumber: nocNumber || 'RJ/CGWA/NOC/2026/001234',
         issueDate: '22-Jan-2026',
+        applicationNumber: 'RJ/2025/APP/00456',
+        nocType: 'New',
+        projectStatus: 'Existing',
         validFrom: '22-Jan-2026',
         validUpto: '21-Jan-2029',
-        applicantName: 'ABC Industries Pvt Ltd',
-        projectName: 'Textile Manufacturing Unit',
-        location: 'Plot No. 123, RIICO Industrial Area, Sanganer, Jaipur - 302029',
-        district: 'Jaipur',
-        block: 'Sanganer',
-        tehsil: 'Sanganer',
-        maxDailyExtraction: '150.25 m³/day',
-        maxAnnualExtraction: '54,841.25 m³/year',
-        purpose: 'Industrial Water Supply',
-        conditions: [
-            'Install digital flow meter with telemetry within 30 days of NOC issuance',
-            'Install piezometer at GPS coordinates 26.8206°N, 75.8472°E within 60 days',
-            'Submit quarterly groundwater monitoring reports by 15th of following month',
-            'Implement rainwater harvesting structures as per approved plan within 90 days',
-            'No groundwater withdrawal during monsoon season (July-September)',
-            'Pay groundwater cess quarterly as per SGWA notification'
-        ],
-        approvedBy: 'Suresh Patel, Chief Engineer',
-        officerDesignation: 'Chief Engineer',
-        issuePlace: 'Jaipur'
+        category: 'Semi-Critical',
+
+        approvedWaterQuantity: '150.25',
+        approvedWaterQuantityAnnual: '54,841.25',
+
+        // Structures Data (Mock)
+        total_ex: 2, total_prop: 0, grand_total: 2,
+        dw_ex: 0, dcb_ex: 0, bw_ex: 2, tw_ex: 0, mpu_ex: 2,
+        dw_prop: 0, dcb_prop: 0, bw_prop: 0, tw_prop: 0, mpu_prop: 0,
+        total_dw: 0, total_dcb: 0, total_bw: 2, total_tw: 0, total_mpu: 2
     };
 
     return (

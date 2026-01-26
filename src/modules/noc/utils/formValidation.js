@@ -165,6 +165,19 @@ export const validateStep2 = (formData) => {
     if ((formData.landUseGreenBeltArea && formData.landUseGreenBeltArea < 0)) errors.landUseGreenBeltArea = 'Cannot be negative';
     if ((formData.landUseOpenArea && formData.landUseOpenArea < 0)) errors.landUseOpenArea = 'Cannot be negative';
 
+    // breakdown validation
+    const totalLandArea = parseFloat(formData.landUseTotalArea || 0);
+    const rooftop = parseFloat(formData.landUseRooftopArea || 0);
+    const paved = parseFloat(formData.landUsePavedArea || 0);
+    const greenBelt = parseFloat(formData.landUseGreenBeltArea || 0);
+    const openArea = parseFloat(formData.landUseOpenArea || 0);
+
+    const sumOfParts = rooftop + paved + greenBelt + openArea;
+
+    if (totalLandArea > 0 && Math.abs(sumOfParts - totalLandArea) > 0.01) {
+        errors.landUseTotalArea = `Total area (${totalLandArea}) does not match sum of breakdown (${sumOfParts})`;
+    }
+
     // Basic consistency check (Total should be roughly sum of parts, but loose check for now)
 
     return errors;
@@ -184,6 +197,22 @@ export const validateStep3 = (formData) => {
     if (formData.waterReqDomestic < 0) errors.waterReqDomestic = 'Cannot be negative';
     if (formData.waterReqIndustrial < 0) errors.waterReqIndustrial = 'Cannot be negative';
     if (formData.waterReqGreenBelt < 0) errors.waterReqGreenBelt = 'Cannot be negative';
+    if (formData.waterReqOther < 0) errors.waterReqOther = 'Cannot be negative';
+
+    // Breakdown Summation Validation
+    // Use the explicit total field since it can be manually edited now
+    const totalRequirement = parseFloat(formData.waterReqTotal || 0);
+
+    const domestic = parseFloat(formData.waterReqDomestic || 0);
+    const industrial = parseFloat(formData.waterReqIndustrial || 0);
+    const greenBelt = parseFloat(formData.waterReqGreenBelt || 0);
+    const other = parseFloat(formData.waterReqOther || 0);
+
+    const sumBreakdown = domestic + industrial + greenBelt + other;
+
+    if (totalRequirement > 0 && Math.abs(sumBreakdown - totalRequirement) > 0.01) {
+        errors.waterReqTotal = `Total requirement (${totalRequirement}) does not match sum of breakdown (${sumBreakdown})`;
+    }
 
     return errors;
 };

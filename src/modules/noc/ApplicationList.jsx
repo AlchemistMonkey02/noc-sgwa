@@ -217,7 +217,7 @@ const ApplicationList = () => {
                                             <tbody>
                                                 {filteredApplications.map(app => (
                                                     <tr key={app.applicationId || app.id || app._id}>
-                                                        <td><strong className="text-blue">{app.applicationNumber || app.applicationId || app.id}</strong></td>
+                                                        <td><strong className="text-blue">{app.applicationNumber || app.trackingId}</strong></td>
                                                         <td>
                                                             <div style={{ fontWeight: '500' }}>{app.projectDetails?.projectName || app.projectName || 'N/A'}</div>
                                                             <div style={{ fontSize: '0.8rem', color: '#666' }}>{app.applicationType}</div>

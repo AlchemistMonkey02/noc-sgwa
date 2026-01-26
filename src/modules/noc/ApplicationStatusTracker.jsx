@@ -101,8 +101,8 @@ const ApplicationStatusTracker = () => {
                 <div className="noc-card" style={{ marginBottom: '30px' }}>
                     <div className="noc-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span>
-                            Application ID: <strong>{application.applicationNumber || application.id}</strong>
-                            {application.trackingId && <span style={{ marginLeft: '15px', fontSize: '0.9rem', color: '#666' }}>(Ref: {application.trackingId})</span>}
+                            Application ID: <strong>{application.trackingId}</strong>
+                            {/* {application.trackingId && <span style={{ marginLeft: '15px', fontSize: '0.9rem', color: '#666' }}>(Ref: {application.trackingId})</span>} */}
                         </span>
                         <span className={`noc-badge noc-badge-${application.statusColor}`} style={{
                             padding: '5px 12px',

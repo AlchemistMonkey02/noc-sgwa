@@ -23,7 +23,7 @@ const OfficerLogin = () => {
         try {
             console.log('Attempting login with:', { username: formData.username, role: formData.role });
 
-            // Call the actual login API (role not sent to API - only used for UI navigation)
+            // Call the actual login API
             const response = await fetch(`${API_BASE_URL}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -40,22 +40,49 @@ const OfficerLogin = () => {
             const token = data.token || data.data?.token;
             const refreshToken = data.refreshToken || data.data?.refreshToken;
             const user = data.user || data.data?.user || {};
+            const userType = user.userType || data.userType || data.data?.userType;
 
             if (response.ok && token) {
-                console.log('Login successful, storing auth data...');
+                console.log('Login successful, validating role...');
+
+                // 1. Security Check: Block Applicants
+                if (userType === 'APPLICANT') {
+                    setError('Access Denied: Applicants are not authorized to access the Officer Portal.');
+                    setLoading(false);
+                    return;
+                }
+
+                // 2. Map API Role to UI Role
+                // 'RSGWA' is often the code for SGWA officers
+                let apiRole = userType;
+                if (userType === 'RSGWA') apiRole = 'SGWA';
+
+                // 3. Authorization Check: Verify User has the Selected Role
+                // Allow "RSGWA" (State) to access "DGO" (District)? - Assuming strict for now as per "check if authorized"
+                if (apiRole !== formData.role) {
+                    // Special case: If user is RSGWA/SGWA, they might be logging into DGO? 
+                    // But user request was "check if user is dgo".
+                    // If API returns RSGWA, they are SGWA. If they selected DGO, they selected WRONG.
+                    setError(`Access Denied: Your account type is '${userType}'. You are not authorized to login as '${formData.role}'.`);
+                    setLoading(false);
+                    return;
+                }
+
+                console.log('Role valid, storing auth data...');
 
                 // Set authentication data
                 setOfficerToken(token);
                 if (refreshToken) {
                     setOfficerRefreshToken(refreshToken);
                 }
-                // Use the role selected by user in the UI for navigation
-                setOfficerRole(formData.role);
+
+                // Use the API verified role
+                setOfficerRole(apiRole);
                 setOfficerData(user);
 
                 console.log('Auth data stored, redirecting to dashboard...');
 
-                // Redirect based on user-selected role
+                // Redirect based on validated role
                 const dashboardRoutes = {
                     'DGO': '/officer/dgo/dashboard',
                     'SGWA': '/officer/sgwa/dashboard',
@@ -63,10 +90,7 @@ const OfficerLogin = () => {
                     'INSPECTION': '/officer/inspection/dashboard'
                 };
 
-                const redirectUrl = dashboardRoutes[formData.role];
-                console.log('Redirecting to:', redirectUrl);
-
-                // Navigate immediately
+                const redirectUrl = dashboardRoutes[apiRole];
                 navigate(redirectUrl);
             } else {
                 setError(data.message || 'Invalid username or password');

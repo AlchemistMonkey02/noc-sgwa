@@ -110,6 +110,7 @@ const NOCDashboard = () => {
         .map(app => ({
             uuid: app.uuid || app._id, // Use UUID for API calls
             nocNumber: app.applicationNumber || 'N/A',
+            refId: app.trackingId || app.applicationId || app.id, // Capture Reference ID
             projectName: app.projectDetails?.projectName || 'N/A',
             issueDate: app.nocIssuedDate ? formatDate(app.nocIssuedDate) : formatDate(app.updatedAt),
             validUpto: app.nocValidityDate ? formatDate(app.nocValidityDate) : 'N/A',
@@ -127,9 +128,19 @@ const NOCDashboard = () => {
     };
 
     // Handle Download Certificate
-    const handleDownloadCertificate = async (uuid, nocNumber) => {
+    const handleDownloadCertificate = async (uuid) => {
         try {
-            await nocApplicationService.downloadCertificate(uuid);
+            // Fetch latest summary to ensure we have the correct Tracking ID (Ref ID)
+            const summaryResponse = await nocApplicationService.getApplication(uuid);
+
+            if (summaryResponse.success && summaryResponse.data?.trackingId) {
+                const refId = summaryResponse.data.trackingId;
+                await nocApplicationService.downloadCertificate(refId);
+            } else {
+                console.warn('Tracking ID not found in summary, falling back to UUID');
+                // Fallback to UUID if tracking ID is missing (though backend might fail)
+                await nocApplicationService.downloadCertificate(uuid);
+            }
         } catch (error) {
             console.error('Error downloading certificate:', error);
             alert('Failed to download certificate. Please try again.');
@@ -256,7 +267,7 @@ const NOCDashboard = () => {
                                                 <strong>NOC Number:</strong> {noc.nocNumber}
                                             </p>
                                             <p style={{ margin: '0.25rem 0', fontSize: '0.875rem', color: '#075985' }}>
-                                                <strong>Issue Date:</strong> {noc.issueDate} | <strong>Valid Until:</strong> {noc.validUpto}
+                                                <strong>Issue Date:</strong> {noc.issueDate} | <strong>Valid Until:</strong> 2 years from issue date
                                             </p>
                                             <span className="status-badge success" style={{ marginTop: '0.5rem', display: 'inline-block' }}>
                                                 ✅ {noc.status}
@@ -273,7 +284,7 @@ const NOCDashboard = () => {
                                             <button
                                                 className="bhuneer-secondary-btn"
                                                 style={{ fontSize: '0.9375rem', padding: '0.75rem 1.25rem' }}
-                                                onClick={() => handleDownloadCertificate(noc.uuid, noc.nocNumber)}
+                                                onClick={() => handleDownloadCertificate(noc.uuid)}
                                             >
                                                 📥 Download
                                             </button>

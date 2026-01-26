@@ -15,166 +15,52 @@ const PaymentModule = ({ formData, onPaymentComplete }) => {
     const [receiptData, setReceiptData] = useState(null);
 
     useEffect(() => {
-        // PRIORITY: Use API-calculated fee calculation if available (new format)
+        // PRIORITY: Use API-calculated fee if available
         if (formData.feeCalculation) {
             const feeCalc = formData.feeCalculation;
-            
-            setFees({
-                baseFee: feeCalc.subtotalAfterDiscount || feeCalc.subtotal || feeCalc.baseFee,
-                gstAmount: feeCalc.gst?.amount || 0,
-                totalAmount: feeCalc.totalAmount
-            });
 
-            // Construct breakdown for UI from new API format
-            const details = [];
-            
-            // Base Fee
-            if (feeCalc.baseFee) {
-                details.push({
-                    label: 'Base Application Fee',
-                    value: formatCurrency(feeCalc.baseFee),
-                    description: feeCalc.baseFee === 750 ? 'Renewal Application' : 'New Application'
-                });
-            }
-
-            // Abstraction Charge
-            if (feeCalc.abstractionCharge) {
-                const abs = feeCalc.abstractionCharge;
-                details.push({
-                    label: 'Water Abstraction Charge',
-                    value: formatCurrency(abs.charge || 0),
-                    description: `${abs.dailyRequirement || 0} KL/day × ₹${abs.rate || 0} × 365 days = ₹${abs.annualRequirement || 0}`
-                });
-            }
-
-            // Borewell Fee
-            if (feeCalc.borewellFee && feeCalc.borewellFee.numberOfBorewells > 0) {
-                const bw = feeCalc.borewellFee;
-                details.push({
-                    label: 'Borewell Fee',
-                    value: formatCurrency(bw.totalFee || 0),
-                    description: `${bw.numberOfBorewells || 0} borewells × ₹${bw.feePerBorewell || 0} = ₹${bw.totalFee || 0}`
-                });
-            }
-
-            // Subtotal
-            if (feeCalc.subtotal) {
-                details.push({
-                    label: 'Subtotal',
-                    value: formatCurrency(feeCalc.subtotal),
-                    isSubtotal: true
-                });
-            }
-
-            // MSME Discount
-            if (feeCalc.discount && feeCalc.discount.discountAmount > 0) {
-                const disc = feeCalc.discount;
-                details.push({
-                    label: `MSME Discount (${disc.discountPercentage || 0}%)`,
-                    value: `-${formatCurrency(disc.discountAmount)}`,
-                    description: disc.isMSME ? 'MSME discount applied' : ''
-                });
-                details.push({
-                    label: 'Subtotal After Discount',
-                    value: formatCurrency(feeCalc.subtotalAfterDiscount),
-                    isSubtotal: true
-                });
-            }
-
-            // GST
-            if (feeCalc.gst) {
-                details.push({
-                    label: `GST (${feeCalc.gst.rate || 18}%)`,
-                    value: formatCurrency(feeCalc.gst.amount || 0),
-                    isSubtotal: true
-                });
-            }
-
-            // Total
-            details.push({
-                label: 'Total Amount',
-                value: formatCurrency(feeCalc.totalAmount),
-                isTotal: true
-            });
-
-            setChargeBreakdown({ details });
-            setAdvancedCharges(null); // Use API data, not local calc
-            return;
-        }
-
-        // FALLBACK: Use old feeStructure format if available
-        if (formData.feeStructure && formData.feeStructure.totalEstimated) {
-            const structure = formData.feeStructure;
-            const gst = formData.gstAmount || (structure.totalEstimated - structure.totalBaseFee);
+            // Extract ONLY base fee - NO GST
+            const baseFee = feeCalc.baseFee || feeCalc.totalAmount || 0;
 
             setFees({
-                baseFee: structure.totalBaseFee,
-                gstAmount: gst,
-                totalAmount: structure.totalEstimated
+                baseFee: baseFee,
+                gstAmount: 0, // NO GST
+                totalAmount: baseFee // Total = Base Fee only
             });
 
-            // Construct breakdown for UI from API data
+            // Simple breakdown - base fee only
             const details = [
-                { label: 'Base Amount', value: formatCurrency(structure.baseAmount || 0) },
-                { label: 'EC Charges', value: formatCurrency(structure.ecCharges || 0) },
-                { label: 'Processing Fee', value: formatCurrency(structure.processingFee || 0) },
-                { label: 'Total Base Fee', value: formatCurrency(structure.totalBaseFee || 0), isSubtotal: true },
-                { label: 'GST (18%)', value: formatCurrency(gst), isSubtotal: true },
-                { label: 'Total Payable', value: formatCurrency(structure.totalEstimated), isTotal: true }
+                {
+                    label: 'Application Base Fee',
+                    value: formatCurrency(baseFee),
+                    description: 'Mandatory processing fee'
+                },
+                {
+                    label: 'GST',
+                    value: '₹0',
+                    description: 'Not Applicable',
+                    isSubtotal: true
+                },
+                {
+                    label: 'Total Amount',
+                    value: formatCurrency(baseFee),
+                    isTotal: true
+                }
             ];
+
             setChargeBreakdown({ details });
-            setAdvancedCharges(null); // Use API data, not local calc
+            setAdvancedCharges(null);
             return;
         }
 
-        // FALLBACK: Use local calculation (existing logic)
-        if (formData.district && formData.block && formData.dailyWaterRequirement) {
-            const blockCategoryObj = getBlockCategory(formData.district, formData.block);
-
-            if (blockCategoryObj) {
-                // Determine project category
-                let projectCategory = 'Industry';
-                if (formData.groundWaterUtilizationFor === 'Mining') {
-                    projectCategory = 'Mining';
-                } else if (formData.groundWaterUtilizationFor !== 'Industry') {
-                    projectCategory = 'Other';
-                }
-
-                // Check if provisional NOC
-                const isProvisional = formData.applicationType === 'Provisional NOC' || formData.applicationSubType === 'Provisional';
-
-                const charges = calculateAdvancedCharges({
-                    dailyWaterRequirement: parseFloat(formData.dailyWaterRequirement) || 0,
-                    blockCategory: blockCategoryObj.name,
-                    applicationType: formData.applicationType || 'Fresh NOC',
-                    projectCategory: projectCategory,
-                    isExempt: formData.isExempt || false,
-                    isProvisional: isProvisional
-                });
-
-                setAdvancedCharges(charges);
-                setChargeBreakdown(getChargeBreakdown(charges));
-
-                // Set fees for backward compatibility
-                setFees({
-                    baseFee: charges.applicationFee,
-                    gstAmount: charges.gstAmount,
-                    totalAmount: charges.totalAmount
-                });
-            } else {
-                // Fallback to old calculation if block category not found
-                const calculatedFees = calculateApplicationFee(formData);
-                setFees(calculatedFees);
-                setAdvancedCharges(null);
-                setChargeBreakdown(null);
-            }
-        } else {
-            // Fallback to old calculation
-            const calculatedFees = calculateApplicationFee(formData);
-            setFees(calculatedFees);
-            setAdvancedCharges(null);
-            setChargeBreakdown(null);
-        }
+        // DEFAULT: If no API data, set to zero (waiting for API call)
+        setFees({
+            baseFee: 0,
+            gstAmount: 0,
+            totalAmount: 0
+        });
+        setAdvancedCharges(null);
+        setChargeBreakdown(null);
     }, [formData]);
 
     const generateReceiptPDF = (paymentDetails) => {
@@ -188,7 +74,7 @@ const PaymentModule = ({ formData, onPaymentComplete }) => {
         doc.setFontSize(12);
         doc.setTextColor(0, 0, 0);
         doc.text('Central Ground Water Authority', 105, 30, { align: 'center' });
-        doc.text('BhuNeer NOC Application Portal', 105, 37, { align: 'center' });
+        doc.text(' NOC Application Portal', 105, 37, { align: 'center' });
 
         // Divider line
         doc.setLineWidth(0.5);

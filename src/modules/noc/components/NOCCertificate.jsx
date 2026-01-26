@@ -1,32 +1,37 @@
 import React from 'react';
-import '../styles/noc-portal.css';
+import '../styles/CertificateTemplate.css';
 
 const NOCCertificate = ({ nocData }) => {
+    // Destructure with defaults to avoid crashes
     const {
-        nocNumber = 'RJ/CGWA/NOC/2026/001234',
-        issueDate = '22-Jan-2026',
-        validFrom = '22-Jan-2026',
-        validUpto = '21-Jan-2029',
-        applicantName = 'ABC Industries Pvt Ltd',
-        projectName = 'Textile Manufacturing Unit',
-        location = 'Plot No. 123, RIICO Industrial Area, Sanganer, Jaipur - 302029',
-        district = 'Jaipur',
-        block = 'Sanganer',
-        tehsil = 'Sanganer',
-        maxDailyExtraction = '150.25 m³/day',
-        maxAnnualExtraction = '54,841.25 m³/year',
-        purpose = 'Industrial Water Supply',
-        conditions = [
-            'Install digital flow meter with telemetry within 30 days of NOC issuance',
-            'Install piezometer at GPS coordinates 26.8206°N, 75.8472°E within 60 days',
-            'Submit quarterly groundwater monitoring reports by 15th of following month',
-            'Implement rainwater harvesting structures as per approved plan within 90 days',
-            'No groundwater withdrawal during monsoon season (July-September)',
-            'Pay groundwater cess quarterly as per SGWA notification'
-        ],
-        approvedBy = 'Chief Engineer, SGWA',
-        officerDesignation = 'Chief Engineer',
-        issuePlace = 'Jaipur'
+        companyName = 'N/A',
+        projectAddress = 'N/A',
+        pinCode = '',
+        state = 'Rajasthan',
+        district = 'N/A',
+        town = '',
+        block = '',
+        communicationAddress = 'N/A',
+        nocNumber = 'N/A',
+        issueDate = '',
+        applicationNumber = '',
+        nocType = 'New',
+        projectStatus = 'Existing',
+        validFrom = '',
+        validUpto = '',
+        category = 'Safe',
+        approvedWaterQuantity = '0',
+        approvedWaterQuantityAnnual = '0',
+
+        // Structures Data
+        total_ex = 0, total_prop = 0, grand_total = 0,
+        dw_ex = 0, dcb_ex = 0, bw_ex = 0, tw_ex = 0, mpu_ex = 0,
+        dw_prop = 0, dcb_prop = 0, bw_prop = 0, tw_prop = 0, mpu_prop = 0,
+        total_dw = 0, total_dcb = 0, total_bw = 0, total_tw = 0, total_mpu = 0,
+
+        emblemImage = '/logos/india-emblem.png', // Default placeholder path if needed
+        qrCodeImage,
+        signatureImage
     } = nocData || {};
 
     const handlePrint = () => {
@@ -34,174 +39,217 @@ const NOCCertificate = ({ nocData }) => {
     };
 
     const handleDownload = () => {
-        // In a real implementation, this would call an API to generate PDF
-        alert('NOC certificate will be downloaded as PDF');
+        alert('Download function would be integrated here.');
     };
 
     return (
         <div className="noc-certificate-container">
-            {/* Action Buttons - Hidden in print */}
-            <div className="noc-actions no-print">
-                <button className="bhuneer-submit-btn" onClick={handlePrint}>
+            <div className="noc-actions no-print" style={{ marginBottom: '20px', textAlign: 'right' }}>
+                <button className="bhuneer-submit-btn" onClick={handlePrint} style={{ marginRight: '10px' }}>
                     🖨️ Print Certificate
                 </button>
-                <button className="bhuneer-submit-btn" onClick={handleDownload} style={{ marginLeft: '1rem' }}>
+                <button className="bhuneer-secondary-btn" onClick={handleDownload}>
                     📥 Download PDF
                 </button>
             </div>
 
-            {/* Certificate Content */}
-            <div className="noc-certificate-content">
-                {/* Government Header */}
-                <div className="noc-header">
-                    <div className="noc-emblem">🏛️</div>
-                    <h1 className="noc-govt-title">GOVERNMENT OF RAJASTHAN</h1>
-                    <h2 className="noc-dept-title">State Groundwater Authority</h2>
-                    <h3 className="noc-wing-title">Ground Water Department</h3>
-                    <p className="noc-address">Jhalana Institutional Area, Jaipur - 302004</p>
+            <div className="certificate-wrapper">
+                {/* Header */}
+                <table className="header-table" style={{ border: 'none' }}>
+                    <tbody>
+                        <tr style={{ border: 'none' }}>
+                            <td className="header-left" style={{ border: 'none' }}>
+                                भारत सरकार<br />
+                                जल शक्ति मंत्रालय<br />
+                                GOVERNMENT OF INDIA<br />
+                                MINISTRY OF JAL SHAKTI<br />
+                                CENTRAL GROUND WATER AUTHORITY
+                            </td>
+                            <td className="header-center" style={{ border: 'none' }}>
+                                {emblemImage ? (
+                                    <img src={emblemImage} alt="Emblem" />
+                                ) : (
+                                    <div style={{ fontSize: '30px' }}>🏛️</div>
+                                )}
+                                <div style={{ fontSize: '10px', fontWeight: 'bold', marginTop: '2px' }}>सत्यमेव जयते</div>
+                            </td>
+                            <td className="header-right" style={{ border: 'none' }}>
+                                {qrCodeImage ? (
+                                    <img src={qrCodeImage} className="qr-code" alt="QR" />
+                                ) : (
+                                    <div className="qr-code" style={{ border: '1px dashed #ccc', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: 'auto' }}>
+                                        QR
+                                    </div>
+                                )}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div style={{ borderBottom: '1px solid #000', marginBottom: '10px' }}></div>
+
+                <div className="noc-title-hindi">भूजल निकासी हेतु अनापत्ति प्रमाण पत्र</div>
+                <div className="noc-title-eng">NO OBJECTION CERTIFICATE (NOC) FOR GROUND WATER ABSTRACTION</div>
+
+                {/* Project Info Grid */}
+                <table className="details-table" style={{ border: '1px solid #ccc' }}>
+                    <tbody>
+                        <tr>
+                            <td colSpan="3">
+                                <span className="label">PROJECT NAME</span>&nbsp; <span className="value">{companyName}</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colSpan="2">
+                                <span className="label">PROJECT ADDRESS</span>&nbsp; <span className="value">{projectAddress}</span>
+                            </td>
+                            <td style={{ width: '25%' }}>
+                                <span className="label">PIN CODE</span>&nbsp; <span className="value">{pinCode}</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <span className="label">STATE</span>&nbsp; <span className="value">{state}</span>
+                            </td>
+                            <td>
+                                <span className="label">DISTRICT</span>&nbsp; <span className="value">{district}</span>
+                            </td>
+                            <td>
+                                <span className="label">TOWN/BLOCK</span><br />
+                                <span className="value">{town} / {block}</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colSpan="3">
+                                <span className="label">COMMUNICATION ADDRESS</span>&nbsp; <span className="value">{communicationAddress}</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colSpan="3">
+                                <span className="label">ADDRESS OF SGWA REGIONAL OFFICE</span>&nbsp; <span className="value">State Ground Water Authority, Jaipur, Rajasthan</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                {/* NOC Details Numbers */}
+                <table className="numbered-table" style={{ border: '1px solid #ccc' }}>
+                    <tbody>
+                        <tr>
+                            <td><span className="num-label">1. NOC NO.</span> <span className="num-value">{nocNumber}</span></td>
+                            <td><span class="num-label">2. DATE OF ISSUANCE</span> <span className="num-value">{issueDate}</span></td>
+                        </tr>
+                        <tr>
+                            <td><span className="num-label">3. APPLICATION NO.</span> <span className="num-value">{applicationNumber}</span></td>
+                            <td><span className="num-label">4. APPLICATION TYPE</span> <span className="num-value">{nocType}</span></td>
+                        </tr>
+                        <tr>
+                            <td><span className="num-label">5. PROJECT STATUS</span> <span className="num-value">{projectStatus}</span></td>
+                            <td><span className="num-label">6. NOC TYPE</span> <span className="num-value">{nocType}</span></td>
+                        </tr>
+                        <tr>
+                            <td><span className="num-label">7. VALID FROM</span> <span className="num-value">{validFrom}</span></td>
+                            <td><span className="num-label">8. VALID UP TO</span> <span className="num-value">{validUpto}</span></td>
+                        </tr>
+                        <tr>
+                            <td><span className="num-label">9. WATER QUALITY TYPE</span> <span className="num-value">Fresh Water</span></td>
+                            <td><span className="num-label">10. AREA TYPE CATEGORY</span> <span className="num-value">{category} (GWRE - 2024)</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                {/* Section 11 */}
+                <div className="blue-header">11. Ground Water Abstraction Permitted</div>
+                <table className="tech-table">
+                    <thead>
+                        <tr>
+                            <th rowSpan="2" style={{ width: '40%' }}>GW Abstraction</th>
+                            <th colSpan="2">Dewatering</th>
+                            <th colSpan="2">Total</th>
+                        </tr>
+                        <tr>
+                            <th>m³/day</th>
+                            <th>m³/year</th>
+                            <th>m³/day</th>
+                            <th>m³/year</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Ground Water Abstraction</strong></td>
+                            <td>0.00</td>
+                            <td>0.00</td>
+                            <td><strong>{approvedWaterQuantity}</strong></td>
+                            <td><strong>{approvedWaterQuantityAnnual}</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Dewatering</strong></td>
+                            <td>0.00</td>
+                            <td>0.00</td>
+                            <td><strong>0.00</strong></td>
+                            <td><strong>0.00</strong></td>
+                        </tr>
+                        <tr style={{ backgroundColor: '#eee' }}>
+                            <td><strong>Total</strong></td>
+                            <td><strong>0.00</strong></td>
+                            <td><strong>0.00</strong></td>
+                            <td><strong>{approvedWaterQuantity}</strong></td>
+                            <td><strong>{approvedWaterQuantityAnnual}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                {/* Section 12 */}
+                <div className="blue-header">12. Details of Ground Water Abstraction / Dewatering Structures</div>
+                <table className="tech-table">
+                    <thead>
+                        <tr>
+                            <th colSpan="5">EXISTING &nbsp; {total_ex}</th>
+                            <th colSpan="5">PROPOSED &nbsp; {total_prop}</th>
+                            <th colSpan="5">TOTAL &nbsp; {grand_total}</th>
+                        </tr>
+                        <tr style={{ fontSize: '9px' }}>
+                            {/* Existing Header */}
+                            <th>DW</th><th>DCB</th><th>BW</th><th>TW</th><th>Pu</th>
+                            {/* Proposed Header */}
+                            <th>DW</th><th>DCB</th><th>BW</th><th>TW</th><th>Pu</th>
+                            {/* Total Header */}
+                            <th>DW</th><th>DCB</th><th>BW</th><th>TW</th><th>Pu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            {/* Existing Values */}
+                            <td>{dw_ex}</td><td>{dcb_ex}</td><td>{bw_ex}</td><td>{tw_ex}</td><td>{mpu_ex}</td>
+                            {/* Proposed Values */}
+                            <td>{dw_prop}</td><td>{dcb_prop}</td><td>{bw_prop}</td><td>{tw_prop}</td><td>{mpu_prop}</td>
+                            {/* Total Values */}
+                            <td>{total_dw}</td><td>{total_dcb}</td><td>{total_bw}</td><td>{total_tw}</td><td>{total_mpu}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div className="footer-note">*DW-Dug Well; DCB-Dug-cum-Bore Well; BW-Bore Well; TW-Tube Well; Pu-Pumps</div>
+
+                {/* Conditions */}
+                <div style={{ fontWeight: 'bold', marginTop: '15px', fontSize: '11px' }}>
+                    Validity of this NOC shall be subject to mandatory compliance of the following conditions:
                 </div>
 
-                <div className="noc-divider"></div>
-
-                {/* NOC Title */}
-                <div className="noc-title-section">
-                    <h2 className="noc-main-title">NO OBJECTION CERTIFICATE</h2>
-                    <p className="noc-subtitle">(For Groundwater Extraction)</p>
+                <div className="conditions">
+                    <h4>Phase I (within 30 days)</h4>
+                    <ol>
+                        <li>Installation of tamper proof digital water flow meter with telemetry on all the abstraction structure(s) is mandatory for all users seeking No Objection Certificate. Intimation regarding their installation shall be updated in Self-Compliance Module.</li>
+                        <li>Installation of Piezometers with Digital Water Level Recorders (DWLR) and Telemetry is mandatory.</li>
+                    </ol>
                 </div>
 
-                {/* NOC Number and Date */}
-                <div className="noc-ref-section">
-                    <div className="noc-ref-row">
-                        <span className="noc-ref-label">NOC No:</span>
-                        <span className="noc-ref-value"><strong>{nocNumber}</strong></span>
-                    </div>
-                    <div className="noc-ref-row">
-                        <span className="noc-ref-label">Issue Date:</span>
-                        <span className="noc-ref-value">{issueDate}</span>
-                    </div>
-                    <div className="noc-ref-row">
-                        <span className="noc-ref-label">Valid From:</span>
-                        <span className="noc-ref-value">{validFrom}</span>
-                    </div>
-                    <div className="noc-ref-row">
-                        <span className="noc-ref-label">Valid Upto:</span>
-                        <span className="noc-ref-value">{validUpto}</span>
-                    </div>
+                <div className="watermark">
+                    <br />
+                    {signatureImage && (
+                        <img src={signatureImage} style={{ maxHeight: '50px', float: 'right' }} alt="Sig" />
+                    )}
                 </div>
 
-                <div className="noc-divider"></div>
-
-                {/* Main Content */}
-                <div className="noc-body">
-                    <p className="noc-intro-text">
-                        This is to certify that <strong>{applicantName}</strong> is hereby granted No Objection
-                        Certificate for extraction of groundwater subject to the following particulars and conditions:
-                    </p>
-
-                    {/* Project Details */}
-                    <div className="noc-section">
-                        <h3 className="noc-section-title">PROJECT DETAILS</h3>
-                        <table className="noc-details-table">
-                            <tbody>
-                                <tr>
-                                    <td className="noc-table-label">Applicant Name:</td>
-                                    <td className="noc-table-value">{applicantName}</td>
-                                </tr>
-                                <tr>
-                                    <td className="noc-table-label">Project Name:</td>
-                                    <td className="noc-table-value">{projectName}</td>
-                                </tr>
-                                <tr>
-                                    <td className="noc-table-label">Location:</td>
-                                    <td className="noc-table-value">{location}</td>
-                                </tr>
-                                <tr>
-                                    <td className="noc-table-label">District:</td>
-                                    <td className="noc-table-value">{district}</td>
-                                </tr>
-                                <tr>
-                                    <td className="noc-table-label">Block/Tehsil:</td>
-                                    <td className="noc-table-value">{block} / {tehsil}</td>
-                                </tr>
-                                <tr>
-                                    <td className="noc-table-label">Purpose:</td>
-                                    <td className="noc-table-value">{purpose}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Extraction Limits */}
-                    <div className="noc-section">
-                        <h3 className="noc-section-title">EXTRACTION LIMITS</h3>
-                        <table className="noc-details-table">
-                            <tbody>
-                                <tr>
-                                    <td className="noc-table-label">Maximum Daily Extraction:</td>
-                                    <td className="noc-table-value"><strong>{maxDailyExtraction}</strong></td>
-                                </tr>
-                                <tr>
-                                    <td className="noc-table-label">Maximum Annual Extraction:</td>
-                                    <td className="noc-table-value"><strong>{maxAnnualExtraction}</strong></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Conditions */}
-                    <div className="noc-section">
-                        <h3 className="noc-section-title">CONDITIONS</h3>
-                        <ol className="noc-conditions-list">
-                            {conditions.map((condition, index) => (
-                                <li key={index} className="noc-condition-item">{condition}</li>
-                            ))}
-                            <li className="noc-condition-item">
-                                This NOC is valid only for the specified location and project. Any change in project
-                                scope or location will require a fresh NOC.
-                            </li>
-                            <li className="noc-condition-item">
-                                Violation of any of the above conditions will lead to cancellation of this NOC and
-                                legal action as per applicable laws.
-                            </li>
-                        </ol>
-                    </div>
-
-                    {/* Disclaimer */}
-                    <div className="noc-section">
-                        <p className="noc-disclaimer">
-                            <strong>Note:</strong> This NOC is issued based on the information provided by the applicant.
-                            The State Groundwater Authority reserves the right to cancel or modify this NOC if any
-                            information is found to be false or if conditions are violated.
-                        </p>
-                    </div>
-                </div>
-
-                {/* Signature Section */}
-                <div className="noc-signature-section">
-                    <div className="noc-signature-block">
-                        <p className="noc-signature-name"><strong>{approvedBy}</strong></p>
-                        <p className="noc-signature-designation">{officerDesignation}</p>
-                        <p className="noc-signature-dept">State Groundwater Authority, Rajasthan</p>
-                        <p className="noc-signature-place">Place: {issuePlace}</p>
-                        <p className="noc-signature-date">Date: {issueDate}</p>
-                    </div>
-                </div>
-
-                {/* Footer */}
-                <div className="noc-footer">
-                    <p className="noc-footer-text">
-                        This is a computer-generated certificate and does not require a physical signature.
-                    </p>
-                    <p className="noc-footer-text">
-                        For verification, please visit: <strong>https://sgwa.raj.in/verify/{nocNumber}</strong>
-                    </p>
-                </div>
-
-                {/* QR Code Placeholder */}
-                <div className="noc-qr-section">
-                    <div className="noc-qr-placeholder">QR Code</div>
-                    <p className="noc-qr-text">Scan to verify</p>
-                </div>
             </div>
         </div>
     );

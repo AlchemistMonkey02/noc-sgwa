@@ -93,41 +93,178 @@ export const structureTypes = [
 ];
 
 export const documentTypes = [
+    // 1. Common Documents (Required for ALL)
     {
-        id: 'affidavit',
-        name: 'Affidavit - Land Ownership Document',
+        id: 'applicant_id_proof',
+        name: 'Applicant ID Proof',
         required: true,
-        description: 'Notarized affidavit regarding land ownership'
+        description: 'Aadhaar Card / PAN Card / Voter ID of Authorized Signatory'
+    },
+    {
+        id: 'land_ownership',
+        name: 'Land Ownership Document / Lease Deed',
+        required: true,
+        description: 'Registered Sale Deed / Lease Deed / Jamabandi'
     },
     {
         id: 'site_plan',
-        name: 'Site Plan / Layout Plan',
+        name: 'Site Location Map',
         required: true,
-        description: 'Detailed site map showing all structures'
+        description: 'Google Map with Site Marked + Revenue/Survey Map'
     },
+    {
+        id: 'project_report', // Merged "Project Description"
+        name: 'Project Description / Brief Note',
+        required: true,
+        description: 'Brief note on project activity and water requirement'
+    },
+    {
+        id: 'affidavit',
+        name: 'Affidavit / Self Declaration',
+        required: true,
+        description: 'Notarized affidavit on Rs. 100 Non-Judicial Stamp Paper'
+    },
+    {
+        id: 'rainwater_plan',
+        name: 'Rainwater Harvesting Plan',
+        required: true,
+        description: 'Proposal/Plan for Rainwater Harvesting implementation'
+    },
+    {
+        id: 'nabl_report',
+        name: 'Water Quality Report (NABL)',
+        required: true,
+        description: 'Recent water quality test report from NABL accredited lab'
+    },
+
+    // 2. Industrial Specific
+    {
+        id: 'dpr',
+        name: 'Detailed Project Report (DPR)',
+        required: false,
+        description: 'Comprehensive DPR covering production, water balance, etc.'
+    },
+    {
+        id: 'industry_reg',
+        name: 'Industry Registration',
+        required: false,
+        description: 'MSME / Udyam / DIC Registration / Factory License'
+    },
+    {
+        id: 'msme_certificate',
+        name: 'MSME Certificate',
+        required: false,
+        description: 'Copy of MSME / Udyam Registration Certificate'
+    },
+    {
+        id: 'water_balance', // Covers "Water Balance Diagram"
+        name: 'Water Balance Diagram',
+        required: false,
+        description: 'Flow chart showing water input, consumption, and discharge'
+    },
+    {
+        id: 'etp_stp_details',
+        name: 'ETP / STP Details',
+        required: false,
+        description: 'Design details, capacity, and technology of ETP/STP'
+    },
+    {
+        id: 'cto_cte',
+        name: 'Consent to Operate/Establish (CTO/CTE)',
+        required: false,
+        description: 'Consent from State Pollution Control Board'
+    },
+    {
+        id: 'flow_meter_undertaking',
+        name: 'Flow Meter Undertaking',
+        required: false,
+        description: 'Undertaking to install tamper-proof digital flow meter with telemetry'
+    },
+
+    // 3. Infrastructure / Commercial
+    {
+        id: 'building_plan',
+        name: 'Approved Building Plan',
+        required: false,
+        description: 'Building plan approved by local development authority'
+    },
+    {
+        id: 'occupancy_cert',
+        name: 'Occupancy / Completion Certificate',
+        required: false,
+        description: 'Required for existing infrastructure projects'
+    },
+    {
+        id: 'fire_noc',
+        name: 'Fire NOC',
+        required: false,
+        description: 'Fire Safety Clearance (if applicable)'
+    },
+
+    // 4. Mining / Construction
+    {
+        id: 'mining_permit',
+        name: 'Mining Permit / Lease',
+        required: false,
+        description: 'Valid mining lease / permit from Dept of Mines'
+    },
+    {
+        id: 'dewatering_plan',
+        name: 'Dewatering Plan',
+        required: false,
+        description: 'Plan for groundwater extraction and management'
+    },
+
+    // 5. Domestic / Agricultural (If ever needed for NOC)
+    {
+        id: 'proof_residence',
+        name: 'Proof of Residence',
+        required: false,
+        description: 'Electricity Bill / Ration Card'
+    },
+    {
+        id: 'land_records_agri',
+        name: 'Agriculture Land Records',
+        required: false,
+        description: 'Khasra / Khatauni reflecting agriculture land use'
+    },
+
+    // 6. Conditional / Special
     {
         id: 'impact_assessment',
         name: 'Impact Assessment Report',
-        required: false, // Mandatory if > 100 KLD
-        description: 'Required if total water requirement > 100 KLD'
+        required: false,
+        description: 'Required if water demand > 100 m³/day'
     },
     {
         id: 'gw_modelling',
         name: 'Ground Water Modelling Report',
-        required: false, // Mandatory if > 100 KLD
-        description: 'Required if total water requirement > 100 KLD'
+        required: false,
+        description: 'Required if water demand > 100 m³/day'
     },
     {
-        id: 'nabl_report',
-        name: 'NABL Approved Lab Report',
-        required: true,
-        description: 'Water quality report from NABL accredited lab'
+        id: 'hydrogeological_report',
+        name: 'Hydrogeological Report',
+        required: false,
+        description: 'Required for Mining or Over-exploited/Critical areas'
     },
     {
-        id: 'cto_cte',
-        name: 'CTO / CTE',
-        required: true,
-        description: 'Consent to Operate / Establish (Mandatory)'
+        id: 'drilling_permission',
+        name: 'Drilling Permission',
+        required: false,
+        description: 'For new borewell drilling'
+    },
+    {
+        id: 'previous_noc',
+        name: 'Previous NOC',
+        required: false,
+        description: 'Copy of previous/expired NOC (for existing projects/renewals)'
+    },
+    {
+        id: 'ec_clearance',
+        name: 'Environmental Clearance (EC)',
+        required: false,
+        description: 'Environmental Clearance from MoEF&CC / SEIAA (if applicable)'
     }
 ];
 

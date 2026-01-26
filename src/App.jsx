@@ -88,7 +88,7 @@ import EACDashboard from './modules/noc/EACDashboard';
 import IssueReporting from './modules/noc/IssueReporting';
 import ChargeRevision from './modules/noc/ChargeRevision';
 import NOCReports from './modules/noc/NOCReports';
-import NOCUtilities from './modules/noc/NOCUtilities';
+import Utilities from './modules/noc/Utilities';
 import NOCHelp from './modules/noc/NOCHelp';
 
 function App() {
@@ -129,17 +129,17 @@ function App() {
             <Route path="/noc/track-status/:id" element={<ApplicationStatusTracker />} />
             <Route path="/noc/update-contact" element={<ContactUpdate />} />
             <Route path="/noc/check-eligibility" element={<EligibilityChecker />} />
-            <Route path="/noc/self-compliance" element={<SelfCompliance />} />
+            {/* <Route path="/noc/self-compliance" element={<SelfCompliance />} /> */}
 
             {/* New Sidebar Screens */}
             <Route path="/noc/account-settings" element={<AccountSettings />} />
             <Route path="/noc/queries" element={<NOCQueries />} />
-            <Route path="/noc/eac" element={<EACDashboard />} />
+            {/* <Route path="/noc/eac" element={<EACDashboard />} /> */}
             <Route path="/noc/issue-reporting" element={<IssueReporting />} />
             <Route path="/noc/payment-details" element={<PaymentDetails />} /> {/* Existing but ensuring clarity */}
             <Route path="/noc/charge-revision" element={<ChargeRevision />} />
             <Route path="/noc/reports" element={<NOCReports />} />
-            <Route path="/noc/utilities" element={<NOCUtilities />} />
+            <Route path="/noc/utilities" element={<Utilities />} />
             <Route path="/noc/help" element={<NOCHelp />} />
 
             {/* Tools Routes */}

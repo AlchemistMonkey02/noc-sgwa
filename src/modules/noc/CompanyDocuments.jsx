@@ -19,12 +19,9 @@ const CompanyDocuments = () => {
 
     const documentTypes = [
         { type: 'GST_CERTIFICATE', label: 'GST Certificate', icon: '📋' },
-        { type: 'PAN_CARD', label: 'PAN Card', icon: '🆔' },
+        { type: 'PAN', label: 'PAN Card', icon: '🆔' },
         { type: 'INCORPORATION_CERTIFICATE', label: 'Incorporation Certificate', icon: '📜' },
-        { type: 'TRADE_LICENSE', label: 'Trade License', icon: '🏪' },
-        { type: 'POLLUTION_CLEARANCE', label: 'Pollution Control Clearance', icon: '🌿' },
-        { type: 'MSME_CERTIFICATE', label: 'MSME Certificate', icon: '🏭' },
-        { type: 'OTHER', label: 'Other Documents', icon: '📄' }
+        { type: 'AUTHORIZATION_LETTER', label: 'Authorization Letter', icon: '✍️' }
     ];
 
     // Fetch company ID and documents on mount

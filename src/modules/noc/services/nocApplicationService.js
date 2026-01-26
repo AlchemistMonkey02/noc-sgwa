@@ -90,14 +90,26 @@ export const nocApplicationService = {
         return handleResponse(response);
     },
     getBlockCategory: async (districtId, blockId) => {
-        // Assuming API structure. If not present, fallback/mock.
+        // Legacy GET
         try {
             const response = await fetch(`${API_BASE_URL}/master/block-category?districtId=${districtId}&blockId=${blockId}`);
-            if (!response.ok) return { success: true, data: { name: 'Safe', color: '#10b981', description: 'Safe for extraction' } }; // Mock fallback
+            if (!response.ok) return { success: true, data: { name: 'Safe', color: '#10b981', description: 'Safe for extraction' } };
             return handleResponse(response);
         } catch (e) {
             return { success: true, data: { name: 'Safe', color: '#10b981', description: 'Safe for extraction' } };
         }
+    },
+
+    fetchBlockCategory: async (payload) => {
+        // POST /api/master/blocks/category
+        return tryFetch(
+            [`${API_BASE_URL}/master/blocks/category`],
+            {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(payload)
+            }
+        );
     },
     getUtilizationSectors: async () => {
         // API endpoint /master/utilization-sectors no longer exists
@@ -494,7 +506,9 @@ export const nocApplicationService = {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('documentType', documentType);
-        formData.append('applicationId', applicationId);
+        if (applicationId) {
+            formData.append('applicationId', applicationId);
+        }
 
         return tryFetch(
             [
@@ -552,6 +566,34 @@ export const nocApplicationService = {
                 'Authorization': `Bearer ${token}`
             }
         };
+    },
+
+    downloadCertificate: async (refNumber) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/applications/noc/ref/${refNumber}/document`, {
+                headers: getHeaders()
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Download failed');
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `NOC_Certificate_${refNumber}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            return { success: true };
+        } catch (error) {
+            console.error('Certificate download error:', error);
+            throw error;
+        }
     }
 };
 

@@ -1,5 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { EXTERNAL_URLS } from '../../config/constants';
+
+import PublicHeader from './components/PublicHeader';
 
 const ToolsDashboard = () => {
     const navigate = useNavigate();
@@ -9,7 +12,9 @@ const ToolsDashboard = () => {
             id: 'charges',
             title: 'Abstraction Charges',
             icon: '💰',
-            link: 'https://rgwcma.geoplanetsolution.in/charges', // External
+            title: 'Abstraction Charges',
+            icon: '💰',
+            link: EXTERNAL_URLS.CHARGES_CALCULATOR, // External
             isExternal: true,
             description: 'Calculate groundwater abstraction charges'
         },
@@ -40,7 +45,8 @@ const ToolsDashboard = () => {
     };
 
     return (
-        <div style={{ padding: '40px', maxWidth: '1200px', margin: '0 auto', minHeight: '60vh' }}>
+        <div style={{ padding: '40px', maxWidth: '1200px', margin: '0 auto', minHeight: '60vh', marginTop: '140px' }}>
+            <PublicHeader />
             <h2 style={{
                 textAlign: 'center',
                 marginBottom: '40px',

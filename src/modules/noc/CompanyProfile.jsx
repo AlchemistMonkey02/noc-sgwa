@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
+import SkeletonLoader from '../../components/SkeletonLoader';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import API_BASE_URL from '../../config/apiConfig';
-import NOCHeader from './components/NOCHeader';
-import NOCFooter from './components/NOCFooter';
-import Sidebar from './components/Sidebar';
+
+import LayoutWithSidebar from './components/LayoutWithSidebar';
 import { nocApplicationService } from './services/nocApplicationService';
 import './styles/noc-portal.css';
 
 const CompanyProfile = () => {
     const navigate = useNavigate();
-    const [sidebarOpen, setSidebarOpen] = useState(false);
+    // const [sidebarOpen, setSidebarOpen] = useState(false); // Removed manual sidebar state
     const [sameAsCommunication, setSameAsCommunication] = useState(false);
     const [companyTypeOptions, setCompanyTypeOptions] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     // Location State
     const [stateOptions, setStateOptions] = useState([]);
@@ -114,6 +115,8 @@ const CompanyProfile = () => {
 
             } catch (error) {
                 console.error('Error initializing data:', error);
+            } finally {
+                setLoading(false);
             }
         };
 
@@ -341,29 +344,52 @@ const CompanyProfile = () => {
     };
 
     return (
-        <div className="noc-portal">
-            <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+        <LayoutWithSidebar defaultCollapsed={true}>
+            <div className="page-gradient-header"></div>
 
-            <button className="sidebar-toggle-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
+            <div className="content-container">
+                {/* Breadcrumb */}
+                <div className="breadcrumb">
+                    <Link to="/noc/dashboard">Dashboard</Link>
+                    <span className="separator">›</span>
+                    <span className="current">Company Profile</span>
+                </div>
 
-            <NOCHeader />
+                <div className="page-title-section">
+                    <h1 className="page-main-title">Company Profile</h1>
+                    <p className="page-subtitle">Manage your company registration details</p>
+                </div>
 
-            <div className="main-content" style={{ marginLeft: window.innerWidth >= 1024 ? '280px' : '0' }}>
-                <div className="page-gradient-header"></div>
-
-                <div className="content-container">
-                    {/* Breadcrumb */}
-                    <div className="breadcrumb">
-                        <Link to="/noc/dashboard">Dashboard</Link>
-                        <span className="separator">›</span>
-                        <span className="current">Company Profile</span>
+                {loading ? (
+                    <div className="application-form">
+                        <div className="form-section">
+                            <h3 className="section-title">
+                                <span className="icon">🏢</span> <SkeletonLoader width="200px" height="1.5rem" style={{ display: 'inline-block' }} />
+                            </h3>
+                            <div className="form-grid-3">
+                                {Array(6).fill(0).map((_, i) => (
+                                    <div key={i} className="form-group">
+                                        <SkeletonLoader width="40%" height="1rem" style={{ marginBottom: '0.5rem' }} />
+                                        <SkeletonLoader width="100%" height="2.5rem" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="form-section">
+                            <h3 className="section-title">
+                                <span className="icon">📍</span> <SkeletonLoader width="200px" height="1.5rem" style={{ display: 'inline-block' }} />
+                            </h3>
+                            <div className="form-grid-2">
+                                {Array(2).fill(0).map((_, i) => (
+                                    <div key={i} className="form-group">
+                                        <SkeletonLoader width="40%" height="1rem" style={{ marginBottom: '0.5rem' }} />
+                                        <SkeletonLoader width="100%" height="2.5rem" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
-
-                    <div className="page-title-section">
-                        <h1 className="page-main-title">Company Profile</h1>
-                        <p className="page-subtitle">Manage your company registration details</p>
-                    </div>
-
+                ) : (
                     <form onSubmit={handleSubmit} className="application-form">
 
                         {/* Company Details Section */}
@@ -725,11 +751,9 @@ const CompanyProfile = () => {
                         </div>
 
                     </form>
-                </div>
+                )}
             </div>
-
-            <NOCFooter />
-        </div>
+        </LayoutWithSidebar>
     );
 };
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import SkeletonLoader from '../../components/SkeletonLoader';
 import NOCHeader from './components/NOCHeader';
 import NOCFooter from './components/NOCFooter';
 import { nocApplicationService } from './services/nocApplicationService';
@@ -10,6 +11,7 @@ const ApplicationDetail = () => {
     const navigate = useNavigate();
     const [application, setApplication] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [verifyingDocs, setVerifyingDocs] = useState({}); // Track which docs are being auto-verified
     const [error, setError] = useState(null);
 
     useEffect(() => {
@@ -36,7 +38,169 @@ const ApplicationDetail = () => {
         }
     }, [id]);
 
-    if (loading || error || !application) {
+    // Auto-Verify Documents Effect
+    useEffect(() => {
+        if (!application || !application.documents) return;
+
+        const verifyPendingDocuments = async () => {
+            const pendingDocs = application.documents.filter(doc => !doc.verification?.ai?.verified && !doc.verification?.ai?.status);
+
+            if (pendingDocs.length === 0) return;
+
+            // Mark as verifying
+            const newVerifying = {};
+            pendingDocs.forEach(d => newVerifying[d.documentId || d._id] = true);
+            setVerifyingDocs(prev => ({ ...prev, ...newVerifying }));
+
+            for (const doc of pendingDocs) {
+                const docId = doc.documentId || doc._id;
+                try {
+                    // 1. Download
+                    const blob = await nocApplicationService.downloadDocument(docId);
+                    const file = new File([blob], doc.fileName || 'doc.pdf', { type: doc.mimeType || 'application/pdf' });
+
+                    // 2. Metadata
+                    const metadata = {
+                        name: application.basicDetails?.projectDetails?.applicantName || "Applicant",
+                    };
+                    const docType = (doc.documentType || '').toLowerCase();
+                    if (docType.includes('aadhaar')) {
+                        metadata.aadhaar_number = application.basicDetails?.projectDetails?.aadhaarNumber || "";
+                    }
+
+                    // 3. Verify
+                    const aiResponse = await nocApplicationService.verifyDocumentWithAI(file, doc.documentType, metadata);
+
+                    // 4. Update Backend
+                    if (aiResponse && aiResponse.success) {
+                        const updatePayload = {
+                            verified: true,
+                            confidence: aiResponse.confidence || 0.95,
+                            remarks: aiResponse.remarks || "Verified by AI",
+                            extractedText: aiResponse.extracted_text
+                        };
+                        await nocApplicationService.updateDocumentAIStatus(docId, updatePayload);
+
+                        // Update local state to reflect change immediately
+                        setApplication(prev => {
+                            if (!prev) return prev;
+                            return {
+                                ...prev,
+                                documents: prev.documents.map(d => {
+                                    if ((d.documentId || d._id) === docId) {
+                                        return { ...d, verification: { ai: updatePayload } };
+                                    }
+                                    return d;
+                                })
+                            };
+                        });
+                    }
+
+                } catch (err) {
+                    console.error(`Auto-verification failed for ${docId}:`, err);
+                } finally {
+                    setVerifyingDocs(prev => ({ ...prev, [docId]: false }));
+                }
+            }
+        };
+
+        verifyPendingDocuments();
+    }, [application]);
+
+    if (loading) {
+        return (
+            <div className="noc-portal">
+                <NOCHeader />
+                <div className="main-content">
+                    <div className="page-gradient-header"></div>
+                    <div className="content-container">
+                        {/* Title Section Skeleton */}
+                        <div className="page-title-section" style={{
+                            padding: '2.5rem 2rem',
+                            borderRadius: '16px',
+                            marginBottom: '2rem',
+                            background: 'white' // Placeholder bg
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                    <SkeletonLoader variant="title" width="300px" height="2.5rem" style={{ marginBottom: '0.5rem' }} />
+                                    <SkeletonLoader width="200px" />
+                                </div>
+                                <SkeletonLoader width="120px" height="40px" style={{ borderRadius: '50px' }} />
+                            </div>
+                        </div>
+
+                        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+                            {/* Basic Details Skeleton */}
+                            <div style={{
+                                background: 'white',
+                                borderRadius: '16px',
+                                padding: '1.75rem',
+                                marginBottom: '1.5rem',
+                                border: '1px solid #e5e7eb'
+                            }}>
+                                <SkeletonLoader variant="title" width="250px" height="2rem" style={{ marginBottom: '1.5rem' }} />
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                                    gap: '1.25rem'
+                                }}>
+                                    {[1, 2, 3, 4, 5, 6].map(i => (
+                                        <div key={i} style={{ padding: '1.25rem', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
+                                            <SkeletonLoader width="40%" height="0.8rem" style={{ marginBottom: '0.5rem' }} />
+                                            <SkeletonLoader width="70%" height="1.2rem" />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Contact Details Skeleton */}
+                            <div style={{
+                                background: 'white',
+                                borderRadius: '16px',
+                                padding: '1.75rem',
+                                marginBottom: '1.5rem',
+                                border: '1px solid #e5e7eb'
+                            }}>
+                                <SkeletonLoader variant="title" width="250px" height="2rem" style={{ marginBottom: '1.5rem' }} />
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                                    gap: '1.25rem'
+                                }}>
+                                    {[1, 2, 3, 4].map(i => (
+                                        <div key={i} style={{ padding: '1.25rem', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
+                                            <SkeletonLoader width="40%" height="0.8rem" style={{ marginBottom: '0.5rem' }} />
+                                            <SkeletonLoader width="70%" height="1.2rem" />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Documents Skeleton */}
+                            <div style={{
+                                background: 'white',
+                                borderRadius: '16px',
+                                padding: '1.75rem',
+                                marginBottom: '1.5rem',
+                                border: '1px solid #e5e7eb'
+                            }}>
+                                <SkeletonLoader variant="title" width="250px" height="2rem" style={{ marginBottom: '1.5rem' }} />
+                                <div style={{ display: 'grid', gap: '1rem' }}>
+                                    {[1, 2, 3].map(i => (
+                                        <SkeletonLoader key={i} width="100%" height="80px" style={{ borderRadius: '12px' }} />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <NOCFooter />
+            </div>
+        );
+    }
+
+    if (error || !application) {
         return (
             <div className="noc-portal">
                 <NOCHeader />
@@ -44,23 +208,19 @@ const ApplicationDetail = () => {
                     <div className="page-gradient-header"></div>
                     <div className="content-container">
                         <div className="application-summary-container" style={{ textAlign: 'center', padding: '50px' }}>
-                            {loading ? (
-                                <div className="loading-spinner">⏳ Loading application details...</div>
-                            ) : (
-                                <div className="error-message">
-                                    <h2 style={{ color: '#ef4444' }}>⚠️ {error || 'Application not found'}</h2>
-                                    <p style={{ marginTop: '10px', color: '#64748b' }}>
-                                        Check the Application ID or try again from the dashboard.
-                                    </p>
-                                    <button
-                                        className="bhuneer-secondary-btn"
-                                        style={{ marginTop: '20px' }}
-                                        onClick={() => navigate('/noc/dashboard')}
-                                    >
-                                        Back to Dashboard
-                                    </button>
-                                </div>
-                            )}
+                            <div className="error-message">
+                                <h2 style={{ color: '#ef4444' }}>⚠️ {error || 'Application not found'}</h2>
+                                <p style={{ marginTop: '10px', color: '#64748b' }}>
+                                    Check the Application ID or try again from the dashboard.
+                                </p>
+                                <button
+                                    className="bhuneer-secondary-btn"
+                                    style={{ marginTop: '20px' }}
+                                    onClick={() => navigate('/noc/dashboard')}
+                                >
+                                    Back to Dashboard
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -121,7 +281,7 @@ const ApplicationDetail = () => {
                                         padding: '0.25rem 0.75rem',
                                         borderRadius: '6px',
                                         fontWeight: '600'
-                                    }}>{application.applicationId || id}</span>
+                                    }}>{application.trackingId || application.applicationNumber}</span>
                                 </p>
                             </div>
                             <span style={{
@@ -442,9 +602,54 @@ const ApplicationDetail = () => {
                                                     <span>📎</span>
                                                     {doc.fileName || doc.documentId || 'Unknown file'}
                                                 </div>
+
+                                                {/* AI Verification Status for Applicant */}
+                                                <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                                    {verifyingDocs[doc.documentId || doc._id] ? (
+                                                        <span style={{
+                                                            fontSize: '0.75rem',
+                                                            color: '#0369a1',
+                                                            background: '#e0f2fe',
+                                                            padding: '0.2rem 0.6rem',
+                                                            borderRadius: '4px',
+                                                            border: '1px solid #bae6fd',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '5px'
+                                                        }}>
+                                                            <span className="sc-spinner">🔄</span> Verifying...
+                                                        </span>
+                                                    ) : doc.verification?.ai ? (
+                                                        <>
+                                                            {doc.verification.ai.verified ? (
+                                                                <span style={{ fontSize: '0.75rem', color: '#166534', background: '#dcfce7', padding: '0.1rem 0.5rem', borderRadius: '4px', border: '1px solid #bbf7d0' }}>
+                                                                    ✅ AI Verified
+                                                                </span>
+                                                            ) : (
+                                                                <span style={{ fontSize: '0.75rem', color: '#991b1b', background: '#fee2e2', padding: '0.1rem 0.5rem', borderRadius: '4px', border: '1px solid #fecaca' }}>
+                                                                    ⚠️ Verification Failed
+                                                                </span>
+                                                            )}
+                                                            {doc.verification.ai.confidence && (
+                                                                <span style={{ fontSize: '0.75rem', color: '#475569', background: '#f1f5f9', padding: '0.1rem 0.5rem', borderRadius: '4px' }}>
+                                                                    Confidence: {(doc.verification.ai.confidence * 100).toFixed(1)}%
+                                                                </span>
+                                                            )}
+                                                            {doc.verification.ai.remarks && (
+                                                                <span style={{ fontSize: '0.75rem', color: '#475569', fontStyle: 'italic' }}>
+                                                                    "{doc.verification.ai.remarks}"
+                                                                </span>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <span style={{ fontSize: '0.75rem', color: '#d97706', background: '#fef3c7', padding: '0.1rem 0.5rem', borderRadius: '4px', border: '1px solid #fde68a' }}>
+                                                            ⌛ Pending AI Verification
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                             <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                                                {doc.verification?.ai?.status === 'APPROVED' && (
+                                                {false && ( // Hidden - handled above now
                                                     <span style={{
                                                         fontSize: '0.75rem',
                                                         padding: '0.35rem 0.75rem',

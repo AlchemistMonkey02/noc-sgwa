@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { EXTERNAL_URLS } from '../config/constants';
 import './Header.css';
 
 const Header = () => {
@@ -49,14 +50,14 @@ const Header = () => {
                 </div>
             </div>
             <nav className="header-nav">
-                <a href="https://rgwcma.geoplanetsolution.in/about" target="_blank" rel="noopener noreferrer">ABOUT DEPARTMENT</a>
-                <a href="https://rgwcma.geoplanetsolution.in/services" target="_blank" rel="noopener noreferrer">SERVICES</a>
-                <a href="https://rgwcma.geoplanetsolution.in/guidelines" target="_blank" rel="noopener noreferrer">GUIDELINES</a>
-                <a href="https://rgwcma.geoplanetsolution.in/downloads" target="_blank" rel="noopener noreferrer">DOWNLOADS</a>
+                <a href={EXTERNAL_URLS.ABOUT_URL} target="_blank" rel="noopener noreferrer">ABOUT DEPARTMENT</a>
+                <a href={EXTERNAL_URLS.SERVICES_URL} target="_blank" rel="noopener noreferrer">SERVICES</a>
+                <a href={EXTERNAL_URLS.GUIDELINES_URL} target="_blank" rel="noopener noreferrer">GUIDELINES</a>
+                <a href={EXTERNAL_URLS.DOWNLOADS_URL} target="_blank" rel="noopener noreferrer">DOWNLOADS</a>
                 <a href="/tools">TOOLS</a>
-                <a href="https://rgwcma.geoplanetsolution.in/contact" target="_blank" rel="noopener noreferrer">CONTACT US</a>
+                <a href={EXTERNAL_URLS.CONTACT_URL} target="_blank" rel="noopener noreferrer">CONTACT US</a>
 
-                {!isAuthenticated() && (
+                {!isAuthenticated && (
                     <div className="auth-nav-items">
                         <Link to="/noc/login" className="auth-btn login-btn">LOGIN</Link>
                         <Link to="/noc/register" className="auth-btn register-btn">REGISTER</Link>

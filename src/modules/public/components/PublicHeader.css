@@ -19,6 +19,16 @@
     border-bottom: 1px solid #ddd;
 }
 
+/* Global Container for Header consistency */
+.public-header-container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 40px;
+    /* Standard side padding */
+    box-sizing: border-box;
+}
+
 .public-top-bar .public-header-container {
     display: flex;
     justify-content: space-between;
@@ -51,19 +61,24 @@
 .public-brand-area {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 25px;
+    /* Reasonable gap */
 }
 
 .header-dept-logo {
-    height: 70px;
-    width: 70px;
+    height: 75px;
+    width: 75px;
     object-fit: contain;
+    margin-right: 15px;
+    /* Extra breathing room */
 }
 
 .header-emblem {
-    height: 60px;
+    height: 65px;
     width: auto;
     object-fit: contain;
+    margin-left: 15px;
+    /* Separation from helpline */
 }
 
 .public-brand-text h1 {
@@ -148,13 +163,49 @@
 .public-header-nav .public-header-container {
     display: flex;
     justify-content: flex-start;
-    padding: 0;
+    padding: 0 40px;
+    /* Align with main header */
 }
 
 .nav-links-wrapper {
     display: flex;
     width: 100%;
     /* justify-content: flex-end; Optional: if you want nav to right */
+}
+
+.nav-btn-link-login {
+    margin-left: auto;
+}
+
+.nav-btn-link-logout {
+    background: transparent !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    padding: 8px 20px !important;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-left: auto;
+    /* Pushes button to the far right */
+    margin-right: 0;
+    /* Ensures no extra spacing on the right */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-radius: 4px;
+}
+
+.nav-btn-link-logout:hover {
+    background: #d32f2f !important;
+    border-color: #d32f2f !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+    transform: translateY(-1px);
+}
+
+.nav-btn-link-logout:active {
+    transform: translateY(0);
 }
 
 .public-header-nav a {

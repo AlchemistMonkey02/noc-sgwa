@@ -1,5 +1,5 @@
 import React from 'react';
-import API_BASE_URL from '../../../config/apiConfig';
+import API_BASE_URL, { AI_SERVICE_URL } from '../../../config/apiConfig';
 
 // Helper to get auth token
 const getAuthToken = () => {
@@ -634,6 +634,42 @@ const officerService = {
     getDocumentUrl: (documentId) => {
         const token = getAuthToken();
         return `${API_BASE_URL}/officer/documents/${documentId}/view?token=${token}`;
+    },
+
+    // Update Document AI Verification Status (Backend)
+    updateDocumentAIStatus: async (documentId, data) => {
+        const response = await apiRequest(`/documents/${documentId}/verify-ai`, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        return handleResponse(response);
+    },
+
+    // Call AI Service (Direct to Python Service)
+    verifyDocumentWithAI: async (file, docType, metadata = {}) => {
+        // NOTE: This calls localhost:5005 directly from the browser.
+        // Ensure the AI service has CORS enabled for the frontend origin.
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('user_input', JSON.stringify(metadata));
+
+        // Map document types if needed (e.g. 'Aadhaar Card' -> 'AADHAAR')
+        let aiDocType = docType.toUpperCase().replace(/\s+/g, '_');
+        if (aiDocType.includes('AADHAAR')) aiDocType = 'AADHAAR';
+
+        const response = await fetch(`${AI_SERVICE_URL}/verify-document/${aiDocType}`, {
+            method: 'POST',
+            body: formData
+            // No custom headers needed for 5005 usually, unless secured
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`AI Service Error: ${errorText}`);
+        }
+
+        return await response.json();
     },
 
     // ==================== NOTIFICATIONS ====================

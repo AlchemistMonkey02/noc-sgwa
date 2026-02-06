@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import NOCRegister from '../noc/NOCRegister';
-import PublicHeader from '../../components/PublicHeader';
+import PublicHeader from './components/PublicHeader';
+import { EXTERNAL_URLS } from '../../config/constants';
 import './styles/public-landing.css';
 
 const PublicLanding = () => {
@@ -82,11 +83,12 @@ const PublicLanding = () => {
         { title: 'Rig Registration', icon: '🏗️', link: '/public/services/rig' },
         { title: 'Vendor Registration', icon: '⚙️', link: '/public/services/vendor' },
         { title: 'Know Your EC', icon: '💰', link: '/public/know-your-ec' },
-        { title: 'Water Calculator', icon: '🧮', link: 'https://rgwcma.geoplanetsolution.in/charges', external: true },
+        { title: 'Know Your Abstraction Cost', icon: '🧮', link: EXTERNAL_URLS.CHARGES_CALCULATOR, external: true },
         { title: 'Application Status', icon: '📋', link: '/noc/track-status' }
     ];
 
     const handleServiceCardClick = (service) => {
+        
         if (service.link) {
             if (service.external) {
                 // Open external links in a new tab
@@ -187,7 +189,7 @@ const PublicLanding = () => {
                     <div className="sidebar-section">
                         <h3 className="sidebar-title">Online Services</h3>
                         <ul className="sidebar-menu">
-                            <li><Link to="/public/services/noc">➤ Apply for Groundwater NOC</Link></li>
+                            <li><Link to="/public/services/noc">➤ Groundwater NOC</Link></li>
                             <li><Link to="/public/services/rig">➤ Rig Registration</Link></li>
                             <li><Link to="/public/services/vendor">➤ Vendor Registration</Link></li>
                             {/* NOC Renewal likely needs login/dashboard access */}
@@ -264,7 +266,7 @@ const PublicLanding = () => {
                                         className="gov-select"
                                     >
                                         <option value="">— Select Service Type —</option>
-                                        <option value="water_abstractor">Water Abstractor (Industries/Projects)</option>
+                                        <option value="water_abstractor">Noc Applicant (Individual)</option>
                                         {/* <option value="rig_registration">Rig Registration & Operations</option>
                                         <option value="vendor_registration">Vendor/Equipment Registration</option>
                                         <option value="dgo">District Groundwater Officer (DGO)</option>

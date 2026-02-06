@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import SkeletonLoader from '../../components/SkeletonLoader';
 import LayoutWithSidebar from './components/LayoutWithSidebar';
 import { nocApplicationService } from './services/nocApplicationService';
 import './styles/noc-portal.css';
@@ -66,7 +67,7 @@ const ApplicationList = () => {
 
     const getStatusColor = (status) => {
         const s = status?.toUpperCase();
-        if (s === 'APPROVED') return 'success';
+        if (s === 'APPROVED' || s === 'EXEMPT') return 'success';
         if (s === 'REJECTED') return 'danger';
         if (s === 'SUBMITTED' || s === 'PENDING') return 'info';
         return 'warning';
@@ -77,7 +78,7 @@ const ApplicationList = () => {
         : applications.filter(app =>
             activeTab === 'active'
                 ? ['SUBMITTED', 'PENDING', 'UNDER_REVIEW', 'UNDER_SCRUTINY', 'QUERY_RAISED'].includes(app.status?.toUpperCase())
-                : ['APPROVED', 'REJECTED', 'WITHDRAWN'].includes(app.status?.toUpperCase())
+                : ['APPROVED', 'REJECTED', 'WITHDRAWN', 'EXEMPT'].includes(app.status?.toUpperCase())
         );
 
     return (
@@ -122,7 +123,60 @@ const ApplicationList = () => {
                 </div>
 
                 {loading ? (
-                    <div style={{ textAlign: 'center', padding: '40px' }}>Loading applications...</div>
+                    <>
+                        {/* Stats Skeleton */}
+                        <div className="dashboard-stats-grid" style={{ marginBottom: '30px' }}>
+                            {Array(3).fill(0).map((_, i) => (
+                                <div key={i} className="dashboard-stat-card">
+                                    <div className="stat-card-content">
+                                        <div className="stat-info" style={{ width: '100%' }}>
+                                            <SkeletonLoader width="40px" height="40px" style={{ marginBottom: '10px', borderRadius: '50%' }} />
+                                            <SkeletonLoader width="60%" height="2rem" />
+                                            <SkeletonLoader width="80%" height="1rem" />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* List Skeleton */}
+                        <div className="dashboard-card">
+                            <div className="card-title-bar">
+                                <SkeletonLoader variant="title" width="200px" height="1.5rem" style={{ marginBottom: 0 }} />
+                            </div>
+                            <div className="card-content-area no-padding">
+                                <div className="professional-table-wrapper">
+                                    <table className="professional-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Application ID</th>
+                                                <th>Project Details</th>
+                                                <th>Date</th>
+                                                <th>Current Stage</th>
+                                                <th>Status</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {Array(5).fill(0).map((_, i) => (
+                                                <tr key={i}>
+                                                    <td><SkeletonLoader width="120px" /></td>
+                                                    <td>
+                                                        <SkeletonLoader width="150px" style={{ marginBottom: '5px' }} />
+                                                        <SkeletonLoader width="100px" height="0.8rem" />
+                                                    </td>
+                                                    <td><SkeletonLoader width="100px" /></td>
+                                                    <td><SkeletonLoader width="120px" /></td>
+                                                    <td><SkeletonLoader width="80px" height="1.5rem" style={{ borderRadius: '20px' }} /></td>
+                                                    <td><SkeletonLoader width="100px" height="2rem" style={{ borderRadius: '6px' }} /></td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </>
                 ) : (!isAuthenticated() || error === 'Login Required First') ? (
                     <div style={{ textAlign: 'center', padding: '60px 40px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
                         <div style={{ fontSize: '3rem', marginBottom: '20px' }}>🔒</div>

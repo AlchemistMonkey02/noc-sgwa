@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../../config/apiConfig';
 import './styles/public-landing.css';
 
+import PublicHeader from './components/PublicHeader';
+
 const KnowYourEC = () => {
     const navigate = useNavigate();
 
@@ -154,47 +156,7 @@ const KnowYourEC = () => {
 
     return (
         <div className="gov-portal" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-            <header className="portal-header">
-                <div className="header-top">
-                    <div className="header-brand" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-                        <div className="dept-logo">
-                            <div className="logo-circle">💧</div>
-                        </div>
-                        <div className="dept-info">
-                            <h1>GROUND WATER DEPARTMENT</h1>
-                            <p>Government of Rajasthan</p>
-                        </div>
-                    </div>
-                </div>
-                <nav className="header-nav" style={{
-                    justifyContent: 'flex-start',
-                    padding: '0.5rem 2rem',
-                    gap: '20px',
-                    alignItems: 'center',
-                    background: '#1e3a8a'
-                }}>
-                    <button
-                        onClick={() => navigate('/')}
-                        style={{
-                            background: 'transparent',
-                            border: '1px solid rgba(255,255,255,0.5)',
-                            color: 'white',
-                            padding: '6px 12px',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '5px',
-                            fontSize: '0.9rem'
-                        }}
-                    >
-                        <span>←</span> Back
-                    </button>
-                    <span className="nav-title" style={{ color: 'white', fontWeight: '500' }}>
-                        Know Your Environmental Compensation (EC)
-                    </span>
-                </nav>
-            </header>
+            <PublicHeader />
 
             <div className="portal-main" style={{
                 display: 'flex',

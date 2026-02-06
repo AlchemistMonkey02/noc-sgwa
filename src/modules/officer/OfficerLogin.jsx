@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { setOfficerToken, setOfficerRole, setOfficerData, setOfficerRefreshToken } from './shared/utils/officerAuth';
+import { useAuth } from '../../context/AuthContext';
+// import { setOfficerToken, setOfficerRole, setOfficerData, setOfficerRefreshToken } from './shared/utils/officerAuth'; // Now handled by context
 import './shared/styles/officer-portal.css';
 
 import API_BASE_URL from '../../config/apiConfig';
@@ -15,6 +16,8 @@ const OfficerLogin = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
+    const { login } = useAuth(); // Use auth context
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -23,64 +26,11 @@ const OfficerLogin = () => {
         try {
             console.log('Attempting login with:', { username: formData.username, role: formData.role });
 
-            // Call the actual login API
-            const response = await fetch(`${API_BASE_URL}/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    username: formData.username,
-                    password: formData.password
-                })
-            });
+            // Call login from AuthContext
+            const result = await login(formData.username, formData.password, formData.role);
 
-            const data = await response.json();
-            console.log('Login response:', { ok: response.ok, data });
-
-            // Check for token in different possible locations
-            const token = data.token || data.data?.token;
-            const refreshToken = data.refreshToken || data.data?.refreshToken;
-            const user = data.user || data.data?.user || {};
-            const userType = user.userType || data.userType || data.data?.userType;
-
-            if (response.ok && token) {
-                console.log('Login successful, validating role...');
-
-                // 1. Security Check: Block Applicants
-                if (userType === 'APPLICANT') {
-                    setError('Access Denied: Applicants are not authorized to access the Officer Portal.');
-                    setLoading(false);
-                    return;
-                }
-
-                // 2. Map API Role to UI Role
-                // 'RSGWA' is often the code for SGWA officers
-                let apiRole = userType;
-                if (userType === 'RSGWA') apiRole = 'SGWA';
-
-                // 3. Authorization Check: Verify User has the Selected Role
-                // Allow "RSGWA" (State) to access "DGO" (District)? - Assuming strict for now as per "check if authorized"
-                if (apiRole !== formData.role) {
-                    // Special case: If user is RSGWA/SGWA, they might be logging into DGO? 
-                    // But user request was "check if user is dgo".
-                    // If API returns RSGWA, they are SGWA. If they selected DGO, they selected WRONG.
-                    setError(`Access Denied: Your account type is '${userType}'. You are not authorized to login as '${formData.role}'.`);
-                    setLoading(false);
-                    return;
-                }
-
-                console.log('Role valid, storing auth data...');
-
-                // Set authentication data
-                setOfficerToken(token);
-                if (refreshToken) {
-                    setOfficerRefreshToken(refreshToken);
-                }
-
-                // Use the API verified role
-                setOfficerRole(apiRole);
-                setOfficerData(user);
-
-                console.log('Auth data stored, redirecting to dashboard...');
+            if (result.success) {
+                console.log('Login successful, modifying local state if needed (handled by context)');
 
                 // Redirect based on validated role
                 const dashboardRoutes = {
@@ -90,10 +40,10 @@ const OfficerLogin = () => {
                     'INSPECTION': '/officer/inspection/dashboard'
                 };
 
-                const redirectUrl = dashboardRoutes[apiRole];
+                const redirectUrl = dashboardRoutes[formData.role] || '/officer/login'; // Fallback
                 navigate(redirectUrl);
             } else {
-                setError(data.message || 'Invalid username or password');
+                setError(result.error);
             }
         } catch (err) {
             console.error('Login error:', err);

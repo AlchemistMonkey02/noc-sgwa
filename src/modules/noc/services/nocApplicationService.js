@@ -1,4 +1,4 @@
-import API_BASE_URL from '../../../config/apiConfig';
+import API_BASE_URL, { AI_SERVICE_URL } from '../../../config/apiConfig';
 
 const getAuthToken = () => {
     return localStorage.getItem('authToken');
@@ -41,12 +41,18 @@ export const nocApplicationService = {
         const response = await fetch(`${API_BASE_URL}/master/application-types`);
         return handleResponse(response);
     },
-    getApplicationSubTypes: async () => {
-        const response = await fetch(`${API_BASE_URL}/master/application-sub-types`);
+    getApplicationSubTypes: async (appTypeCode) => {
+        const url = appTypeCode
+            ? `${API_BASE_URL}/master-data/application-sub-types?appTypeCode=${appTypeCode}`
+            : `${API_BASE_URL}/master/application-sub-types`; // Fallback for legacy
+        const response = await fetch(url);
         return handleResponse(response);
     },
-    getProjectTypes: async () => {
-        const response = await fetch(`${API_BASE_URL}/master/project-types`);
+    getProjectTypes: async (appSubTypeCode) => {
+        const url = appSubTypeCode
+            ? `${API_BASE_URL}/master-data/project-types?appSubTypeCode=${appSubTypeCode}`
+            : `${API_BASE_URL}/master/project-types`;
+        const response = await fetch(url);
         return handleResponse(response);
     },
     getWaterQualityTypes: async () => {
@@ -476,6 +482,46 @@ export const nocApplicationService = {
         );
     },
 
+    submitExemption: async (payload) => {
+        return tryFetch(
+            [
+                `${API_BASE_URL}/noc/exemption`
+            ],
+            {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(payload || {})
+            }
+        );
+    },
+
+    // Submit Exemption to Authority (Final Submission)
+    submitExemptionToAuthority: async (exemptionId) => {
+        return tryFetch(
+            [
+                `${API_BASE_URL}/noc/exemption/${exemptionId}/submit`
+            ],
+            {
+                method: 'POST',
+                headers: getHeaders()
+            }
+        );
+    },
+
+    // Get Dynamic Document Requirements
+    getDocumentRequirements: async (payload) => {
+        return tryFetch(
+            [
+                `${API_BASE_URL}/tools/document-requirements`
+            ],
+            {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(payload)
+            }
+        );
+    },
+
     calculateDischarge: async (payload) => {
         return tryFetch(
             [
@@ -492,7 +538,7 @@ export const nocApplicationService = {
     checkEligibility: async (payload) => {
         return tryFetch(
             [
-                `${API_BASE_URL}/tools/check-eligibility`
+                `${API_BASE_URL}/noc/exemption/check-eligibility`
             ],
             {
                 method: 'POST',
@@ -500,6 +546,11 @@ export const nocApplicationService = {
                 body: JSON.stringify(payload || {})
             }
         );
+    },
+
+    getExemptionConfig: async () => {
+        const response = await fetch(`${API_BASE_URL}/noc/exemption/config`);
+        return handleResponse(response);
     },
 
     uploadDocument: async (file, documentType, applicationId) => {
@@ -594,6 +645,48 @@ export const nocApplicationService = {
             console.error('Certificate download error:', error);
             throw error;
         }
+    },
+
+    downloadDocument: async (documentId) => {
+        const response = await fetch(`${API_BASE_URL}/documents/${documentId}/download`, {
+            headers: getHeaders()
+        });
+        if (!response.ok) throw new Error('Failed to download document');
+        return await response.blob();
+    },
+
+    updateDocumentAIStatus: async (documentId, data) => {
+        const response = await fetch(`${API_BASE_URL}/documents/${documentId}/verify-ai`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(data)
+        });
+        return handleResponse(response);
+    },
+
+    verifyDocumentWithAI: async (file, docType, metadata = {}) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('inputText', JSON.stringify(metadata)); // Changed from user_input as per curl
+
+        let aiDocType = docType.toUpperCase().replace(/\s+/g, '_');
+        if (aiDocType.includes('AADHAAR')) aiDocType = 'AADHAAR';
+
+        formData.append('documentType', aiDocType); // Added missing field
+
+        // Direct call to Python Service (using 5020 as per user curl request suggestion, or fallback to configured)
+        // User's curl showed localhost:5020. Updating port to match user expectation.
+        const response = await fetch(`${AI_SERVICE_URL}/verify-document`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`AI Service Error: ${errorText}`);
+        }
+
+        return await response.json();
     }
 };
 

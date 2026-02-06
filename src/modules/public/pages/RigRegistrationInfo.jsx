@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import PublicHeader from '../components/PublicHeader';
+import { EXTERNAL_URLS } from '../../../config/constants';
 import '../styles/public-landing.css';
 
 const RigRegistrationInfo = () => {
@@ -17,7 +18,7 @@ const RigRegistrationInfo = () => {
                         Mandatory registration for all Drilling Agencies and Rigs operating within the state.
                     </p>
                     <button
-                        onClick={() => window.location.href = 'https://rgwcma-rig.geoplanetsolution.in/'}
+                        onClick={() => window.location.href = EXTERNAL_URLS.RIG_REGISTRATION}
                         className="cta-button"
                         style={{ marginTop: '2rem', padding: '1rem 2.5rem', fontSize: '1.1rem', background: 'white', color: '#1e3a8a', border: 'none', borderRadius: '50px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
                     >

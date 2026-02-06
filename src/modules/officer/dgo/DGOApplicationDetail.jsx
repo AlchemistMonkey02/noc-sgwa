@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import DocumentVerificationPanel from '../components/DocumentVerificationPanel';
 import OfficerHeader from '../shared/components/OfficerHeader';
 import OfficerSidebar from '../shared/components/OfficerSidebar';
 import Timeline from '../shared/components/Timeline';
@@ -188,39 +189,12 @@ const DGOApplicationDetail = () => {
                                     </div>
                                 </div>
 
-                                {/* Documents */}
-                                <div>
-                                    <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>
-                                        📋 Documents ({documents.length})
-                                    </h3>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                        {documents.map((doc) => (
-                                            <div
-                                                key={doc.id}
-                                                style={{
-                                                    background: 'var(--officer-white)',
-                                                    border: '1px solid var(--officer-border)',
-                                                    borderRadius: '8px',
-                                                    padding: '1rem',
-                                                    display: 'flex',
-                                                    justifyContent: 'space-between',
-                                                    alignItems: 'center'
-                                                }}
-                                            >
-                                                <div>
-                                                    <div style={{ fontWeight: '600', color: 'var(--officer-text)' }}>
-                                                        {doc.name}
-                                                        {doc.required && <span style={{ color: 'var(--officer-danger)' }}> *</span>}
-                                                    </div>
-                                                    <div style={{ fontSize: '0.875rem', color: 'var(--officer-text-light)', marginTop: '0.25rem' }}>
-                                                        Document ID: {doc.id}
-                                                    </div>
-                                                </div>
-                                                <StatusBadge status={doc.status} />
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
+                                <DocumentVerificationPanel
+                                    documents={documents}
+                                    applicationId={applicationId}
+                                    applicationDetails={application}
+                                    onVerificationComplete={() => fetchDocuments()} // Refresh list after verification
+                                />
                             </div>
 
                             {/* Right Column - Timeline */}

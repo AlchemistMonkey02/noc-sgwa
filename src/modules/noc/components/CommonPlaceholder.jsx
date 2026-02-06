@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import NOCHeader from './NOCHeader';
+import PublicHeader from '../../public/components/PublicHeader';
 import NOCFooter from './NOCFooter';
 import Sidebar from './Sidebar';
 import '../styles/noc-portal.css';
@@ -13,8 +13,7 @@ const CommonPlaceholder = ({ title, subtitle, breadcrumb, activeTab, onTabChange
         <div className="noc-portal">
             <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
             <button className="sidebar-toggle-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
-            <NOCHeader />
-
+             <PublicHeader/>
             <div className="main-content" style={{ marginLeft: window.innerWidth >= 1024 ? '280px' : '0' }}>
                 <div className="page-gradient-header"></div>
 

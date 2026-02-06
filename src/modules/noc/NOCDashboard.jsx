@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import SkeletonLoader from '../../components/SkeletonLoader';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { EXTERNAL_URLS } from '../../config/constants';
 import { nocApplicationService } from './services/nocApplicationService';
+
 import LayoutWithSidebar from './components/LayoutWithSidebar';
 import './styles/noc-portal.css';
 
 const NOCDashboard = () => {
+    console.log("NOCDashboard mounting");
     const navigate = useNavigate();
     const { user, loading, isLoggingOut } = useAuth();
+    console.log("NOCDashboard auth state:", { user, loading, isLoggingOut });
     const [dashboardData, setDashboardData] = useState(null);
     const [dashboardLoading, setDashboardLoading] = useState(true);
 
@@ -39,15 +44,93 @@ const NOCDashboard = () => {
     // Redirect if not authenticated
     useEffect(() => {
         if (!loading && !user && !isLoggingOut) {
+            console.log("Redirecting to login from NOCDashboard");
             navigate('/noc/login');
         }
     }, [user, loading, isLoggingOut, navigate]);
 
     if (loading || dashboardLoading) {
-        return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading...</div>;
+        return (
+            <LayoutWithSidebar>
+                <div className="page-gradient-header"></div>
+                <div className="content-container">
+                    {/* Breadcrumb Skeleton */}
+                    <div className="breadcrumb" style={{ marginBottom: '1rem' }}>
+                        <SkeletonLoader width="150px" height="1rem" />
+                    </div>
+
+                    {/* Title Skeleton */}
+                    <div className="page-title-section">
+                        <SkeletonLoader variant="title" width="300px" />
+                        <SkeletonLoader variant="text" width="400px" />
+                    </div>
+
+                    {/* Stats Grid Skeleton */}
+                    <div className="dashboard-stats-grid">
+                        {Array(6).fill(0).map((_, i) => (
+                            <div key={i} className="dashboard-stat-card">
+                                <div className="stat-card-content">
+                                    <div className="stat-info" style={{ width: '100%' }}>
+                                        <SkeletonLoader width="40px" height="40px" style={{ marginBottom: '10px', borderRadius: '50%' }} />
+                                        <SkeletonLoader width="60%" height="2rem" />
+                                        <SkeletonLoader width="80%" height="1rem" />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Quick Actions Skeleton */}
+                    <div className="dashboard-card">
+                        <div className="card-title-bar">
+                            <SkeletonLoader variant="title" width="200px" height="1.5rem" style={{ marginBottom: 0 }} />
+                        </div>
+                        <div className="card-content-area">
+                            <div className="quick-actions-grid">
+                                {Array(6).fill(0).map((_, i) => (
+                                    <div key={i} className="quick-action-item" style={{ height: '80px' }}>
+                                        <SkeletonLoader width="40px" height="40px" variant="circle" />
+                                        <SkeletonLoader width="60%" height="1rem" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Recent Apps Skeleton */}
+                    <div className="dashboard-card">
+                        <div className="card-title-bar">
+                            <SkeletonLoader variant="title" width="250px" height="1.5rem" style={{ marginBottom: 0 }} />
+                        </div>
+                        <div className="card-content-area no-padding">
+                            <div className="professional-table-wrapper">
+                                <table className="professional-table">
+                                    <thead>
+                                        <tr>
+                                            {Array(6).fill(0).map((_, i) => (
+                                                <th key={i}><SkeletonLoader width="80%" height="1rem" /></th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {Array(5).fill(0).map((_, i) => (
+                                            <tr key={i}>
+                                                {Array(6).fill(0).map((_, j) => (
+                                                    <td key={j}><SkeletonLoader width="90%" height="1rem" /></td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </LayoutWithSidebar>
+        );
     }
 
-    if (!user) return null; // Will redirect via effect
+    if (!user) return <div style={{ padding: '100px', textAlign: 'center' }}>Redirecting to login...</div>; // Will redirect via effect
 
     // Map API data to dashboard stats
     const stats = dashboardData?.stats || {};
@@ -323,7 +406,7 @@ const NOCDashboard = () => {
                                             <td>{app.purpose}</td>
                                             <td>{app.submittedDate}</td>
                                             <td>
-                                                <span className={`status-badge ${app.statusClass}`}>
+                                                <span className={`status-badge ${app.statusClass || (app.status === 'Exempt' ? 'success' : 'info')}`}>
                                                     {app.status}
                                                 </span>
                                             </td>
@@ -404,7 +487,7 @@ const NOCDashboard = () => {
                     </div>
                     <div className="card-content-area">
                         <div className="utility-tools-grid">
-                            <a href="https://rgwcma.geoplanetsolution.in/charges" target="_blank" rel="noopener noreferrer" className="utility-tool-card" style={{ textDecoration: 'none' }}>
+                            <a href={EXTERNAL_URLS.CHARGES_CALCULATOR} target="_blank" rel="noopener noreferrer" className="utility-tool-card" style={{ textDecoration: 'none' }}>
                                 <div className="utility-icon">💰</div>
                                 <div className="utility-name">Abstraction Charges</div>
                             </a>

@@ -3,6 +3,7 @@ import NOCHeader from './NOCHeader';
 import NOCFooter from './NOCFooter';
 import Sidebar from './Sidebar';
 import '../styles/noc-portal.css';
+import PublicHeader from '../../public/components/PublicHeader';
 
 /**
  * Layout wrapper component with sidebar for authenticated NOC portal pages
@@ -10,9 +11,9 @@ import '../styles/noc-portal.css';
  * @param {React.ReactNode} props.children - Page content
  * @param {boolean} props.showSidebar - Whether to show sidebar (default: true)
  */
-const LayoutWithSidebar = ({ children, showSidebar = true }) => {
+const LayoutWithSidebar = ({ children, showSidebar = true, defaultCollapsed = false }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
     const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
 
     useEffect(() => {
@@ -49,7 +50,7 @@ const LayoutWithSidebar = ({ children, showSidebar = true }) => {
                 </>
             )}
 
-            <NOCHeader />
+            <PublicHeader />
 
             <div
                 className="main-content"
@@ -57,7 +58,7 @@ const LayoutWithSidebar = ({ children, showSidebar = true }) => {
                     marginLeft: showSidebar && isDesktop ? (isCollapsed ? '80px' : '280px') : '0',
                     transition: 'margin-left 0.3s',
                     minHeight: 'calc(100vh - 200px)',
-                    marginTop: '160px' // Adjust for fixed header height
+                    marginTop: '20px' // Reduced top margin
                 }}
             >
                 {children}

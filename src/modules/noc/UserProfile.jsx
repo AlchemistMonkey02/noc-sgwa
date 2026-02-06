@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import NOCHeader from './components/NOCHeader';
+import PublicHeader from '../public/components/PublicHeader';
+import SkeletonLoader from '../../components/SkeletonLoader';
 import NOCFooter from './components/NOCFooter';
 import Sidebar from './components/Sidebar';
 import { nocApplicationService } from './services/nocApplicationService';
@@ -178,11 +179,113 @@ const UserProfile = () => {
     if (loading) {
         return (
             <div className="noc-portal">
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                    <div className="spinner-border text-primary" role="status">
-                        <span className="sr-only">Loading...</span>
+                <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+                <button className="sidebar-toggle-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
+                <PublicHeader />
+
+                <div className="main-content" style={{ marginLeft: window.innerWidth >= 1024 ? '280px' : '0' }}>
+                    <div className="page-gradient-header"></div>
+                    <div className="content-container">
+                        {/* Breadcrumb Skeleton */}
+                        <div className="breadcrumb" style={{ marginBottom: '1rem' }}>
+                            <SkeletonLoader width="150px" height="1rem" />
+                        </div>
+
+                        {/* Title Skeleton */}
+                        <div className="page-title-section">
+                            <SkeletonLoader variant="title" width="200px" />
+                            <SkeletonLoader variant="text" width="300px" />
+                        </div>
+
+                        <div className="application-form">
+                            {/* Profile Photo Skeleton */}
+                            <div className="form-section">
+                                <h3 className="section-title">
+                                    <span className="icon">📸</span> <SkeletonLoader width="150px" height="1.5rem" style={{ display: 'inline-block' }} />
+                                </h3>
+                                <div className="profile-photo-container" style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+                                    <SkeletonLoader width="100px" height="100px" style={{ borderRadius: '50%' }} />
+                                    <SkeletonLoader width="120px" height="2.5rem" />
+                                </div>
+                            </div>
+
+                            {/* Personal Info Skeleton */}
+                            <div className="form-section">
+                                <h3 className="section-title">
+                                    <span className="icon">👤</span> <SkeletonLoader width="200px" height="1.5rem" style={{ display: 'inline-block' }} />
+                                </h3>
+                                <div className="form-grid-2">
+                                    <div className="form-group">
+                                        <SkeletonLoader width="40%" height="1rem" style={{ marginBottom: '0.5rem' }} />
+                                        <SkeletonLoader width="100%" height="2.5rem" />
+                                    </div>
+                                    <div className="form-group">
+                                        <SkeletonLoader width="40%" height="1rem" style={{ marginBottom: '0.5rem' }} />
+                                        <SkeletonLoader width="100%" height="2.5rem" />
+                                    </div>
+                                </div>
+                                <div className="form-grid-2 mt-4">
+                                    <div className="form-group">
+                                        <SkeletonLoader width="40%" height="1rem" style={{ marginBottom: '0.5rem' }} />
+                                        <SkeletonLoader width="100%" height="2.5rem" />
+                                    </div>
+                                    <div className="form-group">
+                                        <SkeletonLoader width="40%" height="1rem" style={{ marginBottom: '0.5rem' }} />
+                                        <SkeletonLoader width="100%" height="2.5rem" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Contact Details Skeleton */}
+                            <div className="form-section">
+                                <h3 className="section-title">
+                                    <span className="icon">📞</span> <SkeletonLoader width="200px" height="1.5rem" style={{ display: 'inline-block' }} />
+                                </h3>
+                                <div className="form-grid-2">
+                                    <div className="form-group">
+                                        <SkeletonLoader width="40%" height="1rem" style={{ marginBottom: '0.5rem' }} />
+                                        <SkeletonLoader width="100%" height="2.5rem" />
+                                    </div>
+                                    <div className="form-group">
+                                        <SkeletonLoader width="40%" height="1rem" style={{ marginBottom: '0.5rem' }} />
+                                        <SkeletonLoader width="100%" height="2.5rem" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Address Skeleton */}
+                            <div className="form-section">
+                                <h3 className="section-title">
+                                    <span className="icon">📍</span> <SkeletonLoader width="250px" height="1.5rem" style={{ display: 'inline-block' }} />
+                                </h3>
+                                <div className="form-grid-2">
+                                    <div className="form-group">
+                                        <SkeletonLoader width="40%" height="1rem" style={{ marginBottom: '0.5rem' }} />
+                                        <SkeletonLoader width="100%" height="2.5rem" />
+                                    </div>
+                                    <div className="form-group">
+                                        <SkeletonLoader width="40%" height="1rem" style={{ marginBottom: '0.5rem' }} />
+                                        <SkeletonLoader width="100%" height="2.5rem" />
+                                    </div>
+                                </div>
+                                <div className="form-grid-3 mt-4">
+                                    {[1, 2, 3].map(i => (
+                                        <div key={i} className="form-group">
+                                            <SkeletonLoader width="40%" height="1rem" style={{ marginBottom: '0.5rem' }} />
+                                            <SkeletonLoader width="100%" height="2.5rem" />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="form-actions-footer">
+                                <SkeletonLoader width="100px" height="2.5rem" />
+                                <SkeletonLoader width="150px" height="2.5rem" />
+                            </div>
+                        </div>
                     </div>
                 </div>
+                <NOCFooter />
             </div>
         );
     }
@@ -193,7 +296,7 @@ const UserProfile = () => {
 
             <button className="sidebar-toggle-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
 
-            <NOCHeader />
+            <PublicHeader />
 
             <div className="main-content" style={{ marginLeft: window.innerWidth >= 1024 ? '280px' : '0' }}>
                 <div className="page-gradient-header"></div>

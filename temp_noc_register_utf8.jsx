@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import API_BASE_URL from '../../config/apiConfig';
-import PublicHeader from '../../modules/public/components/PublicHeader';
+import NOCHeader from './components/NOCHeader';
 import NOCFooter from './components/NOCFooter';
 import './styles/noc-portal.css';
 
@@ -496,7 +496,7 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                     console.log('Registration success:', result);
 
                     // Show success message with username
-                    const successMessage = `🎉 Registration Successful!\n\nYour account has been created successfully.\n\nUsername: ${formData.loginCredentials.preferredUsername}\n\nPlease login with your credentials.`;
+                    const successMessage = `≡ƒÄë Registration Successful!\n\nYour account has been created successfully.\n\nUsername: ${formData.loginCredentials.preferredUsername}\n\nPlease login with your credentials.`;
                     alert(successMessage);
 
                     // Close modal and return to login panel, or navigate to login page
@@ -513,7 +513,7 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                     const msg = errorData.message || 'Registration failed. Please checking your details.';
 
                     if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('duplicate')) {
-                        alert(`⚠️ Registration Error:\n\n${msg}`);
+                        alert(`ΓÜá∩╕Å Registration Error:\n\n${msg}`);
                     } else {
                         alert(msg);
                     }
@@ -689,14 +689,14 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
 
     return (
         <div className="noc-portal">
-            {!isModal && <PublicHeader />}
+            {!isModal && <NOCHeader />}
 
             <div className={`noc-auth-page ${isModal ? 'modal-view' : ''}`} style={{ background: isModal ? 'transparent' : '#f8fafc', minHeight: isModal ? 'auto' : 'calc(100vh - 120px)' }}>
                 <div className={`noc-auth-card ${isModal ? 'no-shadow' : ''}`} style={{ maxWidth: '900px', margin: isModal ? '0' : '30px auto', background: isModal ? 'transparent' : 'white' }}>
 
                     {/* New Premium Header */}
                     <div className="reg-modal-header">
-                        {isModal && <button onClick={onClose} className="modal-close-icon">✕</button>}
+                        {isModal && <button onClick={onClose} className="modal-close-icon">Γ£ò</button>}
                         <h2 className="reg-modal-title">User Registration</h2>
                         <div className="reg-dept-name">Ground Water Department</div>
                         <div className="reg-govt-name">Government of Rajasthan</div>
@@ -724,7 +724,7 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                         {currentStep === 1 && (
                             <div>
                                 <div className="reg-section-header">
-                                    <span className="reg-section-icon">👤</span>
+                                    <span className="reg-section-icon">≡ƒæñ</span>
                                     <div>
                                         <h3 className="reg-section-title">Applicant Information</h3>
                                         <span className="reg-section-desc">Please provide your personal details for registration</span>
@@ -824,7 +824,7 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                                                     {sendingMobileOTP ? 'Sending...' : 'Send OTP'}
                                                 </button>
                                             )}
-                                            {mobileVerified && <span style={{ color: 'green', display: 'flex', alignItems: 'center' }}>✓ Verified</span>}
+                                            {mobileVerified && <span style={{ color: 'green', display: 'flex', alignItems: 'center' }}>Γ£ô Verified</span>}
                                         </div>
                                         {errors['applicantInfo.mobileNumber'] && <span className="error-message" style={{ color: 'red', fontSize: '0.875rem', display: 'block', marginTop: '5px' }}>{errors['applicantInfo.mobileNumber']}</span>}
                                         {!mobileVerified && sendingMobileOTP && (
@@ -861,7 +861,7 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                                                     {sendingEmailOTP ? 'Sending...' : 'Send OTP'}
                                                 </button>
                                             )}
-                                            {emailVerified && <span style={{ color: 'green', display: 'flex', alignItems: 'center' }}>✓ Verified</span>}
+                                            {emailVerified && <span style={{ color: 'green', display: 'flex', alignItems: 'center' }}>Γ£ô Verified</span>}
                                         </div>
                                         {errors['applicantInfo.emailId'] && <span className="error-message" style={{ color: 'red', fontSize: '0.875rem', display: 'block', marginTop: '5px' }}>{errors['applicantInfo.emailId']}</span>}
                                         {!emailVerified && sendingEmailOTP && (
@@ -902,7 +902,7 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                                                 disabled={isUploading}
                                             />
                                             {isUploading && <span style={{ color: '#3b82f6', fontSize: '0.9rem' }}>Uploading...</span>}
-                                            {uploadSuccess && <span style={{ color: 'green', fontSize: '1.2rem' }}>✓</span>}
+                                            {uploadSuccess && <span style={{ color: 'green', fontSize: '1.2rem' }}>Γ£ô</span>}
                                         </div>
                                         {uploadError && <span className="error-message" style={{ color: 'red', fontSize: '0.875rem' }}>{uploadError}</span>}
                                         {formData.applicantInfo.idProofDocumentId && <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Document ID: {formData.applicantInfo.idProofDocumentId}</span>}
@@ -915,7 +915,7 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                         {currentStep === 2 && (
                             <div>
                                 <div className="reg-section-header">
-                                    <span className="reg-section-icon">📍</span>
+                                    <span className="reg-section-icon">≡ƒôì</span>
                                     <div>
                                         <h3 className="reg-section-title">Communication Address</h3>
                                         <span className="reg-section-desc">Please provide your current address details</span>
@@ -1036,7 +1036,7 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                         {currentStep === 3 && (
                             <div>
                                 <div className="reg-section-header">
-                                    <span className="reg-section-icon">🔐</span>
+                                    <span className="reg-section-icon">≡ƒöÉ</span>
                                     <div>
                                         <h3 className="reg-section-title">Login Credentials</h3>
                                         <span className="reg-section-desc">Create your username and password for portal access</span>
@@ -1061,7 +1061,7 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                                         </div>
                                         {formData.usernameAvailable !== undefined && (
                                             <span style={{ fontSize: '0.875rem', color: formData.usernameAvailable ? 'green' : 'red', marginTop: '5px', display: 'block' }}>
-                                                {formData.usernameAvailable ? '✓ Username available' : '✕ Username taken'}
+                                                {formData.usernameAvailable ? 'Γ£ô Username available' : 'Γ£ò Username taken'}
                                             </span>
                                         )}
                                         {errors['loginCredentials.preferredUsername'] && <span className="error-message" style={{ color: 'red', fontSize: '0.875rem' }}>{errors['loginCredentials.preferredUsername']}</span>}
@@ -1135,7 +1135,7 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                                                 {captchaCode}
                                             </div>
                                             <button type="button" onClick={generateCaptcha} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '0.9rem' }}>
-                                                ↻ Refresh
+                                                Γå╗ Refresh
                                             </button>
                                             <input
                                                 type="text"
@@ -1177,7 +1177,7 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                                     onClick={handlePrevious}
                                     className="btn-secondary"
                                 >
-                                    ← Previous
+                                    ΓåÉ Previous
                                 </button>
                             )}
 
@@ -1187,7 +1187,7 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                                     onClick={handleNext}
                                     className="btn-next"
                                 >
-                                    Next →
+                                    Next ΓåÆ
                                 </button>
                             ) : (
                                 <button

@@ -6,35 +6,68 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [userType, setUserType] = useState(null);
+    const [userType, setUserType] = useState(null); // 'APPLICANT' or Officer Role (DGO, SGWA, etc.)
     const [loading, setLoading] = useState(true);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+    // Helpers to manage storage - separating keys avoids collisions
+    const getStorageKeys = (userIdentityType) => {
+        if (userIdentityType === 'OFFICER') {
+            return {
+                token: 'officerToken',
+                refresh: 'officerRefreshToken',
+                data: 'officerData',
+                role: 'officerRole'
+            };
+        }
+        return {
+            token: 'authToken',
+            refresh: 'refreshToken',
+            data: 'nocUser',
+            role: 'userType'
+        };
+    };
 
     useEffect(() => {
         const initAuth = () => {
             try {
-                // Check for existing session on mount
-                const userData = localStorage.getItem('nocUser');
-                const token = localStorage.getItem('authToken');
-                const savedUserType = localStorage.getItem('userType');
+                // 1. Check for Officer Session first (Priority?) or check both
+                // The app should technically only have one user logged in at a time ideally.
+                const officerToken = localStorage.getItem('officerToken');
+                const officerData = localStorage.getItem('officerData');
+                const officerRole = localStorage.getItem('officerRole');
 
-                if (userData && token) {
+                if (officerToken && officerData) {
                     try {
-                        setUser(JSON.parse(userData));
+                        setUser(JSON.parse(officerData));
+                        setUserType(officerRole);
+                        console.log("Restored Officer Session:", officerRole);
                     } catch (e) {
-                        console.error("Failed to parse user data", e);
-                        localStorage.removeItem('nocUser');
-                        setUser(null);
+                        console.error("Failed to parse officer data", e);
+                        clearAuthData('OFFICER');
                     }
                 } else {
-                    // If checking fails (no token), clear partially existing data to force clean state
-                    localStorage.removeItem('nocUser');
-                    localStorage.removeItem('authToken');
-                    setUser(null);
-                }
+                    // 2. Check for NOC User Session
+                    const nocToken = localStorage.getItem('authToken');
+                    const nocData = localStorage.getItem('nocUser');
+                    const savedUserType = localStorage.getItem('userType');
 
-                if (savedUserType) {
-                    setUserType(savedUserType);
+                    if (nocToken && nocData) {
+                        try {
+                            setUser(JSON.parse(nocData));
+                            setUserType(savedUserType || 'APPLICANT');
+                            console.log("Restored NOC Session");
+                        } catch (e) {
+                            console.error("Failed to parse NOC user data", e);
+                            clearAuthData('NOC');
+                        }
+                    } else {
+                        // Cleanup
+                        clearAuthData('OFFICER');
+                        clearAuthData('NOC');
+                        setUser(null);
+                        setUserType(null); // Ensure type is also null
+                    }
                 }
             } catch (error) {
                 console.error("Auth initialization error:", error);
@@ -47,29 +80,56 @@ export const AuthProvider = ({ children }) => {
         initAuth();
     }, []);
 
-    const login = async (username, password, type) => {
+    const clearAuthData = (type) => { // 'OFFICER' or 'NOC' or 'ALL'
+        if (type === 'OFFICER' || type === 'ALL') {
+            localStorage.removeItem('officerToken');
+            localStorage.removeItem('officerRefreshToken');
+            localStorage.removeItem('officerRole');
+            localStorage.removeItem('officerData');
+        }
+        if (type === 'NOC' || type === 'ALL') {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('nocUser');
+            localStorage.removeItem('userType');
+        }
+    };
+
+    const login = async (username, password, role) => {
         setIsLoggingOut(false);
+        const isOfficerLogin = role && role !== 'APPLICANT' && role !== 'CONSULTANT'; // Basic check, refine as needed
+
         try {
+            const body = {
+                username,
+                password,
+            };
+
+            // Officer login API might be same endpoint but expects different payload sometimes?
+            // NOCLogin sends userType: type, captcha
+            // OfficerLogin sends just username, password
+
+            if (!isOfficerLogin) {
+                body.userType = role || 'APPLICANT';
+                body.captcha = '5A7K9'; // Hardcoded bypass
+            }
+
             const response = await fetch(`${API_BASE_URL}/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    username,
-                    password,
-                    userType: type || userType || 'APPLICANT', // Use passed type, or state, or default
-                    captcha: '5A7K9' // Hardcoded for dev/bypass as per user context
-                })
+                body: JSON.stringify(body)
             });
 
             const data = await response.json();
 
-            if (response.ok && data.success) {
-                const userData = data.data;
+            if (response.ok && (data.success || data.token || data.data?.token)) { // Normalize success check
+                const responseData = data.data || data; // Handle different API response structures
+                const userData = responseData.user || responseData;
 
-                // Capture token from body or header
-                let token = userData.token || userData.accessToken || data.token || data.accessToken;
+                // Token extraction
+                let token = responseData.token || responseData.accessToken || data.token;
                 if (!token) {
                     const authHeader = response.headers.get('Authorization');
                     if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -77,79 +137,77 @@ export const AuthProvider = ({ children }) => {
                     }
                 }
 
-                // Append token to userData if missing
-                if (token && !userData.token) {
-                    userData.token = token;
-                }
+                if (!token) throw new Error("No token received");
 
-                setUser(userData);
+                const refreshToken = responseData.refreshToken || data.refreshToken;
 
-                // Persist to localStorage
-                localStorage.setItem('nocUser', JSON.stringify(userData));
-                if (token) {
-                    localStorage.setItem('authToken', token);
-                }
+                // Determine effective role
+                // For Officers: role passed in is the one they selected. API returns userType.
+                // For NOC: passed role or APPLICANT.
 
-                // Robust Refresh Token Capture
-                const refreshToken = userData.refreshToken || data.refreshToken || (data.data && data.data.refreshToken);
-                if (refreshToken) {
-                    localStorage.setItem('refreshToken', refreshToken);
+                let effectiveRole = role || 'APPLICANT';
+                if (isOfficerLogin) {
+                    // Verify if the userType from API matches the requested role if valid
+                    const apiUserType = userData.userType || responseData.userType;
+                    // Logic from OfficerLogin.jsx:
+                    if (apiUserType === 'APPLICANT') {
+                        return { success: false, error: "Access Denied: Applicants cannot use Officer Portal." };
+                    }
+                    // Map RSGWA -> SGWA
+                    let mappedApiRole = apiUserType;
+                    if (apiUserType === 'RSGWA') mappedApiRole = 'SGWA';
+
+                    if (mappedApiRole !== role) {
+                        return { success: false, error: `Access Denied: Account type '${apiUserType}' cannot login as '${role}'.` };
+                    }
+                    effectiveRole = mappedApiRole;
                 } else {
-                    console.warn("Login successful but no refresh token found in response.");
+                    // For NOC, we might want to store what they logged in as
+                    effectiveRole = body.userType;
+                }
+
+                // Append token to user object if convenient
+                const finalUser = { ...userData, token };
+
+                // Persist Data & Update State
+                if (isOfficerLogin) {
+                    // Update State
+                    setUser(finalUser);
+                    setUserType(effectiveRole);
+
+                    // Persist
+                    localStorage.setItem('officerToken', token);
+                    if (refreshToken) localStorage.setItem('officerRefreshToken', refreshToken);
+                    localStorage.setItem('officerData', JSON.stringify(finalUser));
+                    localStorage.setItem('officerRole', effectiveRole);
+
+                    // Clear potential NOC garbage?
+                    clearAuthData('NOC');
+
+                } else {
+                    // Update State
+                    setUser(finalUser);
+                    setUserType(effectiveRole);
+
+                    // Persist
+                    localStorage.setItem('authToken', token);
+                    if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+                    localStorage.setItem('nocUser', JSON.stringify(finalUser));
+                    localStorage.setItem('userType', effectiveRole);
+
+                    // Clear potential Officer garbage
+                    clearAuthData('OFFICER');
                 }
 
                 return { success: true };
+
             } else {
-                const errorMessage = data.error?.message || data.message || "Invalid credentials. Please check your username and password.";
-                console.error("Login failed:", errorMessage);
+                const errorMessage = data.message || data.error?.message || "Invalid credentials.";
                 return { success: false, error: errorMessage };
             }
         } catch (error) {
             console.error("Login error:", error);
-            return { success: false, error: "Network error. Please check your connection and try again." };
-        }
-    };
-
-    const refreshSession = async () => {
-        try {
-            const currentToken = localStorage.getItem('authToken');
-            const refreshToken = localStorage.getItem('refreshToken');
-
-            if (!currentToken || !refreshToken) {
-                console.warn("Cannot refresh session: Missing tokens");
-                return false;
-            }
-
-            const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${currentToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ refreshToken })
-            });
-
-            const data = await response.json();
-
-            if (response.ok && data.success) {
-                const { token: newToken, refreshToken: newRefreshToken } = data.data || {};
-
-                if (newToken) {
-                    localStorage.setItem('authToken', newToken);
-                    // Update user state if necessary, or just token
-                }
-                if (newRefreshToken) {
-                    localStorage.setItem('refreshToken', newRefreshToken);
-                }
-                return true;
-            } else {
-                console.error("Token refresh failed:", data.message);
-                // Optionally logout if refresh fails?
-                return false;
-            }
-        } catch (error) {
-            console.error("Token refresh error:", error);
-            return false;
+            return { success: false, error: "Network error. Please try again." };
         }
     };
 
@@ -157,53 +215,46 @@ export const AuthProvider = ({ children }) => {
         setIsLoggingOut(true);
         let message = null;
         try {
-            const token = localStorage.getItem('authToken');
+            // Try to call logout API with whatever token we have
+            const token = localStorage.getItem('authToken') || localStorage.getItem('officerToken');
             if (token) {
-                const response = await fetch(`${API_BASE_URL}/auth/logout`, {
+                await fetch(`${API_BASE_URL}/auth/logout`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     }
-                });
-                const data = await response.json();
-                if (response.ok) {
-                    message = data.message || 'Logged out successfully';
-                }
+                }).catch(err => console.warn("Logout API check failed", err)); // Swallow error on logout for UX
+                message = 'Logged out successfully';
             }
-        } catch (error) {
-            console.error("Logout API call failed:", error);
         } finally {
-            // Execute redirect callback if provided, BEFORE clearing state
-            // This prevents race conditions with protected routes
+            clearAuthData('ALL');
+            setUser(null);
+            setUserType(null);
             if (performRedirect && typeof performRedirect === 'function') {
                 performRedirect(message);
             }
-
-            // Delay state clearing to allow redirect to unmount protected components
-            setTimeout(() => {
-                setUser(null);
-                setUserType(null);
-                localStorage.removeItem('nocUser');
-                localStorage.removeItem('userType');
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('refreshToken');
-            }, 100);
         }
         return message;
     };
 
     const selectUserType = (type) => {
+        // Only really used for NOC pre-login selection
         setUserType(type);
         localStorage.setItem('userType', type);
     };
 
-    const isAuthenticated = () => {
-        return user !== null;
+    // Helper to check precise officer role
+    const hasRole = (requiredRole) => {
+        if (!user || !userType) return false;
+        if (Array.isArray(requiredRole)) return requiredRole.includes(userType);
+        return userType === requiredRole;
     };
 
-    const hasUserType = () => {
-        return userType !== null;
+    const isOfficer = () => {
+        // Basic check: if userType is NOT one of the standard applicant types or is one of the officer types
+        const officerRoles = ['DGO', 'SGWA', 'ENFORCEMENT', 'INSPECTION'];
+        return officerRoles.includes(userType);
     };
 
     const value = {
@@ -213,10 +264,10 @@ export const AuthProvider = ({ children }) => {
         isLoggingOut,
         login,
         logout,
-        refreshSession,
         selectUserType,
-        isAuthenticated,
-        hasUserType
+        isAuthenticated: !!user,
+        hasRole,
+        isOfficer
     };
 
     return (

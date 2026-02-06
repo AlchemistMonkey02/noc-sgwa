@@ -1,5 +1,7 @@
 import React from 'react';
 
+import PublicHeader from './components/PublicHeader';
+
 const DocumentChecklist = () => {
     const documents = [
         {
@@ -29,33 +31,36 @@ const DocumentChecklist = () => {
     ];
 
     return (
-        <div style={{ padding: '40px', maxWidth: '1000px', margin: '0 auto', minHeight: '80vh' }}>
-            <h2 style={{ textAlign: 'center', marginBottom: '30px', color: '#1e3a8a' }}>📋 Document Checklist</h2>
+        <div style={{ padding: '0', maxWidth: '100%', margin: '0', minHeight: '100vh', flexDirection: 'column', display: 'flex' }}>
+            <PublicHeader />
+            <div style={{ padding: '40px', maxWidth: '1000px', margin: '0 auto', flex: 1, width: '100%', marginTop: '120px' }}>
+                <h2 style={{ textAlign: 'center', marginBottom: '30px', color: '#1e3a8a' }}>📋 Document Checklist</h2>
 
-            <div style={{ display: 'grid', gap: '20px' }}>
-                {documents.map((section, index) => (
-                    <div key={index} style={{
-                        background: 'white',
-                        padding: '25px',
-                        borderRadius: '12px',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                        border: '1px solid #e5e7eb'
-                    }}>
-                        <h3 style={{
-                            color: '#1e3a8a',
-                            borderBottom: '2px solid #e5e7eb',
-                            paddingBottom: '10px',
-                            marginBottom: '15px'
+                <div style={{ display: 'grid', gap: '20px' }}>
+                    {documents.map((section, index) => (
+                        <div key={index} style={{
+                            background: 'white',
+                            padding: '25px',
+                            borderRadius: '12px',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                            border: '1px solid #e5e7eb'
                         }}>
-                            {section.category}
-                        </h3>
-                        <ul style={{ paddingLeft: '20px', lineHeight: '1.8', color: '#4b5563' }}>
-                            {section.items.map((item, i) => (
-                                <li key={i}>{item}</li>
-                            ))}
-                        </ul>
-                    </div>
-                ))}
+                            <h3 style={{
+                                color: '#1e3a8a',
+                                borderBottom: '2px solid #e5e7eb',
+                                paddingBottom: '10px',
+                                marginBottom: '15px'
+                            }}>
+                                {section.category}
+                            </h3>
+                            <ul style={{ paddingLeft: '20px', lineHeight: '1.8', color: '#4b5563' }}>
+                                {section.items.map((item, i) => (
+                                    <li key={i}>{item}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     );

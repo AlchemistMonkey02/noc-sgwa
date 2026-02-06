@@ -1,12 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import SkeletonLoader from '../../components/SkeletonLoader';
 import { Link } from 'react-router-dom';
-import NOCHeader from './components/NOCHeader';
-import NOCFooter from './components/NOCFooter';
-import Sidebar from './components/Sidebar';
+import LayoutWithSidebar from './components/LayoutWithSidebar';
 import './styles/noc-portal.css';
 
 const PaymentDetails = () => {
-    const [sidebarOpen, setSidebarOpen] = useState(false);
+    // const [sidebarOpen, setSidebarOpen] = useState(false); // Removed manual sidebar state
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        // Simulate loading delay
+        const timer = setTimeout(() => {
+            setLoading(false);
+        }, 1500);
+        return () => clearTimeout(timer);
+    }, []);
 
     const paymentHistory = [
         { id: 'PAY-2025-001', applicationId: 'NOC-2024-001234', amount: '₹15,000', date: '15-Dec-2024', status: 'Success', receipt: 'REC001.pdf' },
@@ -21,28 +29,35 @@ const PaymentDetails = () => {
     ];
 
     return (
-        <div className="noc-portal">
-            <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
-            <button className="sidebar-toggle-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
-            <NOCHeader />
+        <LayoutWithSidebar defaultCollapsed={true}>
+            <div className="page-gradient-header"></div>
 
-            <div className="main-content" style={{ marginLeft: window.innerWidth >= 1024 ? '280px' : '0' }}>
-                <div className="page-gradient-header"></div>
+            <div className="content-container">
+                <div className="breadcrumb">
+                    <Link to="/noc/dashboard">Home</Link>
+                    <span className="separator">›</span>
+                    <span className="current">Payment Details</span>
+                </div>
 
-                <div className="content-container">
-                    <div className="breadcrumb">
-                        <Link to="/noc/dashboard">Home</Link>
-                        <span className="separator">›</span>
-                        <span className="current">Payment Details</span>
-                    </div>
+                <div className="page-title-section">
+                    <h1 className="page-main-title">💳 Payment Details</h1>
+                    <p className="page-subtitle">View payment history and download receipts</p>
+                </div>
 
-                    <div className="page-title-section">
-                        <h1 className="page-main-title">💳 Payment Details</h1>
-                        <p className="page-subtitle">View payment history and download receipts</p>
-                    </div>
-
-                    <div className="dashboard-stats-grid">
-                        {stats.map((stat, index) => (
+                <div className="dashboard-stats-grid">
+                    {loading ? (
+                        Array(3).fill(0).map((_, index) => (
+                            <div key={index} className="dashboard-stat-card">
+                                <div className="stat-card-content">
+                                    <div className="stat-info" style={{ width: '100%' }}>
+                                        <SkeletonLoader variant="text" width="40%" height="2rem" />
+                                        <SkeletonLoader variant="text" width="60%" height="1rem" />
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        stats.map((stat, index) => (
                             <div key={index} className={`dashboard-stat-card ${stat.color}`}>
                                 <div className="stat-card-content">
                                     <div className="stat-info">
@@ -51,28 +66,41 @@ const PaymentDetails = () => {
                                     </div>
                                 </div>
                             </div>
-                        ))}
-                    </div>
+                        ))
+                    )}
+                </div>
 
-                    <div className="dashboard-card">
-                        <div className="card-title-bar">
-                            <h2 className="card-main-title">📋 Payment History</h2>
-                        </div>
-                        <div className="card-content-area no-padding">
-                            <div className="professional-table-wrapper">
-                                <table className="professional-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Payment ID</th>
-                                            <th>Application ID</th>
-                                            <th>Amount</th>
-                                            <th>Date</th>
-                                            <th>Status</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {paymentHistory.map(payment => (
+                <div className="dashboard-card">
+                    <div className="card-title-bar">
+                        <h2 className="card-main-title">📋 Payment History</h2>
+                    </div>
+                    <div className="card-content-area no-padding">
+                        <div className="professional-table-wrapper">
+                            <table className="professional-table">
+                                <thead>
+                                    <tr>
+                                        <th>Payment ID</th>
+                                        <th>Application ID</th>
+                                        <th>Amount</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {loading ? (
+                                        Array(5).fill(0).map((_, index) => (
+                                            <tr key={index}>
+                                                <td><SkeletonLoader width="80px" /></td>
+                                                <td><SkeletonLoader width="120px" /></td>
+                                                <td><SkeletonLoader width="60px" /></td>
+                                                <td><SkeletonLoader width="100px" /></td>
+                                                <td><SkeletonLoader width="80px" /></td>
+                                                <td><SkeletonLoader width="100px" /></td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        paymentHistory.map(payment => (
                                             <tr key={payment.id}>
                                                 <td><strong className="text-blue">{payment.id}</strong></td>
                                                 <td>{payment.applicationId}</td>
@@ -93,17 +121,15 @@ const PaymentDetails = () => {
                                                     )}
                                                 </td>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <NOCFooter />
-        </div>
+        </LayoutWithSidebar>
     );
 };
 

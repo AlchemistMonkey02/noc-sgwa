@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import Header from '../header/Header';
-import PublicHeader from './PublicHeader';
+import PublicHeader from '../modules/public/components/PublicHeader';
 
 const Layout = ({ children }) => {
     const location = useLocation();

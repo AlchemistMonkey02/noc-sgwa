@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import NOCHeader from './components/NOCHeader';
+import PublicHeader from '../public/components/PublicHeader';
 import NOCFooter from './components/NOCFooter';
 import ProgressSteps from './components/ProgressSteps';
 import FormNavigation from './components/FormNavigation';
@@ -35,7 +35,7 @@ const NOCApplication = () => {
     const [utilizationPurposeOptions, setUtilizationPurposeOptions] = useState([]);
     const [organizationTypeOptions, setOrganizationTypeOptions] = useState([]);
     const [msmeTypeOptions, setMsmeTypeOptions] = useState([]);
-    const [projectCategoryOptions, setProjectCategoryOptions] = useState([]);
+
 
     // Location Data State
     const [stateOptions, setStateOptions] = useState([]);
@@ -49,10 +49,16 @@ const NOCApplication = () => {
     const [blockCategory, setBlockCategory] = useState(null);
     const [blockCategoryDetails, setBlockCategoryDetails] = useState(null);
     const [exemptionStatus, setExemptionStatus] = useState(null);
+    const [showExemptionModal, setShowExemptionModal] = useState(false); // Modal state
     const [successData, setSuccessData] = useState(null);
     const [applicationId, setApplicationId] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
     const [pendingUploads, setPendingUploads] = useState({});
+    const [verificationFeedback, setVerificationFeedback] = useState({});
+
+    // Dynamic Document Requirements
+    const [dynamicDocuments, setDynamicDocuments] = useState([]);
+    const [documentsLoading, setDocumentsLoading] = useState(false);
 
     // Effect to fetch Block Category when Block changes
     useEffect(() => {
@@ -119,11 +125,92 @@ const NOCApplication = () => {
         }
     };
 
+    // Fetch Dynamic Document Requirements from API
+    const fetchDocumentRequirements = async () => {
+        // Only fetch if we have minimum required data
+        // Relaxing check: Only applicationType is strictly required to get *some* documents
+        if (!formData.applicationType) {
+            console.log('Skipping document requirements fetch - missing applicationType');
+            return;
+        }
+
+        setDocumentsLoading(true);
+        try {
+            // Determine KLD from various possible fields
+            let kld = parseFloat(formData.dailyWaterRequirement || 0);
+            if ((!kld || kld === 0) && formData.waterReqTotal) {
+                kld = parseFloat(formData.waterReqTotal);
+            }
+
+            // Resolve Application Type Name from Options (ID -> Name)
+            // appTypeOptions might contain objects { id: 1, name: 'Industry' } or strings
+            let appTypeName = formData.applicationType;
+            if (appTypeOptions.length > 0) {
+                const match = appTypeOptions.find(opt => {
+                    const id = typeof opt === 'object' ? (opt.id || opt.appTypeCode) : opt;
+                    return String(id) === String(formData.applicationType);
+                });
+                if (match) {
+                    appTypeName = typeof match === 'object' ? (match.name || match.label) : match;
+                }
+            }
+
+            // Determine Utilization (New/Existing)
+            // Priority: Check if 'groundWaterUtilizationFor' explicitly says New/Existing (as seen in screenshot)
+            // Fallback: Check 'projectStatus' or 'projectType'
+            let utilStatus = 'EXISTING'; // Default
+            const gwUtil = formData.groundWaterUtilizationFor?.toUpperCase() || '';
+            const projType = formData.projectType?.toUpperCase() || '';
+
+            if (gwUtil.includes('NEW') || projType.includes('NEW')) {
+                utilStatus = 'NEW';
+            } else if (gwUtil.includes('EXISTING') || projType.includes('EXISTING')) {
+                utilStatus = 'EXISTING';
+            }
+
+            const payload = {
+                applicationType: appTypeName?.toUpperCase(), // Send Name (e.g. INDUSTRY) instead of ID
+                utilizationFor: utilStatus,
+                withdrawalKLD: kld,
+                areaType: formData.blockCategoryDetails?.name?.toUpperCase() === 'SAFE' ? 'SAFE' : 'CRITICAL',
+                rockType: 'HARD', // Default
+                projectInWetlandZone: false,
+                dewateringInvolved: formData.projectType === 'Infrastructure Project'
+            };
+
+            // Enhanced Mapping
+            if (formData.blockCategory) payload.areaType = formData.blockCategory;
+
+            console.log('Fetching document requirements with payload:', payload);
+            const response = await nocApplicationService.getDocumentRequirements(payload);
+
+            if (response.success && response.data && response.data.requiredDocuments) {
+                const apiDocs = response.data.requiredDocuments.map(doc => ({
+                    id: doc.documentCode,
+                    name: doc.documentName,
+                    description: doc.description,
+                    required: doc.required,
+                    condition: doc.condition
+                }));
+                console.log('Received dynamic documents:', apiDocs);
+                setDynamicDocuments(apiDocs);
+            } else {
+                console.warn('Document requirements API returned unexpected format, falling back to empty list');
+                setDynamicDocuments([]);
+            }
+        } catch (error) {
+            console.error('Failed to fetch document requirements:', error);
+            setDynamicDocuments([]);
+        } finally {
+            setDocumentsLoading(false);
+        }
+    };
+
     // Check if any structure has meter installed (needed early for useEffect dependencies)
     const hasMeterInstalled = existingStructures.some(s => s.hasMeter === 'Yes');
 
-    // Dynamic Document Rules
-    const requiredDocs = getRequiredDocuments(formData);
+    // Dynamic Document Rules: Strictly use dynamic documents from API
+    const requiredDocs = dynamicDocuments;
 
     // Fetch Master Data on Mount
     useEffect(() => {
@@ -143,15 +230,32 @@ const NOCApplication = () => {
 
             await Promise.all([
                 loadData(nocApplicationService.getApplicationTypes, setAppTypeOptions),
-                loadData(nocApplicationService.getApplicationSubTypes, setAppSubTypeOptions),
-                loadData(nocApplicationService.getProjectTypes, setProjectTypeOptions),
                 loadData(nocApplicationService.getWaterQualityTypes, setWaterQualityOptions),
                 loadData(nocApplicationService.getUtilizationPurposes, setUtilizationPurposeOptions),
-                loadData(nocApplicationService.getProjectCategories, setProjectCategoryOptions),
+
+                // Fetch Exemption Config for dropdowns (Dynamic Overrides)
+                (async () => {
+                    try {
+                        const response = await nocApplicationService.getExemptionConfig();
+                        if (response.success && response.data) {
+                            if (response.data.utilizationTypes) {
+                                setAppTypeOptions(response.data.utilizationTypes);
+                                setUtilizationPurposeOptions(response.data.utilizationTypes);
+                            }
+                            if (response.data.utilizationPurposes) {
+                                setProjectTypeOptions(response.data.utilizationPurposes);
+                            }
+                        }
+                    } catch (e) { console.warn("Exemption config fetch failed", e); }
+                })(),
+
+
                 loadData(nocApplicationService.getOrganizationTypes, setOrganizationTypeOptions),
                 loadData(nocApplicationService.getMsmeTypes, setMsmeTypeOptions),
                 loadData(nocApplicationService.getStates, setStateOptions)
             ]);
+
+
         };
         fetchMasterData();
     }, []);
@@ -229,20 +333,24 @@ const NOCApplication = () => {
         calculateAutoFee();
     }, [currentStep, applicationId, hasMeterInstalled, formData.feeCalculation]);
 
-    // Check exemption status when relevant form data changes
+    // Fetch Dynamic Document Requirements when relevant data changes
     useEffect(() => {
-        // Only check after user has provided key information (after Step 2 data)
-        if (formData.dailyWaterRequirement && formData.groundWaterUtilizationFor && formData.district) {
-            const exemptionCheck = checkExemption(formData);
-            setExemptionStatus(exemptionCheck);
-
-            if (exemptionCheck.isExempt) {
-                console.log('✅ User is EXEMPT:', exemptionCheck.exemptionType);
-            } else {
-                console.log('❌ User requires NOC:', exemptionCheck.message);
-            }
+        // Fetch when entering Step 5 (Checklist with no meter) or 6 (Checklist with meter)
+        // Adjusting logic to be safe: Fetch from Step 5 onwards
+        if (currentStep >= 5) {
+            fetchDocumentRequirements();
         }
-    }, [formData.dailyWaterRequirement, formData.groundWaterUtilizationFor, formData.district, formData.isMSME, formData.msmeType, formData.organizationType]);
+    }, [
+        formData.applicationType,
+        formData.dailyWaterRequirement,
+        formData.blockCategory,
+        formData.projectType,
+        formData.groundWaterUtilizationFor,
+        currentStep
+    ]);
+
+    // Check exemption status when relevant form data changes
+
 
     useEffect(() => {
         // Check if user is logged in
@@ -254,18 +362,74 @@ const NOCApplication = () => {
 
     // ... (Exemption Check useEffect) ...
     // Phase 1: Comprehensive Exemption Check
+    // Exemption Eligibility Check via API
     useEffect(() => {
-        if (formData.isMSME || formData.groundWaterUtilizationFor || formData.dailyWaterRequirement || formData.organizationType) {
-            const exemption = checkExemption(formData);
-            setExemptionStatus(exemption);
-            // ... logic ...
-            if (exemption.isExempt) {
-                setFormData(prev => ({ ...prev, isExempt: true, exemptionType: exemption.exemptionType, exemptionCode: exemption.exemptionCode, isExemptMSME: exemption.exemptionCode === 'MSME_SM' }));
-            } else {
-                setFormData(prev => ({ ...prev, isExempt: false, exemptionType: null, exemptionCode: null }));
+        const verifyExemption = async () => {
+            // Trigger check if key fields are present
+            if (formData.groundWaterUtilizationFor || formData.applicationType) {
+                try {
+                    // Resolve IDs to Names for API if necessary
+                    const appTypeObj = appTypeOptions.find(opt => {
+                        const val = typeof opt === 'object' ? (opt.appTypeCode || opt.typeCode || opt.id || opt.code || opt._id || opt.name) : opt;
+                        return String(val) === String(formData.applicationType);
+                    });
+                    const appTypeName = appTypeObj ? (appTypeObj.name || appTypeObj.label || formData.applicationType) : formData.applicationType;
+
+                    const utilObj = utilizationPurposeOptions.find(opt => {
+                        const val = typeof opt === 'object' ? (opt.code || opt.name) : opt;
+                        return String(val) === String(formData.groundWaterUtilizationFor);
+                    });
+                    const utilName = utilObj ? (utilObj.name || utilObj.label || formData.groundWaterUtilizationFor) : formData.groundWaterUtilizationFor;
+
+
+                    // Prepare payload for check-eligibility
+                    const payload = {
+                        groundWaterUtilizationFor: utilName || appTypeName, // Fallback to App Type if Utilization is empty
+                        // applicationType removed as per user request (only GW Util For needed)
+                        industryType: formData.industryType,
+                        dailyWaterRequirement: parseFloat(formData.dailyWaterRequirement || 0),
+                        isMSME: formData.isMSME,
+                        msmeType: formData.msmeType,
+                        dateOfCommencement: formData.dateOfCommencement
+                    };
+
+                    const response = await nocApplicationService.checkEligibility(payload);
+
+                    if (response.success && response.isExempt) {
+                        const result = response.exemptionResult || {};
+                        setExemptionStatus(result);
+                        setFormData(prev => ({
+                            ...prev,
+                            isExempt: true,
+                            exemptionType: result.exemptionType,
+                            exemptionCode: result.exemptionCode,
+                            isExemptMSME: result.exemptionCode === 'MSME_SM'
+                        }));
+                        console.log('✅ API: User is EXEMPT:', result.exemptionType);
+
+                        console.log('✅ API: User is EXEMPT:', result.exemptionType);
+
+                        // Show Custom Exemption Modal
+                        setShowExemptionModal(true);
+
+                    } else {
+                        setExemptionStatus(null);
+                        setShowExemptionModal(false);
+                    }
+                } catch (err) {
+                    console.error("Exemption check failed", err);
+                }
             }
-        }
-    }, [formData.isMSME, formData.msmeType, formData.dailyWaterRequirement, formData.groundWaterUtilizationFor, formData.organizationType, formData.applicationType]);
+        };
+
+        const timer = setTimeout(verifyExemption, 1000); // 1s Debounce
+        return () => clearTimeout(timer);
+    }, [
+        formData.groundWaterUtilizationFor,
+        formData.applicationType,
+        formData.industryType,
+        formData.dailyWaterRequirement
+    ]); // Trigger on any of these changes
 
     const [meterManufacturers, setMeterManufacturers] = useState([]);
     const [meterModels, setMeterModels] = useState([]);
@@ -430,6 +594,59 @@ const NOCApplication = () => {
         { id: 9, title: 'Summary', description: 'Review and submit your application' }
     ];
 
+    // Effect: Fetch Application Sub Types when Application Type changes
+    useEffect(() => {
+        const fetchSubTypes = async () => {
+            // Find the ID/Code associated with the current applicationType selection
+            // We assume the value stored in formData.applicationType is the ID/Code
+            const selectedType = formData.applicationType;
+
+            if (selectedType) {
+                try {
+                    const response = await nocApplicationService.getApplicationSubTypes(selectedType);
+                    if (response.success && response.data) {
+                        setAppSubTypeOptions(response.data);
+                    } else if (Array.isArray(response)) {
+                        setAppSubTypeOptions(response);
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch sub types", err);
+                    setAppSubTypeOptions([]);
+                }
+            } else {
+                setAppSubTypeOptions([]);
+            }
+        };
+
+        // Trigger fetch only if type changed
+        fetchSubTypes();
+    }, [formData.applicationType]);
+
+    // Effect: Fetch Project Types when Application Sub Type changes
+    useEffect(() => {
+        const fetchProjectTypes = async () => {
+            const selectedSubType = formData.applicationSubType;
+
+            if (selectedSubType) {
+                try {
+                    const response = await nocApplicationService.getProjectTypes(selectedSubType);
+                    if (response.success && response.data) {
+                        setProjectTypeOptions(response.data);
+                    } else if (Array.isArray(response)) {
+                        setProjectTypeOptions(response);
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch project types", err);
+                    setProjectTypeOptions([]);
+                }
+            } else {
+                setProjectTypeOptions([]);
+            }
+        };
+
+        fetchProjectTypes();
+    }, [formData.applicationSubType]);
+
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
         setFormData(prev => ({
@@ -486,8 +703,7 @@ const NOCApplication = () => {
                     ...prev,
                     uploadedDocuments: {
                         ...prev.uploadedDocuments,
-                        [docId]: file // Keep file object for UI display (name, etc.)
-                        // If backend returns a URL or ID, store that too if needed for payload
+                        [docId]: file // Keep file object for UI display
                     }
                 }));
 
@@ -495,6 +711,81 @@ const NOCApplication = () => {
                     ...prev,
                     [docId]: ''
                 }));
+
+                // AI Verification Trigger (Step 6/7)
+                // We do this optimistically in the background
+                (async () => {
+                    try {
+                        console.log(`Starting AI verification for ${docId}...`);
+
+                        // Set Verifying State
+                        setVerificationFeedback(prev => ({
+                            ...prev,
+                            [docId]: {
+                                status: 'verifying',
+                                message: 'Document is being verified by AI...',
+                                confidence: 0
+                            }
+                        }));
+
+                        // 1. Prepare Metadata (User Input for Cross-Check)
+                        // Map flat formData to the structure expected by AI service
+                        const metadata = {
+                            name: formData.applicantName || formData.projectDetails?.applicantName || "",
+                            aadhaar_number: formData.aadhaarNumber || formData.projectDetails?.aadhaarNumber || "",
+                            // Add contextual info if needed
+                            applicationType: formData.applicationType,
+                            district: formData.district,
+                            block: formData.block
+                        };
+
+                        // 2. Call AI Service (Localhost:5005)
+                        const aiResponse = await nocApplicationService.verifyDocumentWithAI(file, docId, metadata);
+
+                        // 3. Update Backend with Verification Result
+                        if (aiResponse && aiResponse.success) {
+                            const uploadedDocId = response.data?.documentId || response.data?._id;
+
+                            // Determine status and message for UI
+                            const isVerified = aiResponse.verdict === true || aiResponse.verdict === 'true'; // Allow looser truthy check
+                            // Use AI response message/remarks if available
+                            const remarks = aiResponse.remarks || aiResponse.message || (isVerified ? "Document verified successfully." : "Document verification failed.");
+
+                            setVerificationFeedback(prev => ({
+                                ...prev,
+                                [docId]: {
+                                    status: isVerified ? 'approved' : 'rejected',
+                                    message: remarks,
+                                    confidence: aiResponse.confidence,
+                                    explanation: aiResponse.ai_explanation // Extra detail if available
+                                }
+                            }));
+
+                            if (uploadedDocId) {
+                                const updatePayload = {
+                                    verified: isVerified,
+                                    confidence: aiResponse.confidence || 0.95,
+                                    remarks: remarks,
+                                    extractedText: aiResponse.extracted_text
+                                };
+
+                                await nocApplicationService.updateDocumentAIStatus(uploadedDocId, updatePayload);
+                                console.log(`AI Verification updated for ${docId}:`, updatePayload);
+                            }
+                        }
+                    } catch (err) {
+                        console.error(`AI Verification failed for ${docId}:`, err);
+                        // Show error state to user
+                        setVerificationFeedback(prev => ({
+                            ...prev,
+                            [docId]: {
+                                status: 'rejected',
+                                message: 'Verification service unreachable or failed.',
+                                confidence: 0
+                            }
+                        }));
+                    }
+                })();
             }
         } catch (error) {
             console.error("Upload failed:", error);
@@ -1250,7 +1541,93 @@ const NOCApplication = () => {
 
     return (
         <div className="noc-portal">
-            <NOCHeader />
+            <PublicHeader />
+            {/* Custom Exemption Modal */}
+            {showExemptionModal && exemptionStatus && (
+                <div className="noc-modal-overlay">
+                    <div className="noc-modal-content">
+                        <div className="noc-modal-header">
+                            <h3 style={{ margin: 0 }}>🎉 Applicable for Exempted NOC</h3>
+                        </div>
+                        <div className="noc-modal-body">
+                            <p><strong>Exemption Category:</strong> {exemptionStatus.exemptionType}</p>
+                            <p>{exemptionStatus.message || "You are eligible for an Exempted NOC based on your selection."}</p>
+
+                            {exemptionStatus.details && Array.isArray(exemptionStatus.details) && (
+                                <ul style={{ textAlign: 'left', marginTop: '10px' }}>
+                                    {exemptionStatus.details.map((detail, idx) => (
+                                        <li key={idx}>{detail}</li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                        <div className="noc-modal-footer">
+                            <button
+                                className="bhuneer-button-secondary"
+                                onClick={() => setShowExemptionModal(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="bhuneer-button-primary"
+                                onClick={() => {
+                                    // Direct Lookup for Names (Simplest approach as requested)
+                                    const getAppName = () => {
+                                        const match = appTypeOptions.find(o => String(o.id || o.appTypeCode || o.code) === String(formData.applicationType));
+                                        let name = match ? (match.name || match.label) : formData.applicationType;
+
+                                        // FIX: API explicitly requires "Agriculture Activities" but Master Data says "Agriculture"
+                                        if (name === 'Agriculture') return 'Agriculture Activities';
+                                        return name;
+                                    };
+
+                                    const getBlockName = () => {
+                                        // Try availableBlocks first, then blockOptions
+                                        const ops = availableBlocks.length > 0 ? availableBlocks : blockOptions;
+                                        const match = ops.find(o => String(o.blockId || o.id || o.code) === String(formData.block));
+                                        return match ? (match.blockName || match.name) : formData.block;
+                                    };
+
+                                    const getDistrictName = () => {
+                                        const match = districtOptions.find(o => String(o.districtId || o.id) === String(formData.district));
+                                        return match ? (match.districtName || match.name) : formData.district;
+                                    };
+
+                                    const getStateName = () => {
+                                        const match = stateOptions.find(o => String(o.stateId || o.id) === String(formData.state));
+                                        return match ? (match.stateName || match.name) : (formData.state === 'RJ' ? 'RAJASTHAN' : formData.state);
+                                    };
+
+                                    // Create Resolved Form Data
+                                    const resolvedFormData = {
+                                        ...formData,
+                                        applicationType: getAppName(),
+                                        applicationSubType: "", // Exempted applications don't use sub-types
+                                        groundWaterUtilizationFor: getAppName(), // Fallback/Same for exempted
+                                        waterQualityType: "Fresh Water", // API only accepts "Fresh Water" for exemptions
+                                        state: getStateName(),
+                                        district: getDistrictName(),
+                                        block: getBlockName(),
+                                        // Ensure agricultural details get the resolved names too
+                                        assessmentUnitBlockTehsil: getBlockName()
+                                    };
+
+                                    console.log("Navigating with Simple Resolved Data:", resolvedFormData);
+
+                                    navigate('/noc/exempt-application', {
+                                        state: {
+                                            formData: resolvedFormData,
+                                            exemptionResult: exemptionStatus
+                                        }
+                                    });
+                                }}
+                            >
+                                Apply for Exempted NOC
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="noc-application-page">
                 <div className="bhuneer-form-container">
@@ -1277,14 +1654,42 @@ const NOCApplication = () => {
                             }}
                             onSubmit={async (certData) => {
                                 try {
+                                    // Construct payload matching the user's cURL request structure
+                                    const payload = {
+                                        applicationType: formData.applicationType || 'Agriculture Activities',
+                                        applicationSubType: formData.applicationSubType || 'Ground Water Requirement for Agriculture',
+                                        groundWaterRequirementFor: formData.groundWaterUtilizationFor || 'Agricultural draft',
+                                        waterQualityType: formData.waterQualityType || 'Fresh Water',
+                                        applicationForBoring: formData.projectType || 'New Project',
+                                        dateOfBoring: formData.dateOfCommencement || new Date().toISOString().split('T')[0],
+                                        groundWaterUsage: {
+                                            drinkingDomestic: formData.groundWaterUtilizationFor === 'Drinking/Domestic' || false,
+                                            agricultureUse: formData.groundWaterUtilizationFor === 'Agriculture' || true
+                                        },
+                                        ownerDetails: {
+                                            ownerName: formData.applicantName || formData.organizationName,
+                                            ownerPhone: formData.applicantMobile,
+                                            ownerEmail: formData.applicantEmail,
+                                            ownerAddress: formData.projectAddress,
+                                            state: formData.state || "RAJASTHAN",
+                                            district: formData.district || "JAIPUR",
+                                            pinCode: formData.pincode || "302020"
+                                        },
+                                        agriculturalDetails: {
+                                            state: formData.state || "RAJASTHAN",
+                                            district: formData.district || "JAIPUR",
+                                            assessmentUnitBlockTehsil: `${formData.block || 'Unknown'} (Status: ${formData.blockCategory || 'Pending'})`,
+                                            address: formData.projectAddress || "Jaipur",
+                                            pinCode: formData.pincode || "302017",
+                                            landHoldingAreaHectare: parseFloat(formData.totalLandArea || 0),
+                                            landDetailsKhasraNo: formData.plotNo || "23",
+                                            gramPanchayatName: formData.village || "23",
+                                            waterRequirementKLD: parseFloat(formData.dailyWaterRequirement || 0)
+                                        }
+                                    };
+
                                     // Submit exemption record to API
-                                    const result = await nocApplicationService.submitExemption({
-                                        ...formData,
-                                        exemptionCertificateNumber: certData.certificateNumber,
-                                        exemptionType: certData.exemptionType,
-                                        exemptionCode: certData.exemptionCode,
-                                        issueDate: certData.issueDate
-                                    });
+                                    const result = await nocApplicationService.submitExemption(payload);
 
                                     if (result.success) {
                                         alert('✅ Exemption record submitted successfully to SGWA!');
@@ -1322,15 +1727,16 @@ const NOCApplication = () => {
                                             >
                                                 <option value="">Select Application Type</option>
                                                 {appTypeOptions.map(type => {
-                                                    const label = typeof type === 'object' ? type.label : type;
-                                                    const value = typeof type === 'object' ? type.code : type;
+                                                    const label = typeof type === 'object' ? (type.label || type.name) : type;
+                                                    // IMPORTANT: Prioritize ID (numeric) over Code (string)
+                                                    const value = typeof type === 'object' ? (type.appTypeId || type.applicationTypeId || type.id || type.appTypeCode || type.typeCode || type.code || type._id || type.name) : type;
                                                     return <option key={value} value={value}>{label}</option>;
                                                 })}
                                             </select>
                                             {errors.applicationType && <span className="bhuneer-error">{errors.applicationType}</span>}
                                             {formData.applicationType === 'NOC Renewal' && (
                                                 <div className="noc-alert noc-alert-warning" style={{ marginTop: '10px' }}>
-                                                    âš ï¸ <strong>Renewal Notice:</strong> Applications must be submitted at least 90 days before expiry. Late applications may attract Environmental Compensation Charges.
+                                                    ⚠️ <strong>Renewal Notice:</strong> Applications must be submitted at least 90 days before expiry. Late applications may attract Environmental Compensation Charges.
                                                 </div>
                                             )}
                                         </div>
@@ -1345,8 +1751,9 @@ const NOCApplication = () => {
                                             >
                                                 <option value="">Select Application Sub Type</option>
                                                 {appSubTypeOptions.map(type => {
-                                                    const label = typeof type === 'object' ? type.label : type;
-                                                    const value = typeof type === 'object' ? type.code : type;
+                                                    const label = typeof type === 'object' ? (type.label || type.name) : type;
+                                                    // Prioritize code or ID consistent with backend ID expectation if needed, usually ID
+                                                    const value = typeof type === 'object' ? (type.id || type.appSubTypeCode || type.subTypeCode || type.typeCode || type.code || type._id || type.name) : type;
                                                     return <option key={value} value={value}>{label}</option>;
                                                 })}
                                             </select>
@@ -1365,8 +1772,8 @@ const NOCApplication = () => {
                                             >
                                                 <option value="">Select Project Type</option>
                                                 {projectTypeOptions.map(type => {
-                                                    const label = typeof type === 'object' ? type.label : type;
-                                                    const value = typeof type === 'object' ? type.code : type;
+                                                    const label = typeof type === 'object' ? (type.label || type.name) : type;
+                                                    const value = typeof type === 'object' ? (type.projectTypeCode || type.typeCode || type.id || type.code || type._id || type.name) : type;
                                                     return <option key={value} value={value}>{label}</option>;
                                                 })}
                                             </select>
@@ -1383,8 +1790,8 @@ const NOCApplication = () => {
                                             >
                                                 <option value="">Select Water Quality Type</option>
                                                 {waterQualityOptions.map(type => {
-                                                    const label = typeof type === 'object' ? type.label : type;
-                                                    const value = typeof type === 'object' ? type.code : type;
+                                                    const label = typeof type === 'object' ? (type.label || type.name) : type;
+                                                    const value = typeof type === 'object' ? (type.code || type.name) : type;
                                                     return <option key={value} value={value}>{label}</option>;
                                                 })}
                                             </select>
@@ -1403,8 +1810,8 @@ const NOCApplication = () => {
                                             >
                                                 <option value="">Select Utilization Purpose</option>
                                                 {utilizationPurposeOptions.map(type => {
-                                                    const label = typeof type === 'object' ? type.label : type;
-                                                    const value = typeof type === 'object' ? type.code : type;
+                                                    const label = typeof type === 'object' ? (type.label || type.name) : type;
+                                                    const value = typeof type === 'object' ? (type.code || type.name) : type;
                                                     return <option key={value} value={value}>{label}</option>;
                                                 })}
                                             </select>
@@ -1490,36 +1897,7 @@ const NOCApplication = () => {
                                         </div>
                                     )}
 
-                                    {formData.groundWaterUtilizationFor &&
-                                        formData.groundWaterUtilizationFor !== 'Industry' &&
-                                        formData.groundWaterUtilizationFor !== 'Mining' &&
-                                        formData.groundWaterUtilizationFor !== 'Domestic' && (
-                                            <div className="noc-form-group">
-                                                <label className="bhuneer-label required">Project Category</label>
-                                                <select
-                                                    name="otherProjectType"
-                                                    className={`bhuneer-input ${errors.otherProjectType ? 'error' : ''}`}
-                                                    value={formData.otherProjectType || ''}
-                                                    onChange={handleChange}
-                                                >
-                                                    <option value="">Select Project Category</option>
-                                                    {projectCategoryOptions.length > 0 ? (
-                                                        projectCategoryOptions.map(project => {
-                                                            const label = typeof project === 'object' ? project.label : project;
-                                                            const value = typeof project === 'object' ? project.code : project;
-                                                            return <option key={value} value={value}>{label}</option>;
-                                                        })
-                                                    ) : (
-                                                        getOtherProjectDropdownOptions().map(project => (
-                                                            <option key={project.value} value={project.value}>
-                                                                {project.label} ({project.category})
-                                                            </option>
-                                                        ))
-                                                    )}
-                                                </select>
-                                                {errors.otherProjectType && <span className="bhuneer-error">{errors.otherProjectType}</span>}
-                                            </div>
-                                        )}
+
 
                                     <div className="noc-form-row two-col">
                                         <div className="noc-form-group">
@@ -1617,8 +1995,8 @@ const NOCApplication = () => {
                                                 >
                                                     <option value="">Select MSME Type</option>
                                                     {msmeTypeOptions.map(type => {
-                                                        const label = typeof type === 'object' ? type.label : type;
-                                                        const value = typeof type === 'object' ? type.code : type;
+                                                        const label = typeof type === 'object' ? (type.label || type.name) : type;
+                                                        const value = typeof type === 'object' ? (type.code || type.name) : type;
                                                         return <option key={value} value={value}>{label}</option>;
                                                     })}
                                                 </select>
@@ -2500,41 +2878,57 @@ const NOCApplication = () => {
                                         </h4>
 
                                         <div style={{ display: 'grid', gap: '15px' }}>
-                                            {requiredDocs.map((doc, index) => (
-                                                <div key={doc.id} style={{
-                                                    padding: '20px',
-                                                    background: 'white',
-                                                    border: '2px solid #dc3545',
-                                                    borderRadius: '12px',
-                                                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                                                }}>
-                                                    <div style={{ display: 'flex', alignItems: 'start', gap: '15px' }}>
+                                            {requiredDocs.length === 0 && !documentsLoading ? (
+                                                <div className="noc-alert noc-alert-info">
+                                                    No documents required based on current selection. Please verify input details.
+                                                </div>
+                                            ) : (
+                                                requiredDocs.map((doc, index) => (
+                                                    <div key={doc.id} style={{
+                                                        padding: '20px',
+                                                        background: 'white',
+                                                        border: '1px solid #dee2e6',
+                                                        borderRadius: '8px',
+                                                        display: 'flex',
+                                                        alignItems: 'flex-start',
+                                                        gap: '15px'
+                                                    }}>
                                                         <div style={{
-                                                            minWidth: '40px',
-                                                            height: '40px',
-                                                            background: 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)',
+                                                            minWidth: '30px',
+                                                            height: '30px',
+                                                            background: 'var(--cgwa-primary)',
                                                             color: 'white',
                                                             borderRadius: '50%',
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             justifyContent: 'center',
-                                                            fontWeight: 'bold',
-                                                            fontSize: '18px'
+                                                            fontWeight: 'bold'
                                                         }}>
                                                             {index + 1}
                                                         </div>
-                                                        <div style={{ flex: 1 }}>
-                                                            <h5 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '600' }}>
-                                                                {doc.name}
-                                                                <span style={{ color: '#dc3545', marginLeft: '5px' }}>*</span>
+                                                        <div>
+                                                            <h5 style={{ margin: '0 0 5px 0', fontSize: '1rem' }}>
+                                                                {doc.name} {doc.required && <span style={{ color: 'var(--cgwa-danger)' }}>*</span>}
                                                             </h5>
-                                                            <p style={{ margin: 0, color: '#6c757d', fontSize: '14px' }}>
+                                                            <p style={{ margin: '0 0 5px 0', color: '#6c757d', fontSize: '0.9rem' }}>
                                                                 {doc.description}
                                                             </p>
+                                                            {doc.condition && (
+                                                                <div style={{
+                                                                    fontSize: '0.85rem',
+                                                                    color: '#856404',
+                                                                    backgroundColor: '#fff3cd',
+                                                                    padding: '4px 8px',
+                                                                    borderRadius: '4px',
+                                                                    display: 'inline-block',
+                                                                    marginTop: '4px'
+                                                                }}>
+                                                                    ℹ Applicable if: {doc.condition}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                )))}
                                         </div>
                                     </div>
 
@@ -2638,6 +3032,27 @@ const NOCApplication = () => {
                                                 </div>
 
                                                 {errors[doc.id] && <span className="bhuneer-error">{errors[doc.id]}</span>}
+
+                                                {/* AI Verification Feedback */}
+                                                {verificationFeedback[doc.id] && (
+                                                    <div className={`noc-alert ${verificationFeedback[doc.id].status === 'approved' ? 'noc-alert-success' : verificationFeedback[doc.id].status === 'verifying' ? 'noc-alert-info' : 'noc-alert-danger'}`} style={{ marginTop: '10px', padding: '10px', borderLeft: verificationFeedback[doc.id].status === 'verifying' ? '4px solid #3b82f6' : undefined }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                            <span style={{ fontSize: '1.2rem' }}>
+                                                                {verificationFeedback[doc.id].status === 'approved' ? '✅' : verificationFeedback[doc.id].status === 'verifying' ? '🔄' : '❌'}
+                                                            </span>
+                                                            <div>
+                                                                <strong>
+                                                                    {verificationFeedback[doc.id].status === 'approved' ? 'AI Verification Passed' :
+                                                                        verificationFeedback[doc.id].status === 'verifying' ? 'Verifying Document...' :
+                                                                            'AI Verification Rejected'}
+                                                                </strong>
+                                                                <p style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>
+                                                                    {verificationFeedback[doc.id].message}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
@@ -2689,6 +3104,27 @@ const NOCApplication = () => {
                                                 </div>
 
                                                 {errors[doc.id] && <span className="bhuneer-error">{errors[doc.id]}</span>}
+
+                                                {/* AI Verification Feedback */}
+                                                {verificationFeedback[doc.id] && (
+                                                    <div className={`noc-alert ${verificationFeedback[doc.id].status === 'approved' ? 'noc-alert-success' : verificationFeedback[doc.id].status === 'verifying' ? 'noc-alert-info' : 'noc-alert-danger'}`} style={{ marginTop: '10px', padding: '10px', borderLeft: verificationFeedback[doc.id].status === 'verifying' ? '4px solid #3b82f6' : undefined }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                            <span style={{ fontSize: '1.2rem' }}>
+                                                                {verificationFeedback[doc.id].status === 'approved' ? '✅' : verificationFeedback[doc.id].status === 'verifying' ? '🔄' : '❌'}
+                                                            </span>
+                                                            <div>
+                                                                <strong>
+                                                                    {verificationFeedback[doc.id].status === 'approved' ? 'AI Verification Passed' :
+                                                                        verificationFeedback[doc.id].status === 'verifying' ? 'Verifying Document...' :
+                                                                            'AI Verification Rejected'}
+                                                                </strong>
+                                                                <p style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>
+                                                                    {verificationFeedback[doc.id].message}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
@@ -3733,13 +4169,19 @@ const NOCApplication = () => {
                                 </div>
                             </div>
 
-                            <button
-                                className="noc-btn noc-btn-primary"
-                                style={{ padding: '12px 30px', fontSize: '1.1rem' }}
-                                onClick={() => navigate('/noc/dashboard')}
-                            >
-                                Go to Dashboard
-                            </button>
+                            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                                <button
+                                    className="noc-btn noc-btn-primary"
+                                    style={{ padding: '12px 40px', fontSize: '1.2rem', background: 'var(--cgwa-primary)', border: 'none' }}
+                                    onClick={() => {
+                                        // Auto-redirect to details for verification flow
+                                        const targetId = successData.applicationId || successData.id || successData._id;
+                                        navigate(`/noc/application/${targetId}`);
+                                    }}
+                                >
+                                    OK
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )

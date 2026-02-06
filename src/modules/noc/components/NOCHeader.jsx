@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../../context/AuthContext';
 import { NavLink } from 'react-router-dom';
+import { EXTERNAL_URLS } from '../../../config/constants';
 import '../styles/noc-portal.css';
 
 const NOCHeader = () => {
+    const { isAuthenticated, user, logout } = useAuth();
     const [currentTime, setCurrentTime] = useState(new Date());
 
     useEffect(() => {
@@ -31,7 +34,7 @@ const NOCHeader = () => {
     return (
         <header className="rgwa-header-container">
             {/* Top Bar */}
-            <div className="rgwa-top-bar">
+            {/* <div className="rgwa-top-bar">
                 <div className="container-xl">
                     <div className="rgwa-top-bar-content">
                         <div className="rgwa-date-time">
@@ -49,7 +52,7 @@ const NOCHeader = () => {
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> */}
 
             {/* Main Branding Header */}
             <div className="rgwa-branding-section">
@@ -58,7 +61,7 @@ const NOCHeader = () => {
                         {/* Left Logo */}
                         <div className="rgwa-logo-left">
                             <img
-                                src="https://rgwcma.geoplanetsolution.in/assets/img/logo.png"
+                                src={EXTERNAL_URLS.LOGO_URL}
                                 alt="Department Logo"
                                 onError={(e) => e.target.style.display = 'none'} // Fallback if image fails
                             />
@@ -71,9 +74,9 @@ const NOCHeader = () => {
                         </div>
 
                         {/* Right Logo */}
-                        <div className="rgwa-logo-right">
+                        <div className="rgwa-logo-right" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
                             <img
-                                src="https://rgwcma.geoplanetsolution.in/assets/img/emb-logo.png"
+                                src={EXTERNAL_URLS.EMBLEM_URL}
                                 alt="Emblem"
                                 onError={(e) => e.target.style.display = 'none'}
                             />

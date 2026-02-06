@@ -164,10 +164,10 @@ const Sidebar = ({ isOpen, onToggle, isCollapsed, onCollapse }) => {
                 {/* Sidebar Header */}
                 <div className="sidebar-header">
                     <Link to="/noc/dashboard" className="sidebar-logo">
-                        <div className="sidebar-logo-icon">💧</div>
+                        <img src="/logos/logo-black.png" alt="RGWCMA Logo" className="sidebar-logo-icon" />
                         <div className="sidebar-logo-text">
-                            <span className="sidebar-logo-text">RGWCMA</span>
-                            <span className="sidebar-logo-text">Rajasthan Groundwater (Conservation and Management) Authority</span>
+                            <span className="sidebar-brand-name">RGWCMA</span>
+                            <span className="sidebar-brand-subtitle">Rajasthan Groundwater (Conservation and Management) Authority</span>
                         </div>
                     </Link>
                     <button

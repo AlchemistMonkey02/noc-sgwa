@@ -248,8 +248,7 @@ const ECCalculator = () => {
 
     return (
         <div className="noc-portal">
-            <NOCHeader />
-
+            {/* <NOCHeader />            */}
             <div className="noc-container" style={{ padding: '30px 15px' }}>
                 <div className="noc-card">
                     <h1 style={{ 

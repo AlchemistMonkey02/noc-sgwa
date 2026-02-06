@@ -67,11 +67,12 @@ const NOCLogin = () => {
         setLoading(true);
 
         try {
-            const success = await login(formData.username, formData.password);
-            if (success) {
+            // Pass the selected userType to the login function
+            const result = await login(formData.username, formData.password, userType);
+            if (result.success) {
                 navigate('/noc/dashboard');
             } else {
-                setError('Invalid credentials');
+                setError(result.error);
                 setLoading(false);
             }
         } catch (err) {

@@ -10,12 +10,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "captcha-jwt-image": "^1.1.0",
+    "jsonwebtoken": "^9.0.3",
     "jspdf": "^3.0.4",
     "jspdf-autotable": "^5.0.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.11.0",
-    "serve": "^14.2.5"
+    "serve": "^14.2.5",
+    "vite-plugin-node-polyfills": "^0.25.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

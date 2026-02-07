@@ -17,10 +17,10 @@ const CompanyDocuments = () => {
     const [viewerModal, setViewerModal] = useState({ isOpen: false, documentUrl: '', documentName: '' });
 
     const documentTypes = [
-        { type: 'GST_CERTIFICATE', label: 'GST Certificate', icon: '📋' },
-        { type: 'PAN', label: 'PAN Card', icon: '🆔' },
-        { type: 'INCORPORATION_CERTIFICATE', label: 'Incorporation Certificate', icon: '📜' },
-        { type: 'AUTHORIZATION_LETTER', label: 'Authorization Letter', icon: '✍️' }
+        { type: 'GST_CERTIFICATE', label: 'GST Certificate', icon: '📄' },
+        { type: 'PAN', label: 'PAN Card (comapny)', icon: ' 📄' },
+        { type: 'INCORPORATION_CERTIFICATE', label: 'Incorporation Certificate', icon: '📄' },
+        { type: 'ISO_CERTIFICATE', label: 'ISO Certificate', icon: '📄' }
     ];
 
     // Fetch company ID and documents on mount

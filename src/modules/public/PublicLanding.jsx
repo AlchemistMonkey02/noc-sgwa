@@ -4,7 +4,153 @@ import { useAuth } from '../../context/AuthContext';
 import NOCRegister from '../noc/NOCRegister';
 import PublicHeader from './components/PublicHeader';
 import { EXTERNAL_URLS } from '../../config/constants';
-import './styles/public-landing.css';
+// Native Web Crypto API Implementation for Token Signing/Verification
+// This removes dependency on 'jsonwebtoken' and Node polyfills like Buffer/Crypto
+const textEncoder = new TextEncoder();
+const textDecoder = new TextDecoder();
+
+const str2ab = (str) => textEncoder.encode(str);
+const ab2str = (ab) => textDecoder.decode(ab);
+
+const getCryptoKey = async (secret) => {
+    return window.crypto.subtle.importKey(
+        "raw",
+        str2ab(secret),
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign", "verify"]
+    );
+};
+
+const signToken = async (payload, secret) => {
+    const key = await getCryptoKey(secret);
+    const data = JSON.stringify(payload);
+    const signature = await window.crypto.subtle.sign(
+        "HMAC",
+        key,
+        str2ab(data)
+    );
+    // Convert signature to Base64
+    const signatureBase64 = btoa(String.fromCharCode(...new Uint8Array(signature)));
+    // Return payload + signature
+    return btoa(data) + '.' + signatureBase64;
+};
+
+const verifyToken = async (token, secret) => {
+    try {
+        const [payloadB64, signatureB64] = token.split('.');
+        if (!payloadB64 || !signatureB64) return false;
+
+        const key = await getCryptoKey(secret);
+        const dataStr = atob(payloadB64);
+        const signature = Uint8Array.from(atob(signatureB64), c => c.charCodeAt(0));
+
+        const isValid = await window.crypto.subtle.verify(
+            "HMAC",
+            key,
+            signature,
+            str2ab(dataStr)
+        );
+
+        if (isValid) {
+            return JSON.parse(dataStr);
+        }
+        return false;
+    } catch (e) {
+        console.error("Token verification failed:", e);
+        return false;
+    }
+};
+
+// Native Browser Implementation of Captcha Generation
+const generate_captcha = async (bgBase64, randomKey, secret, options = {}) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const length = options.length || 6;
+            const width = 150;
+            const height = 50;
+
+            // 1. Create Canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+
+            // 2. Draw Background
+            ctx.fillStyle = '#f0f0f0';
+            ctx.fillRect(0, 0, width, height);
+
+            for (let i = 0; i < 50; i++) {
+                ctx.fillStyle = `rgba(200,200,200, ${Math.random()})`;
+                ctx.fillRect(Math.random() * width, Math.random() * height, 2, 2);
+            }
+
+            // 3. Generate Random Text
+            const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+            let text = "";
+            for (let i = 0; i < length; i++) {
+                text += chars[Math.floor(Math.random() * chars.length)];
+            }
+
+            // 4. Draw Text
+            ctx.font = "bold 24px sans-serif";
+            ctx.textBaseline = "middle";
+            const spacing = width / (length + 2);
+
+            for (let i = 0; i < length; i++) {
+                const x = spacing * (i + 1);
+                const y = height / 2;
+                const char = text[i];
+
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate((Math.random() - 0.5) * 0.4);
+                ctx.fillStyle = "#333";
+                ctx.fillText(char, 0, 0);
+                ctx.restore();
+            }
+
+            // 5. Add Noise
+            for (let i = 0; i < 7; i++) {
+                ctx.strokeStyle = `rgba(100,100,100, ${Math.random()})`;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(Math.random() * width, Math.random() * height);
+                ctx.lineTo(Math.random() * width, Math.random() * height);
+                ctx.stroke();
+            }
+
+            // 6. Generate Token with Native Crypto
+            const payload = {
+                k: randomKey,
+                t: text,
+                exp: Date.now() + 5 * 60 * 1000 // 5 mins
+            };
+
+            const token = await signToken(payload, secret);
+
+            // 7. Return Data URL
+            const dataUrl = canvas.toDataURL('image/png');
+            resolve([token, dataUrl]);
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
+
+const verify_captcha = async (token, input, secret) => {
+    try {
+        const decoded = await verifyToken(token, secret);
+        if (!decoded) return false;
+
+        // Check expiry
+        if (decoded.exp && Date.now() > decoded.exp) return false;
+
+        return decoded.t === input.toUpperCase();
+    } catch (e) {
+        return false;
+    }
+};
 
 const PublicLanding = () => {
     const navigate = useNavigate();
@@ -23,6 +169,28 @@ const PublicLanding = () => {
     const [loading, setLoading] = useState(false);
     const [showRegisterModal, setShowRegisterModal] = useState(false);
     const [flashMessage, setFlashMessage] = useState('');
+    const [captchaJwt, setCaptchaJwt] = useState('');
+    const [captchaImage, setCaptchaImage] = useState('');
+
+    const HASH_SECRET = 'sgwa_secret_key_2026'; // In production, this should be backend-side
+    const RANDOM_KEY = 'sgwa_random_key_987';
+    // 150x50 grey placeholder
+    const BG_IMAGE_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAAAyCAYAAACaxd2OAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABoSURBVHhe7cExAQAAAMKg9U9tCj8gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJw0FeAABxO93uAAAAABJRU5ErkJggg==";
+
+    const refreshCaptcha = async () => {
+        try {
+            // Use native canvas implementation
+            const [token, dataUrl] = await generate_captcha(BG_IMAGE_BASE64, RANDOM_KEY, HASH_SECRET, { length: 5 });
+            setCaptchaJwt(token);
+            setCaptchaImage(dataUrl);
+        } catch (e) {
+            console.error("Captcha error:", e);
+        }
+    };
+
+    useEffect(() => {
+        refreshCaptcha();
+    }, []);
 
     // Check for flash message from redirection (e.g. logout)
     useEffect(() => {
@@ -48,6 +216,14 @@ const PublicLanding = () => {
 
         if (!formData.userType || !formData.username || !formData.password || !formData.captcha) {
             setError('Please fill all required fields');
+            return;
+        }
+
+        // Verify Captcha
+        const isCaptchaValid = await verify_captcha(captchaJwt, formData.captcha, HASH_SECRET);
+        if (!isCaptchaValid) {
+            setError('Invalid Captcha Code');
+            refreshCaptcha(); // Refresh on failure
             return;
         }
 
@@ -88,7 +264,7 @@ const PublicLanding = () => {
     ];
 
     const handleServiceCardClick = (service) => {
-        
+
         if (service.link) {
             if (service.external) {
                 // Open external links in a new tab
@@ -300,13 +476,18 @@ const PublicLanding = () => {
                                 <div className="form-field">
                                     <label>Captcha</label>
                                     <div className="captcha-container">
-                                        <div className="captcha-strip">
-                                            {/* Vertical stacking with spans */}
-                                            <span style={{ '--r': '-5deg' }}>5</span>
-                                            <span style={{ '--r': '3deg' }}>A</span>
-                                            <span style={{ '--r': '-2deg' }}>7</span>
-                                            <span style={{ '--r': '4deg' }}>K</span>
-                                            <span style={{ '--r': '-3deg' }}>9</span>
+                                        <div className="captcha-strip" style={{ display: 'block', padding: 0, overflow: 'hidden', border: '1px solid #ccc' }}>
+                                            {captchaImage ? (
+                                                <img
+                                                    src={captchaImage}
+                                                    alt="Captcha"
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                    onClick={refreshCaptcha}
+                                                    title="Click to Refresh"
+                                                />
+                                            ) : (
+                                                <div style={{ padding: '10px', textAlign: 'center' }}>Loading...</div>
+                                            )}
                                         </div>
                                         <div className="captcha-input-area">
                                             <input

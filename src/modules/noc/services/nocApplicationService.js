@@ -669,10 +669,59 @@ export const nocApplicationService = {
         formData.append('file', file);
         formData.append('inputText', JSON.stringify(metadata)); // Changed from user_input as per curl
 
-        let aiDocType = docType.toUpperCase().replace(/\s+/g, '_');
-        if (aiDocType.includes('AADHAAR')) aiDocType = 'AADHAAR';
+        // Helper to map frontend document types to AI Service types
+        const getAIDocumentType = (type) => {
+            const t = type.toUpperCase().replace(/\s+/g, '_');
 
-        formData.append('documentType', aiDocType); // Added missing field
+            // Direct Map
+            const map = {
+                'AADHAAR': 'DOC_AADHAAR',
+                'PAN': 'DOC_PAN_COMPANY',
+                'PAN_COMPANY': 'DOC_PAN_COMPANY',
+                'GST': 'DOC_GST',
+                'GST_CERTIFICATE': 'DOC_GST',
+                'COI': 'DOC_COI',
+                'INCORPORATION_CERTIFICATE': 'DOC_COI',
+                'MOA': 'DOC_MOA_AOA',
+                'AOA': 'DOC_MOA_AOA',
+                'MOA_AOA': 'DOC_MOA_AOA',
+                'SAN': 'DOC_SAN', // Business Registration
+                'MSME': 'DOC_UDYAM', // Assuming Udyam for MSME
+                'UDYAM': 'DOC_UDYAM',
+                'ISO': 'DOC_ISO',
+                'ISO_CERTIFICATE': 'DOC_ISO',
+                'STARTUP': 'DOC_STARTUP',
+                'STARTUP_INDIA': 'DOC_STARTUP',
+                'CONSENT_TO_ESTABLISH': 'DOC_EC_CTE',
+                'CTE': 'DOC_EC_CTE',
+                'ECO_SENSITIVE': 'DOC_EC_CTE', // Approximation if needed
+                'ENV_CLEARANCE': 'DOC_EC_CTE', // Approximation
+                'AFFIDAVIT': 'DOC_AFFIDAVIT',
+                'MINE_PLAN': 'DOC_MINE_PLAN',
+                'APPROVED_MINE_PLAN': 'DOC_MINE_PLAN',
+                'LAND_OWNERSHIP': 'DOC_LAND_OWNERSHIP', // If supported
+                'OWNERSHIP_PROOF': 'DOC_LAND_OWNERSHIP'
+            };
+
+            if (map[t]) return map[t];
+
+            // Fuzzy/Fallback Logic
+            if (t.includes('AADHAAR')) return 'DOC_AADHAAR';
+            if (t.includes('PAN')) return 'DOC_PAN_COMPANY';
+            if (t.includes('GST')) return 'DOC_GST';
+            if (t.includes('CONSENT') || t.includes('CTE')) return 'DOC_EC_CTE';
+            if (t.includes('AFFIDAVIT')) return 'DOC_AFFIDAVIT';
+            if (t.includes('MINE')) return 'DOC_MINE_PLAN';
+            if (t.includes('INCORPORATION') || t.includes('COI')) return 'DOC_COI';
+
+            // Default to raw if no match (hoping backend handles it or it's already correct)
+            return type; // Was 'aiDocType', but raw might be safer if unknown
+        };
+
+        const aiDocType = getAIDocumentType(docType);
+        formData.append('documentType', aiDocType);
+
+        console.log(`AI Method: verifyDocumentWithAI | Input Type: ${docType} | Mapped Type: ${aiDocType}`);
 
         // Direct call to Python Service (using 5020 as per user curl request suggestion, or fallback to configured)
         // User's curl showed localhost:5020. Updating port to match user expectation.

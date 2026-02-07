@@ -743,30 +743,58 @@ const NOCApplication = () => {
                         const aiResponse = await nocApplicationService.verifyDocumentWithAI(file, docId, metadata);
 
                         // 3. Update Backend with Verification Result
-                        if (aiResponse && aiResponse.success) {
+                        if (aiResponse) {
                             const uploadedDocId = response.data?.documentId || response.data?._id;
 
-                            // Determine status and message for UI
-                            const isVerified = aiResponse.verdict === true || aiResponse.verdict === 'true'; // Allow looser truthy check
-                            // Use AI response message/remarks if available
-                            const remarks = aiResponse.remarks || aiResponse.message || (isVerified ? "Document verified successfully." : "Document verification failed.");
+                            // Robust Status Determination
+                            // API might return { success: true, verdict: true } OR { status: "FAIL", verdict: { verdict: "FAIL", ... } }
+                            let isVerified = false;
+                            let remarks = "Verification failed.";
+                            let confidence = 0;
+                            let explanation = "";
 
+                            // Check High-Level Status
+                            const isApiSuccess = aiResponse.success === true || aiResponse.status === "PASS";
+
+                            if (aiResponse.verdict) {
+                                if (typeof aiResponse.verdict === 'object') {
+                                    // Complex verdict object (User's FAIL case)
+                                    isVerified = aiResponse.verdict.verdict === "PASS";
+                                    remarks = aiResponse.verdict.summary || aiResponse.message || "Document verification failed.";
+                                    confidence = aiResponse.verdict.confidence || 0;
+                                } else {
+                                    // Simple boolean/string verdict
+                                    isVerified = aiResponse.verdict === true || aiResponse.verdict === 'true' || aiResponse.verdict === 'PASS';
+                                    remarks = aiResponse.remarks || aiResponse.message || (isVerified ? "Document verified successfully." : "Document verification failed.");
+                                    confidence = aiResponse.confidence || 0;
+                                }
+                            } else {
+                                // Fallback if no verdict field
+                                isVerified = isApiSuccess;
+                                remarks = aiResponse.message || (isVerified ? "Document verified." : "Verification failed.");
+                            }
+
+                            // Explanation might be at top level
+                            explanation = aiResponse.ai_explanation || "";
+
+                            // UI Update
                             setVerificationFeedback(prev => ({
                                 ...prev,
                                 [docId]: {
                                     status: isVerified ? 'approved' : 'rejected',
                                     message: remarks,
-                                    confidence: aiResponse.confidence,
-                                    explanation: aiResponse.ai_explanation // Extra detail if available
+                                    confidence: confidence,
+                                    explanation: explanation
                                 }
                             }));
 
+                            // Backend Update (Always update status, even if failed)
                             if (uploadedDocId) {
                                 const updatePayload = {
                                     verified: isVerified,
-                                    confidence: aiResponse.confidence || 0.95,
+                                    confidence: confidence || 0,
                                     remarks: remarks,
-                                    extractedText: aiResponse.extracted_text
+                                    extractedText: aiResponse.extracted_text || ""
                                 };
 
                                 await nocApplicationService.updateDocumentAIStatus(uploadedDocId, updatePayload);

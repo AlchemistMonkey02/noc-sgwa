@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import NOCHeader from './components/NOCHeader';
 import NOCFooter from './components/NOCFooter';
+import BackButton from '../../components/BackButton';
 import './styles/noc-portal.css';
 import './styles/noc-certificate.css';
 
@@ -95,6 +96,7 @@ const ApplicationSummary = () => {
                 <div className="page-gradient-header"></div>
 
                 <div className="content-container">
+                    <BackButton />
                     {/* Page Title */}
                     <div className="page-title-section">
                         <h1 className="page-main-title">📋 Application Summary</h1>

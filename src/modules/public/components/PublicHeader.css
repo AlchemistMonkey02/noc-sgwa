@@ -252,7 +252,7 @@
     text-decoration: none;
 }
 
-.public-header-nav a:hover {
+.public-header-nav a:not(.nav-btn-link-login):not(.nav-btn-link-register):not(.nav-btn-link-logout):hover {
     background: #f8f9fa;
     color: #1a237e;
     padding-left: 30px;
@@ -285,12 +285,29 @@
 .nav-btn-link-login {
     background: #1a237e;
     color: white !important;
+    border: 1px solid #1a237e;
+    transition: all 0.2s;
+}
+
+.nav-btn-link-login:hover {
+    background: #2c3e95;
+    color: white !important;
+    border-color: #2c3e95;
+    padding-left: 12px !important;
 }
 
 .nav-btn-link-register {
     background: white;
     border: 1px solid #1a237e;
     color: #1a237e !important;
+    transition: all 0.2s;
+}
+
+.nav-btn-link-register:hover {
+    background: #f0f4ff;
+    border-color: #2c3e95;
+    color: #1a237e !important;
+    padding-left: 12px !important;
 }
 
 .nav-btn-link-logout {

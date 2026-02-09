@@ -1,0 +1,58 @@
+.back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    color: #495057;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 20px;
+}
+
+.back-button:hover {
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+    color: #212529;
+    transform: translateX(-2px);
+}
+
+.back-button:active {
+    transform: translateX(-1px);
+}
+
+.back-arrow {
+    font-size: 18px;
+    font-weight: bold;
+    transition: transform 0.2s ease;
+}
+
+.back-button:hover .back-arrow {
+    transform: translateX(-3px);
+}
+
+.back-text {
+    line-height: 1;
+}
+
+/* Compact variant */
+.back-button.compact {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+/* Primary variant */
+.back-button.primary {
+    background-color: var(--primary-color, #3b82f6);
+    color: white;
+    border-color: var(--primary-color, #3b82f6);
+}
+
+.back-button.primary:hover {
+    background-color: var(--primary-dark, #2563eb);
+    border-color: var(--primary-dark, #2563eb);
+}

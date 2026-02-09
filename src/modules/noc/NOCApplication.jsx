@@ -749,7 +749,7 @@ const NOCApplication = () => {
                             // Robust Status Determination
                             // API might return { success: true, verdict: true } OR { status: "FAIL", verdict: { verdict: "FAIL", ... } }
                             let isVerified = false;
-                            let remarks = "Verification failed.";
+                            let remarks = "Your uploaded document is not valid or doesn't match the application. Please upload a valid document.";
                             let confidence = 0;
                             let explanation = "";
 
@@ -760,18 +760,18 @@ const NOCApplication = () => {
                                 if (typeof aiResponse.verdict === 'object') {
                                     // Complex verdict object (User's FAIL case)
                                     isVerified = aiResponse.verdict.verdict === "PASS";
-                                    remarks = aiResponse.verdict.summary || aiResponse.message || "Document verification failed.";
+                                    remarks = aiResponse.verdict.summary || aiResponse.message || "Your uploaded document is not valid or doesn't match the application. Please upload a valid document.";
                                     confidence = aiResponse.verdict.confidence || 0;
                                 } else {
                                     // Simple boolean/string verdict
                                     isVerified = aiResponse.verdict === true || aiResponse.verdict === 'true' || aiResponse.verdict === 'PASS';
-                                    remarks = aiResponse.remarks || aiResponse.message || (isVerified ? "Document verified successfully." : "Document verification failed.");
+                                    remarks = aiResponse.remarks || aiResponse.message || (isVerified ? "Document verified and approved." : "Your uploaded document is not valid or doesn't match the application. Please upload a valid document.");
                                     confidence = aiResponse.confidence || 0;
                                 }
                             } else {
                                 // Fallback if no verdict field
                                 isVerified = isApiSuccess;
-                                remarks = aiResponse.message || (isVerified ? "Document verified." : "Verification failed.");
+                                remarks = aiResponse.message || (isVerified ? "Document verified and approved." : "Your uploaded document is not valid or doesn't match the application. Please upload a valid document.");
                             }
 
                             // Explanation might be at top level
@@ -808,7 +808,7 @@ const NOCApplication = () => {
                             ...prev,
                             [docId]: {
                                 status: 'rejected',
-                                message: 'Verification service unreachable or failed.',
+                                message: "Document verification failed. Your uploaded document is not valid or doesn't match the application. Please upload a valid document.",
                                 confidence: 0
                             }
                         }));
@@ -1156,12 +1156,10 @@ const NOCApplication = () => {
                         longitude: parseFloat(formData.longitude)
                     },
                     projectDetails: {
+                        projectName: formData.projectName || 'Draft Project',
                         landArea: parseFloat(formData.landUseTotalArea || 0),
                         builtUpArea: parseFloat(formData.landUseRooftopArea || 0) + parseFloat(formData.landUsePavedArea || 0),
                         openLandArea: parseFloat(formData.landUseGreenBeltArea || 0) + parseFloat(formData.landUseOpenArea || 0)
-                    },
-                    hydrogeology: {
-                        aquiferType: formData.aquiferType || ''
                     }
                 };
 
@@ -2418,24 +2416,6 @@ const NOCApplication = () => {
                                             })()}
                                         </div>
 
-                                        {/* Aquifer Type */}
-                                        <div className="noc-form-group">
-                                            <label className="bhuneer-label">Aquifer Type</label>
-                                            <select
-                                                name="aquiferType"
-                                                className={`bhuneer-input ${errors.aquiferType ? 'error' : ''}`}
-                                                value={formData.aquiferType || ''}
-                                                onChange={handleChange}
-                                            >
-                                                <option value="">Select Aquifer Type</option>
-                                                <option value="Unconfined">Unconfined</option>
-                                                <option value="Confined">Confined</option>
-                                                <option value="Semi-Confined">Semi-Confined</option>
-                                                <option value="Perched">Perched</option>
-                                            </select>
-                                            {errors.aquiferType && <span className="bhuneer-error">{errors.aquiferType}</span>}
-                                        </div>
-
                                         <div className="noc-form-group">
                                             <label className="bhuneer-label">Village / Town</label>
                                             <input
@@ -2515,7 +2495,7 @@ const NOCApplication = () => {
                                             value={formData.geology}
                                             onChange={handleChange}
                                         >
-                                            <option value="">Select Aquifer Type</option>
+                                            <option value="">Select Geology</option>
                                             {geologyTypes.map(type => (
                                                 <option key={type} value={type}>{type}</option>
                                             ))}
@@ -2530,7 +2510,7 @@ const NOCApplication = () => {
                                                     className={`bhuneer-input ${errors.otherGeology ? 'error' : ''}`}
                                                     value={formData.otherGeology}
                                                     onChange={handleChange}
-                                                    placeholder="Please specify aquifer type"
+                                                    placeholder="Please specify geology type"
                                                 />
                                                 {errors.otherGeology && <span className="bhuneer-error">{errors.otherGeology}</span>}
                                             </div>

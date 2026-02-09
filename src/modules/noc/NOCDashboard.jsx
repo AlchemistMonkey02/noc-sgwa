@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { EXTERNAL_URLS } from '../../config/constants';
 import { nocApplicationService } from './services/nocApplicationService';
+import BackButton from '../../components/BackButton';
 
 import LayoutWithSidebar from './components/LayoutWithSidebar';
 import './styles/noc-portal.css';
@@ -247,6 +248,9 @@ const NOCDashboard = () => {
                     <span className="current">Dashboard</span>
                 </div>
 
+                {/* Back Button */}
+                <BackButton />
+
                 {/* Page Title */}
                 <div className="page-title-section">
                     <h1 className="page-main-title">Dashboard</h1>
@@ -392,7 +396,6 @@ const NOCDashboard = () => {
                                     <tr>
                                         <th>Application ID</th>
                                         <th>Type</th>
-                                        <th>Purpose</th>
                                         <th>Submitted Date</th>
                                         <th>Status</th>
                                         <th>Actions</th>
@@ -403,7 +406,6 @@ const NOCDashboard = () => {
                                         <tr key={index}>
                                             <td data-label="Application ID"><strong className="text-blue">{app.id}</strong></td>
                                             <td data-label="Type">{app.type}</td>
-                                            <td data-label="Purpose">{app.purpose}</td>
                                             <td data-label="Submitted Date">{app.submittedDate}</td>
                                             <td data-label="Status">
                                                 <span className={`status-badge ${app.statusClass || (app.status === 'Exempt' ? 'success' : 'info')}`}>

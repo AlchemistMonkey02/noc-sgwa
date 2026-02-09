@@ -367,11 +367,21 @@
 @media (max-width: 1023px) {
     .sidebar {
         transform: translateX(-100%);
+        top: 0;
+        height: 100vh;
+        z-index: 1100;
+        /* Above header */
+        width: 280px;
+        /* Ensure width is fixed on mobile */
+        border-right: none;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
     }
 
     .sidebar.open {
         transform: translateX(0);
     }
+
+    /* Show close button logic if needed, but we have toggle */
 }
 
 /* Collapsed State */
@@ -444,6 +454,36 @@
     padding: 10px 16px;
 }
 
+
 .sidebar.collapsed .submenu-link::before {
     left: 8px;
+}
+
+/* Mobile Close Button */
+.sidebar-close-mobile {
+    display: none;
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    color: #1e3a8a;
+    cursor: pointer;
+    line-height: 1;
+    padding: 5px;
+}
+
+@media (max-width: 1023px) {
+    .sidebar-toggle.sidebar-toggle-desktop {
+        display: none;
+        /* Hide collapse on mobile */
+    }
+
+    .sidebar-close-mobile {
+        display: block;
+        /* Show close button on mobile */
+    }
+
+    .sidebar-header {
+        justify-content: space-between;
+        padding-right: 15px;
+    }
 }

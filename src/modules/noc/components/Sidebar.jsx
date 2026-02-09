@@ -171,11 +171,18 @@ const Sidebar = ({ isOpen, onToggle, isCollapsed, onCollapse }) => {
                         </div>
                     </Link>
                     <button
-                        className="sidebar-toggle"
+                        className="sidebar-toggle sidebar-toggle-desktop"
                         onClick={toggleCollapse}
                         aria-label="Toggle sidebar"
                     >
                         {isCollapsed ? '»' : '«'}
+                    </button>
+                    <button
+                        className="sidebar-close-mobile"
+                        onClick={onToggle}
+                        aria-label="Close sidebar"
+                    >
+                        ✕
                     </button>
                 </div>
 

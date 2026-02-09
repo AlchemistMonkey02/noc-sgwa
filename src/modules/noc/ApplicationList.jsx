@@ -19,7 +19,7 @@ const ApplicationList = () => {
     // Fetch Applications
     useEffect(() => {
         const fetchApplications = async () => {
-            if (!isAuthenticated()) {
+            if (!isAuthenticated) {
                 setLoading(false);
                 return;
             }
@@ -28,21 +28,27 @@ const ApplicationList = () => {
                 const response = await nocApplicationService.getUserApplications();
                 console.log('Application List API Response:', response);
 
-                // Handle valid response scenarios based on observed API behavior
-                if (response.success) {
-                    let apps = [];
-                    if (Array.isArray(response.applications)) {
-                        apps = response.applications;
-                    } else if (response.data && Array.isArray(response.data.applications)) {
-                        apps = response.data.applications;
-                    } else if (Array.isArray(response.data)) {
-                        apps = response.data;
-                    }
-                    setApplications(apps);
-                } else {
-                    console.warn('API returned success:false or invalid format');
-                    setApplications([]);
+                // Handle various response structures
+                let apps = [];
+                if (Array.isArray(response)) {
+                    apps = response;
+                } else if (response.success && Array.isArray(response.applications)) {
+                    apps = response.applications;
+                } else if (response.data && Array.isArray(response.data.applications)) {
+                    apps = response.data.applications;
+                } else if (response.data && Array.isArray(response.data)) {
+                    apps = response.data;
+                } else if (response.applications && Array.isArray(response.applications)) {
+                    // Fallback if success flag is missing but applications exist
+                    apps = response.applications;
                 }
+
+                setApplications(apps);
+
+                if (apps.length === 0 && response.success === false) {
+                    console.warn('API might have returned an specific error or just empty list');
+                }
+
             } catch (err) {
                 console.error('Failed to fetch applications:', err);
                 if (err.message.includes('401') || err.message.toLowerCase().includes('token')) {
@@ -177,7 +183,7 @@ const ApplicationList = () => {
                             </div>
                         </div>
                     </>
-                ) : (!isAuthenticated() || error === 'Login Required First') ? (
+                ) : (!isAuthenticated || error === 'Login Required First') ? (
                     <div style={{ textAlign: 'center', padding: '60px 40px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
                         <div style={{ fontSize: '3rem', marginBottom: '20px' }}>🔒</div>
                         <h3 style={{ color: '#1e293b', marginBottom: '10px' }}>Login Required</h3>
@@ -271,7 +277,7 @@ const ApplicationList = () => {
                                             <tbody>
                                                 {filteredApplications.map(app => (
                                                     <tr key={app.applicationId || app.id || app._id}>
-                                                        <td><strong className="text-blue">{app.applicationNumber || app.trackingId}</strong></td>
+                                                        <td><strong className="text-blue">{app.applicationNumber || app.trackingId || 'N/A'}</strong></td>
                                                         <td>
                                                             <div style={{ fontWeight: '500' }}>{app.projectDetails?.projectName || app.projectName || 'N/A'}</div>
                                                             <div style={{ fontSize: '0.8rem', color: '#666' }}>{app.applicationType}</div>
@@ -310,32 +316,6 @@ const ApplicationList = () => {
                     </>
                 )}
             </div>
-
-            <style jsx>{`
-                .filter-tabs {
-                    display: flex;
-                    gap: 10px;
-                }
-                .filter-tab {
-                    background: none;
-                    border: none;
-                    padding: 8px 16px;
-                    border-radius: 20px;
-                    font-size: 0.9rem;
-                    font-weight: 500;
-                    color: #64748b;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                }
-                .filter-tab.active {
-                    background: #eff6ff;
-                    color: #1e3a8a;
-                    font-weight: 600;
-                }
-                .filter-tab:hover:not(.active) {
-                    background: #f1f5f9;
-                }
-            `}</style>
         </LayoutWithSidebar>
     );
 };

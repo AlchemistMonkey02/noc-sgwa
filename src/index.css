@@ -37,18 +37,16 @@ body {
   background-color: var(--bg-body);
   color: var(--text-main);
   margin: 0;
+  /* Responsive Body Padding */
   padding-top: 110px;
-  /* Space for fixed header */
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
+  /* Desktop default */
+}
 
-  /* RGWA Specific Pattern Overlay */
-  background-image:
-    radial-gradient(rgb(71 85 105 / 0.15) 1px, transparent 1px),
-    linear-gradient(to right, rgb(71 85 105 / 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(71 85 105 / 0.03) 1px, transparent 1px);
-  background-size: 24px 24px, 40px 40px, 40px 40px;
-  background-position: center top;
+@media (max-width: 768px) {
+  body {
+    padding-top: 80px;
+    /* Reduced for Mobile/Tablet */
+  }
 }
 
 /* Container Utility */
@@ -56,6 +54,14 @@ body {
   max-width: 1536px;
   margin: 0 auto;
   padding: 0 1rem;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .container-xl {
+    padding: 0 1rem;
+    /* standard padding */
+  }
 }
 
 /* Global Reset & Utils */

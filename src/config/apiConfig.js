@@ -1,6 +1,7 @@
 // export const API_BASE_URL = 'https://rgwcma-noc-api.geoplanetsolution.in/api'
 
-export const API_BASE_URL = 'https://rgwcma-noc-api.geoplanetsolution.in/api';
+// export const API_BASE_URL = 'https://rgwcma-noc-api.geoplanetsolution.in/api';
+export const API_BASE_URL = 'http://localhost:5000/api';
 export const AI_SERVICE_URL = 'https://ocr.geoplanetsolution.in';
 
 if (!import.meta.env.VITE_API_URL) {

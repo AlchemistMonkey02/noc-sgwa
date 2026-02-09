@@ -349,7 +349,7 @@ const ApplicationDetail = () => {
                                     border: '1px solid #e2e8f0'
                                 }}>
                                     <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '600', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Application Type</div>
-                                    <div style={{ fontSize: '1.1rem', color: '#0f172a', fontWeight: '600' }}>{basicDetails?.applicationType || 'N/A'}</div>
+                                    <div style={{ fontSize: '1.1rem', color: '#0f172a', fontWeight: '600' }}>{basicDetails?.applicationTypeName || basicDetails?.applicationType || 'N/A'}</div>
                                 </div>
                                 <div style={{
                                     background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
@@ -358,7 +358,7 @@ const ApplicationDetail = () => {
                                     border: '1px solid #e2e8f0'
                                 }}>
                                     <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '600', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Industry Type</div>
-                                    <div style={{ fontSize: '1.1rem', color: '#0f172a', fontWeight: '600' }}>{projectDetails?.industryType || 'N/A'}</div>
+                                    <div style={{ fontSize: '1.1rem', color: '#0f172a', fontWeight: '600' }}>{basicDetails?.sectorType || projectDetails?.industryType || 'N/A'}</div>
                                 </div>
                                 <div style={{
                                     background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
@@ -385,7 +385,7 @@ const ApplicationDetail = () => {
                                     border: '1px solid #e2e8f0'
                                 }}>
                                     <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '600', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Applied On</div>
-                                    <div style={{ fontSize: '1.1rem', color: '#0f172a', fontWeight: '600' }}>{timestamps?.createdAt ? new Date(timestamps.createdAt).toLocaleDateString() : 'N/A'}</div>
+                                    <div style={{ fontSize: '1.1rem', color: '#0f172a', fontWeight: '600' }}>{application?.updatedAt ? new Date(application.updatedAt).toLocaleDateString() : 'N/A'}</div>
                                 </div>
                             </div>
                         </div>
@@ -423,7 +423,6 @@ const ApplicationDetail = () => {
                                     { label: 'Aadhaar Number', value: projectDetails?.aadhaarNumber },
                                     { label: 'PAN Number', value: projectDetails?.panNumber },
                                     { label: 'Designation', value: projectDetails?.designation },
-                                    { label: 'NIC Code', value: projectDetails?.nicCode },
                                     { label: 'MSME', value: projectDetails?.isMSME ? 'Yes' : 'No' }
                                 ].map((field, idx) => (
                                     <div key={idx} style={{
@@ -468,8 +467,8 @@ const ApplicationDetail = () => {
                             }}>
                                 {[
                                     { label: 'District', value: locationDetails?.districtId },
-                                    { label: 'Block/Assessment Unit', value: locationDetails?.assessmentUnit },
-                                    { label: 'Tehsil', value: locationDetails?.tehsil },
+                                    { label: 'Block', value: locationDetails?.blockId || locationDetails?.assessmentUnit },
+                                    { label: 'Assessment Unit', value: locationDetails?.blockId },
                                     { label: 'Geology', value: locationDetails?.geology },
                                     { label: 'Coordinates', value: locationDetails?.latitude && locationDetails?.longitude ? `Lat: ${locationDetails.latitude}, Lon: ${locationDetails.longitude}` : null },
                                     { label: 'Pincode', value: locationDetails?.pincode }

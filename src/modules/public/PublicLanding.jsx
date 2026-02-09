@@ -287,7 +287,7 @@ const PublicLanding = () => {
 
     return (
         <div className="gov-portal">
-            <PublicHeader />
+            {/* PublicHeader is handled by Layout.jsx */}
 
             {/* Flash Message Modal */}
             {flashMessage && (

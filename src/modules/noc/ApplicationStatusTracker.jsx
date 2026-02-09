@@ -99,10 +99,9 @@ const ApplicationStatusTracker = () => {
 
                 {/* Application Summary Card */}
                 <div className="noc-card" style={{ marginBottom: '30px' }}>
-                    <div className="noc-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="noc-card-header responsive-card-header">
                         <span>
                             Application ID: <strong>{application.trackingId}</strong>
-                            {/* {application.trackingId && <span style={{ marginLeft: '15px', fontSize: '0.9rem', color: '#666' }}>(Ref: {application.trackingId})</span>} */}
                         </span>
                         <span className={`noc-badge noc-badge-${application.statusColor}`} style={{
                             padding: '5px 12px',
@@ -116,7 +115,7 @@ const ApplicationStatusTracker = () => {
                         </span>
                     </div>
                     <div className="noc-card-body">
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px', marginBottom: '24px' }}>
+                        <div className="responsive-grid" style={{ marginBottom: '24px' }}>
                             <div>
                                 <label style={{ color: '#64748b', fontSize: '0.875rem', display: 'block', marginBottom: '4px' }}>Project Name</label>
                                 <div style={{ fontWeight: '600', color: '#1e293b' }}>{application.projectName}</div>

@@ -172,7 +172,7 @@ const NOCDashboard = () => {
 
     const recentApplications = (dashboardData?.recentApplications || []).map(app => ({
         id: app.applicationNumber || app.trackingId,
-        type: app.applicationType === 'NEW' ? 'Fresh NOC' : app.applicationType === 'RENEWAL' ? 'NOC Renewal' : app.applicationType,
+        type: app.applicationTypeName || (app.applicationType === 'NEW' ? 'Fresh NOC' : app.applicationType === 'RENEWAL' ? 'NOC Renewal' : app.applicationType),
         purpose: app.projectDetails?.projectName || 'N/A',
         submittedDate: formatDate(app.updatedAt),
         status: formatStatus(app.status),
@@ -401,16 +401,16 @@ const NOCDashboard = () => {
                                 <tbody>
                                     {recentApplications.map((app, index) => (
                                         <tr key={index}>
-                                            <td><strong className="text-blue">{app.id}</strong></td>
-                                            <td>{app.type}</td>
-                                            <td>{app.purpose}</td>
-                                            <td>{app.submittedDate}</td>
-                                            <td>
+                                            <td data-label="Application ID"><strong className="text-blue">{app.id}</strong></td>
+                                            <td data-label="Type">{app.type}</td>
+                                            <td data-label="Purpose">{app.purpose}</td>
+                                            <td data-label="Submitted Date">{app.submittedDate}</td>
+                                            <td data-label="Status">
                                                 <span className={`status-badge ${app.statusClass || (app.status === 'Exempt' ? 'success' : 'info')}`}>
                                                     {app.status}
                                                 </span>
                                             </td>
-                                            <td>
+                                            <td data-label="Actions">
                                                 <button
                                                     className="table-action-btn"
                                                     onClick={() => {

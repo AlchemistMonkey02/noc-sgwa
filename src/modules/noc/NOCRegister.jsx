@@ -103,13 +103,14 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
             // Map document type
             let docType = 'OTHER';
             const selectedType = formData.applicantInfo.idProofType;
-            if (selectedType === 'Aadhaar') docType = 'AADHAR';
-            else if (selectedType === 'PAN') docType = 'PAN';
-            else if (selectedType === 'VoterID') docType = 'VOTER_ID';
+            if (selectedType === 'Aadhaar Card') docType = 'AADHAAR';
+            else if (selectedType === 'PAN Card') docType = 'PAN';
+            else if (selectedType === 'Voter ID') docType = 'VOTER_ID';
 
             formDataUpload.append('documentType', docType);
 
-            const response = await fetch(`${API_BASE_URL}/documents/upload/single`, {
+            // Use public upload endpoint
+            const response = await fetch(`${API_BASE_URL}/public/documents/upload`, {
                 method: 'POST',
                 // Note: Do NOT set Content-Type header for FormData, browser does it automatically with boundary
                 body: formDataUpload
@@ -144,6 +145,32 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
             setIsUploading(false);
         }
     };
+
+    // Claim uploaded document after successful registration
+    const claimDocument = async (documentId, token) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/documents/${documentId}/claim`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                console.log('Document claimed successfully');
+                return true;
+            } else {
+                const errorData = await response.json();
+                console.error('Failed to claim document:', errorData.message);
+                return false;
+            }
+        } catch (error) {
+            console.error('Error claiming document:', error);
+            return false;
+        }
+    };
+
 
     // Generate captcha on mount
     useEffect(() => {
@@ -495,6 +522,25 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                     const result = await response.json();
                     console.log('Registration success:', result);
 
+                    // Claim uploaded document if exists
+                    if (formData.applicantInfo.idProofDocumentId) {
+                        // Extract token from response
+                        const token = result.data?.token || result.token;
+
+                        if (token) {
+                            console.log('Claiming uploaded document...');
+                            const claimSuccess = await claimDocument(formData.applicantInfo.idProofDocumentId, token);
+
+                            if (claimSuccess) {
+                                console.log('Document successfully linked to user account');
+                            } else {
+                                console.warn('Document claim failed, but registration succeeded');
+                            }
+                        } else {
+                            console.warn('No token received, cannot claim document');
+                        }
+                    }
+
                     // Show success message with username
                     const successMessage = `🎉 Registration Successful!\n\nYour account has been created successfully.\n\nUsername: ${formData.loginCredentials.preferredUsername}\n\nPlease login with your credentials.`;
                     alert(successMessage);
@@ -774,7 +820,7 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                                     </div>
                                 </div>
 
-                                <div className="reg-row" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                                <div className="reg-row reg-grid-2">
                                     <div className="form-group">
                                         <label className="reg-label">Date of Birth <span className="required">*</span></label>
                                         <input
@@ -905,7 +951,6 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                                             {uploadSuccess && <span style={{ color: 'green', fontSize: '1.2rem' }}>✓</span>}
                                         </div>
                                         {uploadError && <span className="error-message" style={{ color: 'red', fontSize: '0.875rem' }}>{uploadError}</span>}
-                                        {formData.applicantInfo.idProofDocumentId && <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Document ID: {formData.applicantInfo.idProofDocumentId}</span>}
                                     </div>
                                 </div>
                             </div>

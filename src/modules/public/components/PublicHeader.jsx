@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { EXTERNAL_URLS } from '../../../config/constants';
@@ -7,11 +7,17 @@ import './PublicHeader.css';
 const PublicHeader = () => {
     const { isAuthenticated, user, logout } = useAuth();
     const navigate = useNavigate();
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const handleLogout = async (e) => {
         e.preventDefault();
         await logout();
         navigate('/noc/login');
+        setIsMenuOpen(false);
+    };
+
+    const toggleMenu = () => {
+        setIsMenuOpen(!isMenuOpen);
     };
 
     return (
@@ -61,20 +67,29 @@ const PublicHeader = () => {
                             className="header-emblem"
                             onError={(e) => e.target.style.display = 'none'}
                         />
+
+                        {/* Mobile Menu Toggle */}
+                        <button className="public-mobile-toggle" onClick={toggleMenu} aria-label="Toggle Menu">
+                            {isMenuOpen ? '✕' : '☰'}
+                        </button>
                     </div>
                 </div>
             </div>
 
             {/* Navigation Bar */}
-            <nav className="public-header-nav">
+            <nav className={`public-header-nav ${isMenuOpen ? 'open' : ''}`}>
                 <div className="public-header-container">
+                    <div className="mobile-menu-header">
+                        <span className="mobile-menu-title">Menu</span>
+                        <button className="mobile-close-btn" onClick={() => setIsMenuOpen(false)}>✕</button>
+                    </div>
                     <div className="nav-links-wrapper">
-                        <Link to="/">HOME</Link>
-                        <a href={EXTERNAL_URLS.ABOUT_URL} target="_blank" rel="noopener noreferrer">ABOUT DEPARTMENT</a>
-                        <a href={EXTERNAL_URLS.SERVICES_URL} target="_blank" rel="noopener noreferrer">SERVICES</a>
-                        <a href={EXTERNAL_URLS.GUIDELINES_URL} target="_blank" rel="noopener noreferrer">GUIDELINES</a>
-                        <a href={EXTERNAL_URLS.DOWNLOADS_URL} target="_blank" rel="noopener noreferrer">DOWNLOADS</a>
-                        <a href={EXTERNAL_URLS.CONTACT_URL} target="_blank" rel="noopener noreferrer">CONTACT US</a>
+                        <Link to="/" onClick={() => setIsMenuOpen(false)}>HOME</Link>
+                        <a href={EXTERNAL_URLS.ABOUT_URL} target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>ABOUT DEPARTMENT</a>
+                        <a href={EXTERNAL_URLS.SERVICES_URL} target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>SERVICES</a>
+                        <a href={EXTERNAL_URLS.GUIDELINES_URL} target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>GUIDELINES</a>
+                        <a href={EXTERNAL_URLS.DOWNLOADS_URL} target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>DOWNLOADS</a>
+                        <a href={EXTERNAL_URLS.CONTACT_URL} target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>CONTACT US</a>
 
                         {isAuthenticated ? (
                             <>
@@ -83,13 +98,15 @@ const PublicHeader = () => {
                             </>
                         ) : (
                             <>
-                                <Link to="/noc/login" className="nav-btn-link-login">LOGIN</Link>
-                                <Link to="/noc/register" className="nav-btn-link-register">REGISTER</Link>
+                                <Link to="/noc/login" className="nav-btn-link-login" onClick={() => setIsMenuOpen(false)}>LOGIN</Link>
+                                <Link to="/noc/register" className="nav-btn-link-register" onClick={() => setIsMenuOpen(false)}>REGISTER</Link>
                             </>
                         )}
                     </div>
                 </div>
             </nav>
+            {/* Backdrop for mobile */}
+            {isMenuOpen && <div className="public-nav-backdrop" onClick={() => setIsMenuOpen(false)}></div>}
         </header>
     );
 };

@@ -154,109 +154,183 @@
 }
 
 /* ===== NAVIGATION BAR ===== */
+/* Hamburger Toggle Button - Visible everywhere now */
+.public-mobile-toggle {
+    display: block;
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #1a237e;
+    padding: 8px;
+    margin-left: 15px;
+    border-radius: 4px;
+    transition: background 0.3s;
+}
+
+.public-mobile-toggle:hover {
+    background: rgba(26, 35, 126, 0.1);
+}
+
+/* Navigation Drawer - Standard for all screens */
 .public-header-nav {
-    background: #1a237e;
-    /* Navy Blue */
-    width: 100%;
+    display: block;
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 100vh;
+    background: white;
+    z-index: 1010;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: -5px 0 25px rgba(0, 0, 0, 0.15);
+    overflow-y: auto;
+    padding-top: 0;
+}
+
+.public-header-nav.open {
+    transform: translateX(0);
 }
 
 .public-header-nav .public-header-container {
+    display: block;
+    padding: 0;
+}
+
+/* Mobile Menu Header */
+.mobile-menu-header {
     display: flex;
-    justify-content: flex-start;
-    padding: 0 40px;
-    /* Align with main header */
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    background: #1a237e;
+    color: white;
+    margin-bottom: 10px;
+}
+
+.mobile-menu-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.mobile-close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: transform 0.2s;
+}
+
+.mobile-close-btn:hover {
+    transform: rotate(90deg);
 }
 
 .nav-links-wrapper {
     display: flex;
+    flex-direction: column;
     width: 100%;
-    /* justify-content: flex-end; Optional: if you want nav to right */
+    padding: 10px 0;
+}
+
+.public-header-nav a {
+    display: block;
+    width: 100%;
+    padding: 16px 25px;
+    color: #333;
+    border-right: none;
+    border-bottom: 1px solid #f0f0f0;
+    text-align: left;
+    font-size: 15px;
+    font-weight: 500;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.public-header-nav a:hover {
+    background: #f8f9fa;
+    color: #1a237e;
+    padding-left: 30px;
+}
+
+.public-header-nav a::after {
+    display: none;
+}
+
+.public-header-nav a:last-child {
+    border-bottom: none;
+}
+
+/* Buttons in menu */
+.nav-btn-link-login,
+.nav-btn-link-register,
+.nav-btn-link-logout {
+    margin: 15px 25px 5px !important;
+    width: calc(100% - 50px) !important;
+    display: block !important;
+    text-align: center;
+    border-radius: 6px;
+    padding: 12px !important;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
 }
 
 .nav-btn-link-login {
-    margin-left: auto;
+    background: #1a237e;
+    color: white !important;
+}
+
+.nav-btn-link-register {
+    background: white;
+    border: 1px solid #1a237e;
+    color: #1a237e !important;
 }
 
 .nav-btn-link-logout {
     background: transparent !important;
-    color: rgba(255, 255, 255, 0.9) !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
-    padding: 8px 20px !important;
-    font-size: 14px;
-    font-weight: 600;
-    font-family: inherit;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    margin-left: auto;
-    /* Pushes button to the far right */
-    margin-right: 0;
-    /* Ensures no extra spacing on the right */
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border-radius: 4px;
+    color: #333 !important;
+    border: 1px solid #ddd !important;
 }
 
 .nav-btn-link-logout:hover {
     background: #d32f2f !important;
-    border-color: #d32f2f !important;
     color: white !important;
-    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
-    transform: translateY(-1px);
+    border-color: #d32f2f !important;
 }
 
-.nav-btn-link-logout:active {
-    transform: translateY(0);
-}
 
-.public-header-nav a {
-    color: white;
-    text-decoration: none;
-    padding: 12px 20px;
-    font-size: 14px;
-    font-weight: 500;
-    border-right: 1px solid rgba(255, 255, 255, 0.2);
-    display: inline-block;
-    transition: background 0.3s;
-}
-
-.public-header-nav a:hover {
-    background: rgba(255, 255, 255, 0.1);
-}
-
-.public-header-nav a:last-child {
-    border-right: none;
-}
-
-.public-header-nav a:hover {
-    background: rgba(255, 255, 255, 0.15);
-}
-
-.public-header-nav a::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
+.public-nav-backdrop {
+    position: fixed;
+    top: 0;
     left: 0;
-    right: 0;
-    height: 3px;
-    background: white;
-    transform: scaleX(0);
-    transition: transform 0.3s;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1005;
+    backdrop-filter: blur(2px);
+    animation: fadeIn 0.3s ease-out;
 }
 
-.public-header-nav a:hover::after {
-    transform: scaleX(1);
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
-/* Active Link */
-.public-header-nav a.active {
-    background: rgba(255, 255, 255, 0.2);
-}
 
-.public-header-nav a.active::after {
-    transform: scaleX(1);
-}
-
-/* ===== RESPONSIVE DESIGN ===== */
+/* ===== RESPONSIVE DESIGN RESTRICTIONS ===== */
+/* Adjustments for smaller screens that affect OTHER elements only */
 
 @media (max-width: 1200px) {
     .public-header-container {
@@ -264,7 +338,7 @@
     }
 
     .public-header-top .public-header-container {
-        padding: 1rem 1.5rem;
+        padding: 5px 1.5rem;
     }
 
     .public-dept-info h1 {
@@ -274,127 +348,76 @@
     .public-search-box input {
         width: 180px;
     }
-
-    .public-header-nav a {
-        padding: 14px 24px;
-        font-size: 13px;
-    }
 }
 
 @media (max-width: 992px) {
-    .public-header-top .public-header-container {
-        padding: 12px 1rem;
+    .public-header-main {
+        padding: 10px 0;
     }
 
-    .public-dept-logo .public-logo-circle {
-        width: 60px;
-        height: 60px;
+    .header-dept-logo {
+        height: 50px;
+        width: 50px;
+        margin-right: 10px;
     }
 
-    .public-raj-emblem .public-emblem-circle {
-        width: 55px;
-        height: 55px;
+    .header-emblem {
+        height: 45px;
+        width: auto;
+        margin-left: 10px;
     }
 
-    .public-dept-info h1 {
+    .public-brand-text h1 {
         font-size: 1rem;
     }
 
-    .public-dept-info p {
+    .public-brand-text p {
         font-size: 0.75rem;
     }
 
-    .public-search-box input {
-        width: 150px;
+    /* Force hide search and helpline on mobile/tablet */
+    .public-search-wrapper,
+    .header-helpline,
+    .helpline-label,
+    .helpline-time {
+        display: none !important;
     }
 
-    .public-helpline-info {
-        display: none;
-    }
-
-    .public-header-nav a {
-        padding: 12px 20px;
-        font-size: 12px;
+    /* Ensure toggle is visible */
+    .public-mobile-toggle {
+        display: block !important;
+        margin-left: auto;
+        /* Push to right */
     }
 }
 
 @media (max-width: 768px) {
-    .public-header-top .public-header-container {
-        flex-direction: column;
-        gap: 15px;
-        padding: 15px 1rem;
+    .public-brand-area {
+        gap: 10px;
     }
 
-    .public-header-brand {
-        gap: 15px;
+    .header-dept-logo {
+        height: 40px;
+        width: 40px;
+        margin-right: 5px;
     }
 
-    .public-dept-logo .public-logo-circle {
-        width: 50px;
-        height: 50px;
+    .header-emblem {
+        height: 35px;
+        margin-left: 5px;
     }
 
-    .public-raj-emblem .public-emblem-circle {
-        width: 50px;
-        height: 50px;
+    .public-brand-text h1 {
+        font-size: 0.9rem;
+        line-height: 1.1;
     }
 
-    .public-dept-info h1 {
-        font-size: 0.875rem;
+    .public-brand-text p {
+        display: none;
     }
 
-    .public-dept-info p {
-        font-size: 0.6875rem;
-    }
-
-    .public-header-right {
-        gap: 15px;
-        width: 100%;
-        justify-content: space-between;
-    }
-
-    .public-search-box {
-        flex: 1;
-    }
-
-    .public-search-box input {
-        width: 100%;
-    }
-
-    .public-header-nav .public-header-container {
-        overflow-x: auto;
-        justify-content: flex-start;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .public-header-nav a {
-        padding: 12px 16px;
-        font-size: 11px;
-        white-space: nowrap;
-    }
-}
-
-@media (max-width: 576px) {
-    .public-dept-info h1 {
-        font-size: 0.75rem;
-    }
-
-    .public-dept-info p {
-        font-size: 0.625rem;
-    }
-
-    .public-dept-logo .public-logo-circle {
-        width: 45px;
-        height: 45px;
-    }
-
-    .public-raj-emblem .public-emblem-circle {
-        width: 45px;
-        height: 45px;
-    }
-
-    .public-header-nav a {
-        padding: 10px 14px;
-        font-size: 10px;
+    .public-header-nav {
+        /* Prevent previous overflow overrides */
+        overflow: hidden;
     }
 }

@@ -365,10 +365,14 @@ body {
 }
 
 /* Responsive Handling */
+/* Responsive Handling */
 @media (max-width: 1024px) {
     .portal-main {
         grid-template-columns: 1fr;
         /* Switch to single column stack */
+        margin-top: 120px;
+        /* Reduced from 180px */
+        gap: 1.5rem;
     }
 
     .left-sidebar,
@@ -377,7 +381,6 @@ body {
         /* Move sidebars below content or adjust as needed */
     }
 
-    /* Usually Header -> Content -> Sidebars or Header -> Sidebar -> Content */
     /* For mobile: Stack everything vertically */
     .center-content {
         order: 1;
@@ -387,8 +390,37 @@ body {
         order: 2;
     }
 
+    .login-panel {
+        order: 3;
+        /* Login at bottom or top depending on preference, usually top for access */
+        position: static;
+        /* Remove sticky on mobile */
+        margin-bottom: 2rem;
+    }
+
     .right-sidebar {
         order: 3;
+    }
+}
+
+@media (max-width: 768px) {
+    .portal-main {
+        margin-top: 100px;
+        /* Further reduced */
+    }
+
+    .services-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        /* Smaller cards */
+        gap: 1rem;
+    }
+
+    .service-card-gov {
+        padding: 1rem;
+    }
+
+    .section-title {
+        font-size: 1.25rem;
     }
 }
 

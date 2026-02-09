@@ -3,6 +3,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { NavLink } from 'react-router-dom';
 import { EXTERNAL_URLS } from '../../../config/constants';
 import '../styles/noc-portal.css';
+import './NOCHeader.css';
 
 const NOCHeader = () => {
     const { isAuthenticated, user, logout } = useAuth();
@@ -74,7 +75,7 @@ const NOCHeader = () => {
                         </div>
 
                         {/* Right Logo */}
-                        <div className="rgwa-logo-right" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+                        <div className="rgwa-logo-right">
                             <img
                                 src={EXTERNAL_URLS.EMBLEM_URL}
                                 alt="Emblem"

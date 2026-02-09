@@ -1121,29 +1121,47 @@ const NOCApplication = () => {
             } else if (currentStep === 2) {
                 if (!applicationId) throw new Error("Application ID missing for Step 2");
 
+                // Helper functions to ensure we send Names not IDs
+                const getStateName = () => {
+                    const match = stateOptions.find(o => String(o.stateId || o.id) === String(formData.state));
+                    return match ? (match.stateName || match.name) : (formData.state === 'RJ' ? 'RAJASTHAN' : formData.state);
+                };
+
+                const getDistrictName = () => {
+                    const match = districtOptions.find(o => String(o.districtId || o.id) === String(formData.district));
+                    return match ? (match.districtName || match.name) : formData.district;
+                };
+
+                const getBlockName = () => {
+                    // Try availableBlocks first, then blockOptions
+                    const ops = availableBlocks.length > 0 ? availableBlocks : blockOptions;
+                    const match = ops.find(o => String(o.blockId || o.id || o.code) === String(formData.block));
+                    return match ? (match.blockName || match.name) : formData.block;
+                };
+
+                const stateName = getStateName();
+                const districtName = getDistrictName();
+                const blockName = getBlockName();
+
                 const locationPayload = {
                     location: {
-                        stateId: "27", // Example mapping
-                        districtId: "12",
-                        blockId: "004",
-                        state: formData.state,
-                        district: formData.district,
-                        block: formData.block,
+                        stateId: stateName, // Sending Name as requested
+                        districtId: districtName,
+                        blockId: blockName,
                         tehsil: formData.tehsil,
-                        assessmentUnit: formData.assessmentUnit,
-                        relevantBlocks: formData.relevantBlocks,
-                        projectAddress: formData.projectAddress,
+                        village: formData.village || '', // New field mapping
+                        address: formData.projectAddress, // Mapped from projectAddress
                         pincode: formData.pincode,
-                        geology: formData.geology === 'Other' ? formData.otherGeology : formData.geology,
                         latitude: parseFloat(formData.latitude),
                         longitude: parseFloat(formData.longitude)
                     },
                     projectDetails: {
-                        projectName: formData.projectName, // Update project name
-                        totalLandArea: parseFloat(formData.totalLandArea),
-                        greenBeltArea: parseFloat(formData.greenBeltArea),
-                        isNearWetland: formData.wetlandAreasName ? true : false,
-                        wetlandName: formData.wetlandAreasName
+                        landArea: parseFloat(formData.landUseTotalArea || 0),
+                        builtUpArea: parseFloat(formData.landUseRooftopArea || 0) + parseFloat(formData.landUsePavedArea || 0),
+                        openLandArea: parseFloat(formData.landUseGreenBeltArea || 0) + parseFloat(formData.landUseOpenArea || 0)
+                    },
+                    hydrogeology: {
+                        aquiferType: formData.aquiferType || ''
                     }
                 };
 
@@ -2340,7 +2358,7 @@ const NOCApplication = () => {
                                         </div>
                                     )}
 
-                                    <div className="noc-form-row">
+                                    <div className="noc-form-row two-col">
                                         <div className="noc-form-group">
                                             <label className="bhuneer-label required">Assessment Unit</label>
                                             <select
@@ -2365,6 +2383,70 @@ const NOCApplication = () => {
                                                 )}
                                             </select>
                                             {errors.assessmentUnit && <span className="bhuneer-error">{errors.assessmentUnit}</span>}
+
+                                            {/* Display Selected Assessment Unit Category */}
+                                            {(() => {
+                                                const selectedUnit = assessmentUnitOptions.find(u =>
+                                                    (typeof u === 'object' ? (u.name === formData.assessmentUnit || u.assessmentUnitName === formData.assessmentUnit) : u === formData.assessmentUnit)
+                                                );
+
+                                                if (selectedUnit && selectedUnit.category) {
+                                                    const cat = selectedUnit.category.toUpperCase();
+                                                    const styles = {
+                                                        'SAFE': { bg: '#d4edda', color: '#155724' },
+                                                        'SEMI_CRITICAL': { bg: '#fff3cd', color: '#856404' },
+                                                        'CRITICAL': { bg: '#f8d7da', color: '#721c24' },
+                                                        'OVER_EXPLOITED': { bg: '#f5c6cb', color: '#721c24' }
+                                                    };
+                                                    const style = styles[cat] || { bg: '#e2e3e5', color: '#383d41' };
+
+                                                    return (
+                                                        <div style={{
+                                                            marginTop: '10px',
+                                                            padding: '10px 15px',
+                                                            backgroundColor: style.bg,
+                                                            color: style.color,
+                                                            borderRadius: '6px',
+                                                            fontWeight: '600',
+                                                            fontSize: '0.9rem'
+                                                        }}>
+                                                            Category: {cat.replace('_', ' ')}
+                                                        </div>
+                                                    );
+                                                }
+                                                return null;
+                                            })()}
+                                        </div>
+
+                                        {/* Aquifer Type */}
+                                        <div className="noc-form-group">
+                                            <label className="bhuneer-label">Aquifer Type</label>
+                                            <select
+                                                name="aquiferType"
+                                                className={`bhuneer-input ${errors.aquiferType ? 'error' : ''}`}
+                                                value={formData.aquiferType || ''}
+                                                onChange={handleChange}
+                                            >
+                                                <option value="">Select Aquifer Type</option>
+                                                <option value="Unconfined">Unconfined</option>
+                                                <option value="Confined">Confined</option>
+                                                <option value="Semi-Confined">Semi-Confined</option>
+                                                <option value="Perched">Perched</option>
+                                            </select>
+                                            {errors.aquiferType && <span className="bhuneer-error">{errors.aquiferType}</span>}
+                                        </div>
+
+                                        <div className="noc-form-group">
+                                            <label className="bhuneer-label">Village / Town</label>
+                                            <input
+                                                type="text"
+                                                name="village"
+                                                className={`bhuneer-input ${errors.village ? 'error' : ''}`}
+                                                value={formData.village || ''}
+                                                onChange={handleChange}
+                                                placeholder="Enter Village or Town name"
+                                            />
+                                            {errors.village && <span className="bhuneer-error">{errors.village}</span>}
                                         </div>
                                     </div>
 
@@ -3537,7 +3619,7 @@ const NOCApplication = () => {
                                     <div className="noc-card" style={{ marginBottom: '20px' }}>
                                         <div className="noc-card-header">2. Project & Location Details</div>
                                         <div className="noc-card-body">
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+                                            <div className="noc-form-row two-col">
                                                 <div>
                                                     <strong>Project Name:</strong> {formatDisplayValue(formData.projectName)}
                                                 </div>
@@ -3581,7 +3663,7 @@ const NOCApplication = () => {
                                     <div className="noc-card" style={{ marginBottom: '20px' }}>
                                         <div className="noc-card-header">3. Water Requirement Details</div>
                                         <div className="noc-card-body">
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+                                            <div className="noc-form-row two-col">
                                                 <div>
                                                     <strong>Daily Requirement:</strong> {formatDisplayValue(formData.dailyWaterRequirement)} {formData.dailyWaterRequirement ? 'm³/day' : ''}
                                                 </div>
@@ -3622,7 +3704,7 @@ const NOCApplication = () => {
                                     <div className="noc-card" style={{ marginBottom: '20px' }}>
                                         <div className="noc-card-header">4. Groundwater Structures</div>
                                         <div className="noc-card-body">
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+                                            <div className="noc-form-row two-col">
                                                 <div>
                                                     <strong>Proposed Borewells:</strong> {formData.proposedBorewells || 0}
                                                 </div>
@@ -3657,7 +3739,7 @@ const NOCApplication = () => {
                                     <div className="noc-card" style={{ marginBottom: '20px' }}>
                                         <div className="noc-card-header">5. Applicant Details</div>
                                         <div className="noc-card-body">
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+                                            <div className="noc-form-row two-col">
                                                 <div>
                                                     <strong>Applicant Name:</strong> {formatDisplayValue(formData.applicantName)}
                                                 </div>
@@ -3716,7 +3798,7 @@ const NOCApplication = () => {
                                     <div className="noc-card" style={{ marginBottom: '20px' }}>
                                         <div className="noc-card-header">7. Payment Details</div>
                                         <div className="noc-card-body">
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+                                            <div className="noc-form-row two-col">
                                                 <div>
                                                     <strong>Application Fee:</strong> ₹{formData.applicationFee?.toLocaleString('en-IN') || '0'}
                                                 </div>
@@ -3804,7 +3886,7 @@ const NOCApplication = () => {
                                     <div className="noc-card" style={{ marginBottom: '20px' }}>
                                         <div className="noc-card-header">1. Application Type & Basic Details</div>
                                         <div className="noc-card-body">
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+                                            <div className="noc-form-row two-col">
                                                 <div>
                                                     <strong>Application Type:</strong> {getDisplayLabel(formData.applicationType, appTypeOptions)}
                                                 </div>
@@ -3847,7 +3929,7 @@ const NOCApplication = () => {
                                     <div className="noc-card" style={{ marginBottom: '20px' }}>
                                         <div className="noc-card-header">2. Project & Location Details</div>
                                         <div className="noc-card-body">
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+                                            <div className="noc-form-row two-col">
                                                 <div>
                                                     <strong>Project Name:</strong> {formatDisplayValue(formData.projectName)}
                                                 </div>
@@ -3891,7 +3973,7 @@ const NOCApplication = () => {
                                     <div className="noc-card" style={{ marginBottom: '20px' }}>
                                         <div className="noc-card-header">3. Water Requirement Details</div>
                                         <div className="noc-card-body">
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+                                            <div className="noc-form-row two-col">
                                                 <div>
                                                     <strong>Daily Requirement:</strong> {formatDisplayValue(formData.dailyWaterRequirement)} {formData.dailyWaterRequirement ? 'm³/day' : ''}
                                                 </div>
@@ -3932,7 +4014,7 @@ const NOCApplication = () => {
                                     <div className="noc-card" style={{ marginBottom: '20px' }}>
                                         <div className="noc-card-header">4. Groundwater Structures</div>
                                         <div className="noc-card-body">
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+                                            <div className="noc-form-row two-col">
                                                 <div>
                                                     <strong>Proposed Borewells:</strong> {formData.proposedBorewells || 0}
                                                 </div>
@@ -3968,7 +4050,7 @@ const NOCApplication = () => {
                                         <div className="noc-card" style={{ marginBottom: '20px' }}>
                                             <div className="noc-card-header">5. Flow Meter Details</div>
                                             <div className="noc-card-body">
-                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+                                                <div className="noc-form-row two-col">
                                                     <div>
                                                         <strong>Manufacturer:</strong> {formData.flowMeterDetails.manufacturer}
                                                     </div>
@@ -4000,7 +4082,7 @@ const NOCApplication = () => {
                                     <div className="noc-card" style={{ marginBottom: '20px' }}>
                                         <div className="noc-card-header">6. Applicant Details</div>
                                         <div className="noc-card-body">
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+                                            <div className="noc-form-row two-col">
                                                 <div>
                                                     <strong>Applicant Name:</strong> {formatDisplayValue(formData.applicantName)}
                                                 </div>
@@ -4059,7 +4141,7 @@ const NOCApplication = () => {
                                     <div className="noc-card" style={{ marginBottom: '20px' }}>
                                         <div className="noc-card-header">8. Payment Details</div>
                                         <div className="noc-card-body">
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+                                            <div className="noc-form-row two-col">
                                                 <div>
                                                     <strong>Application Fee:</strong> ₹{formData.applicationFee?.toLocaleString('en-IN') || '0'}
                                                 </div>
@@ -4136,19 +4218,19 @@ const NOCApplication = () => {
                             )}
                         </div>
                     )}
+                    {/* Form Navigation - Only show for non-exempted users */}
+                    {!exemptionStatus || !exemptionStatus.isExempt ? (
+                        <FormNavigation
+                            currentStep={currentStep}
+                            totalSteps={dynamicFormSteps.length}
+                            onPrevious={handlePrevious}
+                            onNext={handleNext}
+                            onSubmit={handleSubmit}
+                            isLastStep={currentStep === dynamicFormSteps.length}
+                        />
+                    ) : null}
                 </div>
 
-                {/* Form Navigation - Only show for non-exempted users */}
-                {!exemptionStatus || !exemptionStatus.isExempt ? (
-                    <FormNavigation
-                        currentStep={currentStep}
-                        totalSteps={dynamicFormSteps.length}
-                        onPrevious={handlePrevious}
-                        onNext={handleNext}
-                        onSubmit={handleSubmit}
-                        isLastStep={currentStep === dynamicFormSteps.length}
-                    />
-                ) : null}
             </div>
 
             {/* Success Modal */}

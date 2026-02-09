@@ -258,13 +258,15 @@
         width: 150px;
     }
 
-    .helpline-info {
+    .helpline-info,
+    .search-box,
+    .raj-emblem {
         display: none;
     }
 
-    .header-nav a {
-        padding: 12px 20px;
-        font-size: 12px;
+    /* Hide Navigation on Mobile/Tablet */
+    .header-nav {
+        display: none !important;
     }
 }
 
@@ -315,18 +317,6 @@
 
     .search-box input {
         width: 100%;
-    }
-
-    .header-nav {
-        overflow-x: auto;
-        justify-content: flex-start;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .header-nav a {
-        padding: 12px 16px;
-        font-size: 11px;
-        white-space: nowrap;
     }
 }
 

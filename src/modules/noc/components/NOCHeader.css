@@ -1,0 +1,108 @@
+/* NOC Portal Header Styles */
+
+.rgwa-header-container {
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    position: relative;
+    z-index: 1000;
+}
+
+.rgwa-branding-section {
+    padding: 15px 0;
+    background: white;
+}
+
+.rgwa-branding-layout {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+.rgwa-logo-right {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.rgwa-logo-left img,
+.rgwa-logo-right img {
+    height: 75px;
+    width: auto;
+    object-fit: contain;
+}
+
+.rgwa-title-text {
+    text-align: center;
+    flex: 1;
+}
+
+.rgwa-title-text h1 {
+    color: #1a237e;
+    font-size: 1.5rem;
+    /* 24px */
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.rgwa-title-text p {
+    color: #555;
+    font-size: 1rem;
+    margin: 5px 0 0;
+    font-weight: 500;
+}
+
+/* Responsive Design */
+
+@media (max-width: 1024px) {
+    .rgwa-branding-layout {
+        padding: 0 15px;
+    }
+
+    .rgwa-title-text h1 {
+        font-size: 1.25rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .rgwa-branding-section {
+        padding: 10px 0;
+    }
+
+    .rgwa-branding-layout {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+
+    .rgwa-logo-left img,
+    .rgwa-logo-right img {
+        height: 60px;
+    }
+
+    .rgwa-title-text h1 {
+        font-size: 1.1rem;
+    }
+
+    .rgwa-title-text p {
+        font-size: 0.9rem;
+    }
+
+    /* Optimize order for mobile if needed, but column stack is usually fine 
+       (Logo - Title - Emblem) or (Title - Logo - Emblem) depending on preference.
+       Default DOM order is Left Logo -> Title -> Right Logo. 
+    */
+}
+
+@media (max-width: 480px) {
+    .rgwa-title-text h1 {
+        font-size: 1rem;
+    }
+
+    .rgwa-logo-left img,
+    .rgwa-logo-right img {
+        height: 50px;
+    }
+}

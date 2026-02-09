@@ -52,13 +52,21 @@ const LayoutWithSidebar = ({ children, showSidebar = true, defaultCollapsed = fa
 
             <PublicHeader />
 
+            {showSidebar && !isDesktop && sidebarOpen && (
+                <div
+                    className="sidebar-backdrop"
+                    onClick={() => setSidebarOpen(false)}
+                />
+            )}
+
             <div
                 className="main-content"
                 style={{
                     marginLeft: showSidebar && isDesktop ? (isCollapsed ? '80px' : '280px') : '0',
                     transition: 'margin-left 0.3s',
-                    minHeight: 'calc(100vh - 200px)',
-                    marginTop: '20px' // Reduced top margin
+                    minHeight: 'calc(100vh - 100px)',
+                    marginTop: '20px',
+                    padding: '20px'
                 }}
             >
                 {children}

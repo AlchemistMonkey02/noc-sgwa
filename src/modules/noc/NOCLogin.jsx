@@ -10,64 +10,43 @@ const NOCLogin = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [searchParams] = useSearchParams();
-    const { login, userType, selectUserType, user, loading: authLoading } = useAuth(); // Destructure properly
-    const [formData, setFormData] = useState({
-        username: '',
-        password: '',
-        captcha: ''
-    });
+    const { login, userType, selectUserType, user, loading: authLoading } = useAuth();
+    const [formData, setFormData] = useState({ username: '', password: '', captcha: '' });
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false); // Form loading state
+    const [loading, setLoading] = useState(false);
     const [flashMessage, setFlashMessage] = useState('');
 
-    // Check for flash message from redirection (e.g. logout)
     useEffect(() => {
         if (location.state?.flashMessage) {
             setFlashMessage(location.state.flashMessage);
-            // Optional: Clear state so it doesn't persist on refresh
             window.history.replaceState({}, document.title);
         }
     }, [location]);
 
-    // Redirect if already logged in
     useEffect(() => {
-        if (!authLoading && user) {
-            navigate('/noc/dashboard');
-        }
+        if (!authLoading && user) navigate('/noc/dashboard');
     }, [user, authLoading, navigate]);
 
-    // Auto-select service type from URL parameter
     useEffect(() => {
         const serviceParam = searchParams.get('service');
-        if (serviceParam && !userType) {
-            selectUserType(serviceParam);
-        }
+        if (serviceParam && !userType) selectUserType(serviceParam);
     }, [searchParams, userType, selectUserType]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        setFormData(prev => ({ ...prev, [name]: value }));
         setError('');
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        // Simple validation
         if (!formData.username || !formData.password || !formData.captcha) {
             setError('Please fill all required fields');
-            setLoading(false);
             return;
         }
-
         setLoading(true);
-
         try {
-            // Pass the selected userType to the login function
             const result = await login(formData.username, formData.password, userType);
             if (result.success) {
                 navigate('/noc/dashboard');
@@ -81,139 +60,82 @@ const NOCLogin = () => {
         }
     };
 
-
-
     return (
-        <div className="noc-portal" style={{ background: 'white', minHeight: '100vh' }}>
+        <div style={{ background: 'white', minHeight: '100vh' }}>
             {/* Flash Message Modal */}
             {flashMessage && (
                 <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'rgba(0,0,0,0.6)',
-                    zIndex: 9999,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backdropFilter: 'blur(2px)'
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.6)', zIndex: 9999,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    backdropFilter: 'blur(4px)'
                 }}>
-                    <div style={{
-                        background: 'white',
-                        padding: '30px',
-                        borderRadius: '12px',
-                        width: '90%',
-                        maxWidth: '400px',
-                        textAlign: 'center',
-                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                        border: '1px solid #e2e8f0',
-                        animation: 'fadeIn 0.3s ease-out'
-                    }}>
+                    <div className="auth-card" style={{ maxWidth: '400px', textAlign: 'center', animation: 'fadeIn 0.3s ease-out' }}>
                         <div style={{
-                            fontSize: '3rem',
-                            marginBottom: '15px',
-                            background: '#dcfce7',
-                            width: '80px',
-                            height: '80px',
-                            borderRadius: '50%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            margin: '0 auto 20px auto',
-                            color: '#166534'
+                            fontSize: '2.5rem', marginBottom: '1rem',
+                            background: flashMessage.toLowerCase().includes('error') ? '#fee2e2' : '#dcfce7',
+                            width: '72px', height: '72px', borderRadius: '50%',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            margin: '0 auto 1.25rem'
                         }}>
                             {flashMessage.toLowerCase().includes('error') || flashMessage.toLowerCase().includes('expired') ? '⚠️' : '✅'}
                         </div>
-                        <h3 style={{ margin: '0 0 10px 0', color: '#1e293b', fontSize: '1.25rem' }}>Notification</h3>
-                        <p style={{ color: '#64748b', marginBottom: '25px', lineHeight: '1.5' }}>
-                            {flashMessage}
-                        </p>
-                        <button
-                            onClick={() => setFlashMessage('')}
-                            style={{
-                                width: '100%',
-                                padding: '12px',
-                                background: '#0f172a',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '8px',
-                                cursor: 'pointer',
-                                fontWeight: '600',
-                                fontSize: '0.95rem',
-                                transition: 'background 0.2s'
-                            }}
-                            onMouseOver={(e) => e.target.style.background = '#1e293b'}
-                            onMouseOut={(e) => e.target.style.background = '#0f172a'}
-                        >
-                            Okay, Got it
-                        </button>
+                        <h3 style={{ margin: '0 0 0.625rem', color: '#1e293b', fontSize: '1.25rem', fontWeight: 700 }}>Notification</h3>
+                        <p style={{ color: '#64748b', marginBottom: '1.5rem', lineHeight: 1.6 }}>{flashMessage}</p>
+                        <button className="auth-btn" onClick={() => setFlashMessage('')}>Okay, Got it</button>
                     </div>
                 </div>
             )}
 
             <NOCHeader />
 
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 20px', background: '#fff' }}>
-                <div style={{
-                    width: '100%',
-                    maxWidth: '480px',
-                    background: 'white',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 25px rgba(0,0,0,0.08)',
-                    padding: '40px',
-                    border: '1px solid #f1f5f9'
-                }}>
-                    <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
+            {/* Login Area */}
+            <div className="auth-page-wrapper" style={{ background: 'linear-gradient(135deg, #f0f4f8 0%, #e8f0fe 60%, #dbeafe 100%)', minHeight: 'calc(100vh - 140px)' }}>
+                <div className="auth-card">
+                    {/* Logo / Icon */}
+                    <div className="auth-logo-area">
+                        <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>
                             {userType ? getUserTypeIcon(userType) : '💧'}
                         </div>
-                        <h2 style={{ color: '#0f4c81', margin: '0 0 10px 0', fontSize: '1.8rem', fontWeight: '700' }}>
-                            {userType ? `${getUserTypeDisplayName(userType)} Login` : 'Ground Water Department Login'}
-                        </h2>
-                        <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0 }}>
-                            Login to Ground Water Department Portal
-                        </p>
-                        <div style={{ width: '60px', height: '3px', background: '#f1f5f9', margin: '15px auto' }}></div>
+                        <h2>{userType ? `${getUserTypeDisplayName(userType)} Login` : 'Ground Water Department Login'}</h2>
+                        <p>Login to Ground Water Department Portal</p>
+                        <div style={{ width: '50px', height: '3px', background: 'linear-gradient(90deg, #1e3a8a, #2563eb)', margin: '0.75rem auto 0', borderRadius: '999px' }} />
                     </div>
 
+                    {/* Error Message */}
                     {error && (
-                        <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px', borderRadius: '4px', marginBottom: '20px', fontSize: '0.85rem' }}>
-                            {error}
+                        <div style={{
+                            background: '#fee2e2', color: '#b91c1c',
+                            padding: '0.75rem 1rem', borderRadius: '8px',
+                            marginBottom: '1.25rem', fontSize: '0.875rem',
+                            display: 'flex', alignItems: 'center', gap: '0.5rem',
+                            border: '1px solid #fca5a5'
+                        }}>
+                            <span>⚠️</span> {error}
                         </div>
                     )}
 
                     <form onSubmit={handleSubmit}>
-
                         {/* Username */}
-                        <div style={{ marginBottom: '20px' }}>
-                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#334155', marginBottom: '8px' }}>
-                                Username / Email ID <span style={{ color: 'red' }}>*</span>
+                        <div className="auth-form-group">
+                            <label className="auth-label">
+                                Username / Email ID <span style={{ color: '#ef4444' }}>*</span>
                             </label>
                             <input
                                 type="text"
                                 name="username"
                                 value={formData.username}
                                 onChange={handleChange}
-                                style={{
-                                    width: '100%',
-                                    padding: '12px 15px',
-                                    borderRadius: '6px',
-                                    border: '1px solid #e2e8f0',
-                                    background: '#eff6ff',
-                                    fontSize: '0.95rem',
-                                    fontWeight: '500',
-                                    color: '#0f172a',
-                                    boxSizing: 'border-box'
-                                }}
+                                className="auth-input"
+                                placeholder="Enter your username or email"
+                                autoComplete="username"
                             />
                         </div>
 
                         {/* Password */}
-                        <div style={{ marginBottom: '20px' }}>
-                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#334155', marginBottom: '8px' }}>
-                                Password <span style={{ color: 'red' }}>*</span>
+                        <div className="auth-form-group">
+                            <label className="auth-label">
+                                Password <span style={{ color: '#ef4444' }}>*</span>
                             </label>
                             <div style={{ position: 'relative' }}>
                                 <input
@@ -221,20 +143,20 @@ const NOCLogin = () => {
                                     name="password"
                                     value={formData.password}
                                     onChange={handleChange}
-                                    style={{
-                                        width: '100%',
-                                        padding: '12px 15px',
-                                        borderRadius: '6px',
-                                        border: '1px solid #e2e8f0',
-                                        background: '#eff6ff',
-                                        fontSize: '0.95rem',
-                                        boxSizing: 'border-box'
-                                    }}
+                                    className="auth-input"
+                                    placeholder="Enter your password"
+                                    style={{ paddingRight: '2.75rem' }}
+                                    autoComplete="current-password"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer' }}
+                                    style={{
+                                        position: 'absolute', right: '0.75rem', top: '50%',
+                                        transform: 'translateY(-50%)', border: 'none',
+                                        background: 'transparent', cursor: 'pointer',
+                                        fontSize: '1rem', color: '#94a3b8', padding: 0
+                                    }}
                                 >
                                     {showPassword ? '🙈' : '👁️'}
                                 </button>
@@ -242,20 +164,18 @@ const NOCLogin = () => {
                         </div>
 
                         {/* Captcha */}
-                        <div style={{ marginBottom: '25px' }}>
-                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#334155', marginBottom: '8px' }}>
-                                Enter Captcha <span style={{ color: 'red' }}>*</span>
+                        <div className="auth-form-group">
+                            <label className="auth-label">
+                                Enter Captcha <span style={{ color: '#ef4444' }}>*</span>
                             </label>
-                            <div style={{ display: 'flex', gap: '15px' }}>
+                            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'stretch' }}>
                                 <div style={{
-                                    background: '#f1f5f9',
-                                    padding: '10px 20px',
-                                    borderRadius: '6px',
-                                    fontWeight: '700',
-                                    fontSize: '1.1rem',
-                                    letterSpacing: '5px',
-                                    fontFamily: 'monospace',
-                                    userSelect: 'none'
+                                    background: '#f1f5f9', padding: '0.625rem 1.25rem',
+                                    borderRadius: '8px', fontWeight: '700', fontSize: '1.1rem',
+                                    letterSpacing: '6px', fontFamily: 'monospace',
+                                    userSelect: 'none', border: '1.5px solid #d1d5db',
+                                    display: 'flex', alignItems: 'center', flexShrink: 0,
+                                    color: '#1e3a8a'
                                 }}>
                                     5 A 7 K 9
                                 </div>
@@ -265,47 +185,38 @@ const NOCLogin = () => {
                                     placeholder="Enter captcha"
                                     value={formData.captcha}
                                     onChange={handleChange}
-                                    style={{
-                                        flex: 1,
-                                        padding: '10px 15px',
-                                        borderRadius: '6px',
-                                        border: '1px solid #e2e8f0',
-                                        background: 'white'
-                                    }}
+                                    className="auth-input"
+                                    style={{ flex: 1 }}
                                 />
                             </div>
                         </div>
 
+                        {/* Submit */}
                         <button
                             type="submit"
-                            style={{
-                                width: '100px',
-                                padding: '10px 20px',
-                                background: '#1e3a8a',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '6px',
-                                fontWeight: '600',
-                                cursor: 'pointer',
-                                fontSize: '0.95rem'
-                            }}
+                            className="auth-btn"
                             disabled={loading}
+                            style={{ marginTop: '0.75rem' }}
                         >
-                            {loading ? '...' : 'Login'}
+                            {loading ? '⏳ Logging in...' : '🔒 Login'}
                         </button>
-
                     </form>
 
-                    <div style={{ marginTop: '30px', textAlign: 'center', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <a href="#" style={{ color: '#0f4c81', textDecoration: 'none', fontWeight: '600' }}>Forgot Password?</a>
+                    {/* Footer Links */}
+                    <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.875rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                        <Link to="/forgot-password" style={{ color: '#2563eb', fontWeight: 600, textDecoration: 'none' }}>
+                            Forgot Password?
+                        </Link>
                         <div style={{ color: '#64748b' }}>
-                            Don't have an account? <Link to="/noc/register" style={{ color: '#0f4c81', textDecoration: 'none', fontWeight: '600' }}>Register New Account</Link>
+                            Don't have an account?{' '}
+                            <Link to="/noc/register" style={{ color: '#2563eb', fontWeight: 600, textDecoration: 'none' }}>
+                                Register New Account
+                            </Link>
                         </div>
-                        <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #e2e8f0' }}>
-                            <Link to="/role-selection" style={{ color: '#64748b', textDecoration: 'none', fontSize: '0.85rem' }}>← Change Service Type</Link>
-                        </div>
-                        <div>
-                            <Link to="/" style={{ color: '#64748b', textDecoration: 'none', fontSize: '0.85rem' }}>← Back to Public Portal</Link>
+                        <div style={{ marginTop: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+                            <Link to="/role-selection" style={{ color: '#6b7280', textDecoration: 'none', fontSize: '0.8125rem' }}>← Change Service Type</Link>
+                            <span style={{ color: '#d1d5db' }}>|</span>
+                            <Link to="/" style={{ color: '#6b7280', textDecoration: 'none', fontSize: '0.8125rem' }}>← Public Portal</Link>
                         </div>
                     </div>
                 </div>

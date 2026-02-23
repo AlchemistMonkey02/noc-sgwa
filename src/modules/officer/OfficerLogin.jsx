@@ -1,192 +1,237 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-// import { setOfficerToken, setOfficerRole, setOfficerData, setOfficerRefreshToken } from './shared/utils/officerAuth'; // Now handled by context
 import './shared/styles/officer-portal.css';
+import './OfficerLogin.css';
 
-import API_BASE_URL from '../../config/apiConfig';
+const ROLES = [
+    {
+        value: 'DGO',
+        label: 'DGO',
+        full: 'District Groundwater Officer',
+        icon: '🏛️',
+        color: '#1e3a8a',
+        bg: '#eff6ff'
+    },
+    {
+        value: 'SGWA',
+        label: 'SGWA',
+        full: 'State Groundwater Authority',
+        icon: '🌊',
+        color: '#065f46',
+        bg: '#ecfdf5'
+    },
+    {
+        value: 'ENFORCEMENT',
+        label: 'Enforcement',
+        full: 'Enforcement Wing Officer',
+        icon: '⚖️',
+        color: '#92400e',
+        bg: '#fffbeb'
+    },
+    {
+        value: 'INSPECTION',
+        label: 'Inspection',
+        full: 'Inspection Officer',
+        icon: '🔍',
+        color: '#581c87',
+        bg: '#faf5ff'
+    }
+];
 
 const OfficerLogin = () => {
     const navigate = useNavigate();
-    const [formData, setFormData] = useState({
-        username: '',
-        password: '',
-        role: 'DGO'
-    });
+    const location = useLocation();
+    const [formData, setFormData] = useState({ username: '', password: '', role: 'DGO' });
+    const [showPassword, setShowPassword] = useState(false);
+    const [showCreds, setShowCreds] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const { login } = useAuth();
 
-    const { login } = useAuth(); // Use auth context
+    // Pre-fill role if redirected from public portal
+    useEffect(() => {
+        if (location.state?.prefilledRole) {
+            setFormData(prev => ({ ...prev, role: location.state.prefilledRole }));
+        }
+    }, [location.state]);
+
+    const selectedRole = ROLES.find(r => r.value === formData.role) || ROLES[0];
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
-
         try {
-            console.log('Attempting login with:', { username: formData.username, role: formData.role });
-
-            // Call login from AuthContext
             const result = await login(formData.username, formData.password, formData.role);
-
             if (result.success) {
-                console.log('Login successful, modifying local state if needed (handled by context)');
-
-                // Redirect based on validated role
-                const dashboardRoutes = {
-                    'DGO': '/officer/dgo/dashboard',
-                    'SGWA': '/officer/sgwa/dashboard',
-                    'ENFORCEMENT': '/officer/enforcement/dashboard',
-                    'INSPECTION': '/officer/inspection/dashboard'
+                const routes = {
+                    DGO: '/officer/dgo/dashboard',
+                    SGWA: '/officer/sgwa/dashboard',
+                    ENFORCEMENT: '/officer/enforcement/dashboard',
+                    INSPECTION: '/officer/inspection/dashboard'
                 };
-
-                const redirectUrl = dashboardRoutes[formData.role] || '/officer/login'; // Fallback
-                navigate(redirectUrl);
+                navigate(routes[formData.role] || '/officer/login');
             } else {
-                setError(result.error);
+                setError(result.error || 'Invalid credentials. Please try again.');
             }
-        } catch (err) {
-            console.error('Login error:', err);
-            setError('Login failed. Please check your connection and try again.');
+        } catch {
+            setError('Network error. Please check your connection.');
         } finally {
             setLoading(false);
         }
     };
 
-
     return (
-        <div style={{
-            minHeight: '100vh',
-            background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #60a5fa 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '2rem'
-        }}>
-            <div style={{
-                background: 'white',
-                borderRadius: '16px',
-                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
-                padding: '3rem',
-                maxWidth: '500px',
-                width: '100%'
-            }}>
-                {/* Header */}
-                <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                    <h1 style={{
-                        fontSize: '2rem',
-                        fontWeight: '700',
-                        color: 'var(--officer-primary)',
-                        margin: '0 0 0.5rem 0'
-                    }}>
-                        Officer Portal Login
-                    </h1>
-                    <p style={{
-                        fontSize: '1rem',
-                        color: 'var(--officer-text-light)',
-                        margin: 0
-                    }}>
-                        State Groundwater Authority, Rajasthan
-                    </p>
+        <div className="ol-page">
+            {/* Left decorative panel */}
+            <div className="ol-left">
+                <div className="ol-left-emblem">
+                    <img
+                        src="/logos/india-emblem.png"
+                        alt="Emblem of India"
+                        className="ol-emblem-img"
+                        onError={e => e.target.style.display = 'none'}
+                    />
+                </div>
+                <h2 className="ol-left-title">Officer Portal</h2>
+                <p className="ol-left-sub">State Groundwater Authority</p>
+                <p className="ol-left-dept">Government of Rajasthan</p>
+
+                <div className="ol-left-roles">
+                    {ROLES.map(r => (
+                        <div
+                            key={r.value}
+                            className={`ol-role-pill ${formData.role === r.value ? 'active' : ''}`}
+                            onClick={() => setFormData(prev => ({ ...prev, role: r.value }))}
+                        >
+                            <span>{r.icon}</span>
+                            <span>{r.label}</span>
+                        </div>
+                    ))}
                 </div>
 
-                {/* Error Message */}
-                {error && (
-                    <div style={{
-                        background: 'rgba(239, 68, 68, 0.1)',
-                        border: '1px solid var(--officer-danger)',
-                        borderRadius: '8px',
-                        padding: '1rem',
-                        marginBottom: '1.5rem',
-                        color: 'var(--officer-danger)',
-                        fontSize: '0.9375rem'
-                    }}>
-                        {error}
-                    </div>
-                )}
+                <Link to="/" className="ol-back-link">← Public Portal</Link>
+            </div>
 
-                {/* Login Form */}
-                <form onSubmit={handleSubmit}>
-                    {/* Role Selection */}
-                    <div className="officer-form-group">
-                        <label className="officer-label required">Officer Role</label>
-                        <select
-                            className="officer-select"
-                            value={formData.role}
-                            onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                            required
+            {/* Right form panel */}
+            <div className="ol-right">
+                <div className="ol-card">
+                    {/* Selected role indicator */}
+                    <div className="ol-role-indicator" style={{ background: selectedRole.bg, color: selectedRole.color }}>
+                        <span className="ol-role-icon">{selectedRole.icon}</span>
+                        <div>
+                            <div className="ol-role-name">{selectedRole.full}</div>
+                            <div className="ol-role-sub">Officer Login</div>
+                        </div>
+                    </div>
+
+                    <h1 className="ol-card-title">Welcome Back</h1>
+                    <p className="ol-card-sub">Sign in to your officer dashboard</p>
+
+                    {error && (
+                        <div className="ol-error">
+                            <span>⚠️</span> {error}
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit} className="ol-form">
+                        {/* Role selector (also on mobile) */}
+                        <div className="ol-form-group ol-role-select-group">
+                            <label className="ol-label">Officer Role</label>
+                            <select
+                                className="ol-select"
+                                value={formData.role}
+                                onChange={e => setFormData({ ...formData, role: e.target.value })}
+                                required
+                            >
+                                {ROLES.map(r => (
+                                    <option key={r.value} value={r.value}>{r.icon} {r.full}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="ol-form-group">
+                            <label className="ol-label">Username</label>
+                            <input
+                                type="text"
+                                className="ol-input"
+                                value={formData.username}
+                                onChange={e => setFormData({ ...formData, username: e.target.value })}
+                                placeholder="Enter your username"
+                                required
+                                autoComplete="username"
+                            />
+                        </div>
+
+                        <div className="ol-form-group">
+                            <label className="ol-label">Password</label>
+                            <div className="ol-pwd-wrap">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    className="ol-input"
+                                    value={formData.password}
+                                    onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                    placeholder="Enter your password"
+                                    required
+                                    autoComplete="current-password"
+                                />
+                                <button
+                                    type="button"
+                                    className="ol-eye-btn"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    tabIndex={-1}
+                                >
+                                    {showPassword ? '🙈' : '👁️'}
+                                </button>
+                            </div>
+                        </div>
+
+                        <button
+                            type="submit"
+                            className="ol-submit-btn"
+                            disabled={loading}
                         >
-                            <option value="DGO">DGO (District Groundwater Officer)</option>
-                            <option value="SGWA">SGWA (State Groundwater Authority)</option>
-                            <option value="ENFORCEMENT">Enforcement Wing</option>
-                            <option value="INSPECTION">Inspection Officer</option>
-                        </select>
-                    </div>
+                            {loading ? (
+                                <span className="ol-spinner">⏳ Logging in...</span>
+                            ) : (
+                                <>Login to Portal →</>
+                            )}
+                        </button>
+                    </form>
 
-                    {/* Username */}
-                    <div className="officer-form-group">
-                        <label className="officer-label required">Username</label>
-                        <input
-                            type="text"
-                            className="officer-input"
-                            value={formData.username}
-                            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                            placeholder="Enter your username"
-                            required
-                        />
-                    </div>
-
-                    {/* Password */}
-                    <div className="officer-form-group">
-                        <label className="officer-label required">Password</label>
-                        <input
-                            type="password"
-                            className="officer-input"
-                            value={formData.password}
-                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                            placeholder="Enter your password"
-                            required
-                        />
-                    </div>
-
-                    {/* Submit Button */}
-                    <button
-                        type="submit"
-                        className="officer-btn officer-btn-primary"
-                        disabled={loading}
-                        style={{
-                            width: '100%',
-                            justifyContent: 'center',
-                            marginTop: '1rem'
-                        }}
-                    >
-                        {loading ? 'Logging in...' : 'Login to Portal'}
-                    </button>
-                </form>
-
-                {/* Footer Links */}
-                <div style={{
-                    marginTop: '2rem',
-                    paddingTop: '1.5rem',
-                    borderTop: '1px solid var(--officer-border)',
-                    textAlign: 'center',
-                    fontSize: '0.875rem',
-                    color: 'var(--officer-text-light)'
-                }}>
-                    <p style={{ margin: 0 }}>
-                        <a href="#" style={{ color: 'var(--officer-primary)', textDecoration: 'none' }}>
-                            Forgot Password?
-                        </a>
-                    </p>
-                    <p style={{ margin: '0.5rem 0 0 0' }}>
-                        For applicants, please{' '}
-                        <a
-                            href="/noc/login"
-                            style={{ color: 'var(--officer-primary)', textDecoration: 'none', fontWeight: '600' }}
+                    {/* Test Credentials Panel */}
+                    <div className="ol-creds-section">
+                        <button
+                            type="button"
+                            className="ol-creds-toggle"
+                            onClick={() => setShowCreds(!showCreds)}
                         >
-                            click here
-                        </a>
-                    </p>
+                            {showCreds ? '🔒 Hide' : '🔑 Show'} Test Credentials
+                        </button>
+                        {showCreds && (
+                            <div className="ol-creds-panel">
+                                <div className="ol-creds-note">Password for all: <strong>Test@1234</strong></div>
+                                <table className="ol-creds-table">
+                                    <thead>
+                                        <tr><th>Role</th><th>Username</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td>DGO</td><td>test_dgo</td></tr>
+                                        <tr><td>SGWA</td><td>test_sgwa</td></tr>
+                                        <tr><td>Enforcement</td><td>test_enforcement</td></tr>
+                                        <tr><td>Inspection</td><td>test_inspection</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="ol-footer-links">
+                        <a href="#" className="ol-forgot">Forgot Password?</a>
+                        <span>·</span>
+                        <Link to="/" className="ol-pub-link">Public Portal</Link>
+                    </div>
                 </div>
             </div>
         </div>

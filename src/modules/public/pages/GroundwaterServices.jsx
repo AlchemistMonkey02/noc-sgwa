@@ -1,10 +1,39 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import PublicHeader from '../components/PublicHeader';
+import ProcessFlow from '../../../components/ProcessFlow';
 import '../styles/public-landing.css';
 
 const GroundwaterServices = () => {
     const navigate = useNavigate();
+
+    const applicationSteps = [
+        {
+            title: 'Register',
+            description: 'Create your account',
+            status: 'completed'
+        },
+        {
+            title: 'Fill Details',
+            description: 'Submit project info',
+            status: 'active'
+        },
+        {
+            title: 'Pay Fee',
+            description: 'Online payment',
+            status: 'pending'
+        },
+        {
+            title: 'Inspection',
+            description: 'Site verification',
+            status: 'pending'
+        },
+        {
+            title: 'Get NOC',
+            description: 'Digital certificate',
+            status: 'completed'
+        }
+    ];
 
     return (
         <div className="gov-portal">
@@ -51,36 +80,10 @@ const GroundwaterServices = () => {
                         </div>
                     </div>
 
-                    <div className="application-process" style={{ background: '#f8fafc', padding: '3rem', borderRadius: '20px' }}>
-                        <h2 style={{ textAlign: 'center', marginBottom: '2.5rem', color: '#1e3a8a' }}>Application Process</h2>
-                        <div className="step-chain" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-                            <div className="process-step" style={{ flex: 1, minWidth: '200px', textAlign: 'center' }}>
-                                <div style={{ width: '50px', height: '50px', background: '#1e3a8a', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', fontSize: '1.2rem', fontWeight: 'bold' }}>1</div>
-                                <h4>Register</h4>
-                                <p style={{ fontSize: '0.9rem', color: '#64748b' }}>Create your account</p>
-                            </div>
-                            <div className="process-step" style={{ flex: 1, minWidth: '200px', textAlign: 'center' }}>
-                                <div style={{ width: '50px', height: '50px', background: '#1e3a8a', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', fontSize: '1.2rem', fontWeight: 'bold' }}>2</div>
-                                <h4>Fill Details</h4>
-                                <p style={{ fontSize: '0.9rem', color: '#64748b' }}>Submit project info</p>
-                            </div>
-                            <div className="process-step" style={{ flex: 1, minWidth: '200px', textAlign: 'center' }}>
-                                <div style={{ width: '50px', height: '50px', background: '#1e3a8a', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', fontSize: '1.2rem', fontWeight: 'bold' }}>3</div>
-                                <h4>Pay Fee</h4>
-                                <p style={{ fontSize: '0.9rem', color: '#64748b' }}>Online payment</p>
-                            </div>
-                            <div className="process-step" style={{ flex: 1, minWidth: '200px', textAlign: 'center' }}>
-                                <div style={{ width: '50px', height: '50px', background: '#1e3a8a', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', fontSize: '1.2rem', fontWeight: 'bold' }}>4</div>
-                                <h4>Inspection</h4>
-                                <p style={{ fontSize: '0.9rem', color: '#64748b' }}>Site verification</p>
-                            </div>
-                            <div className="process-step" style={{ flex: 1, minWidth: '200px', textAlign: 'center' }}>
-                                <div style={{ width: '50px', height: '50px', background: '#10b981', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', fontSize: '1.2rem', fontWeight: 'bold' }}>5</div>
-                                <h4>Get NOC</h4>
-                                <p style={{ fontSize: '0.9rem', color: '#64748b' }}>Digital certificate</p>
-                            </div>
-                        </div>
-                    </div>
+                    <ProcessFlow
+                        title="Application Process"
+                        steps={applicationSteps}
+                    />
 
                 </div>
             </div>
@@ -89,3 +92,4 @@ const GroundwaterServices = () => {
 };
 
 export default GroundwaterServices;
+

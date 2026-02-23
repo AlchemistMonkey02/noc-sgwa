@@ -309,6 +309,15 @@ export const initialFormData = {
     msmeRegistrationDate: '',
     isExemptMSME: false,
 
+    // Additional Step 1 fields
+    title: '',
+    gender: '',
+    category: '', // Industry / Mining / Infrastructure
+    pollutingNature: 'No',
+    packagedWaterIndustry: 'No',
+    dateOfNOCExpiry: '',
+    renewalWithin90Days: false,
+
     // Project Details
     projectName: '',
     projectNameType: '',
@@ -324,6 +333,7 @@ export const initialFormData = {
     communicationAddress: '',
     sameAsProjectAddress: false,
     pincode: '',
+    village: '', // Added village
     latitude: '',
     longitude: '',
     totalLandArea: '', // Kept for backward compatibility if needed, but Step 2 uses specific fields now
@@ -341,6 +351,8 @@ export const initialFormData = {
     landUseOpenArea: '',
 
     // Step 3: Water Requirement Details
+    dailyWaterRequirement: '', // Added dailyWaterRequirement
+    surfaceWaterAvailability: 'No', // Added surfaceWaterAvailability
     waterReqTotalFresh: '', // Fresh Water
     waterReqRecycled: '', // Recycled Water
     waterReqTotal: '', // Fresh + Recycled (Calculated)
@@ -350,16 +362,14 @@ export const initialFormData = {
     waterReqIndustrial: '',
     waterReqGreenBelt: '',
     waterReqOther: '',
+    waterConservationMeasures: '', // Added waterConservationMeasures
     waterReqFreshRequirement: '', // Explicit field from user request
 
-    // Existing Structures
+    // Step 4: GW Structures
+    numExistingBorewells: 0,
+    numProposedBorewells: 0,
+    hasMeterInstalled: 'No',
     existingStructures: [],
-
-    // Proposed Structures (Step 4)
-    // We will use the existingStructures array model for proposed as well, or specific fields if simpler.
-    // User asked for "ask for water pump submersible centrifugal pump capacity hp" in GW structures.
-    // We'll add these to the structure object model, so no new top-level fields needed for structure details specifically,
-    // but we need to ensure the structure object has them.
 
     // Applicant Details
     applicantName: '',

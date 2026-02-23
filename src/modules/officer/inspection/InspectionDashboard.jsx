@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import OfficerHeader from '../shared/components/OfficerHeader';
 import OfficerSidebar from '../shared/components/OfficerSidebar';
 import officerService from '../services/officerService';
+import { getOfficerData } from '../shared/utils/officerAuth';
 import '../shared/styles/officer-portal.css';
 
 const InspectionDashboard = () => {
     const navigate = useNavigate();
+    const [officerInfo, setOfficerInfo] = useState(null);
     const [statistics, setStatistics] = useState({
         todayCount: 0,
         pendingCount: 0,
@@ -19,6 +21,7 @@ const InspectionDashboard = () => {
 
 
     useEffect(() => {
+        setOfficerInfo(getOfficerData());
         const fetchDashboardData = async () => {
             setLoading(true);
             try {
@@ -53,33 +56,9 @@ const InspectionDashboard = () => {
 
             } catch (error) {
                 console.error("Error fetching dashboard data:", error);
-                // Fallback Mock Data for Demo
-                setStatistics({
-                    todayCount: 3,
-                    pendingCount: 12,
-                    completedMonth: 8,
-                    overdueCount: 1
-                });
-                setTodaysSchedule([
-                    {
-                        id: 'insp-001',
-                        applicationNumber: 'RJ/CGWA/NOC/2026/001234',
-                        applicantName: 'Rajesh Kumar Sharma',
-                        location: 'Sanganer, Jaipur',
-                        time: '10:00 AM',
-                        status: 'SCHEDULED',
-                        type: 'New NOC Verification'
-                    },
-                    {
-                        id: 'insp-002',
-                        applicationNumber: 'RJ/CGWA/NOC/2026/01452',
-                        applicantName: 'Hotel Blue Diamond',
-                        location: 'Ajmer Road, Jaipur',
-                        time: '02:00 PM',
-                        status: 'SCHEDULED',
-                        type: 'New NOC Verification'
-                    }
-                ]);
+                // Fail silently - no mock data
+                setStatistics({ todayCount: 0, pendingCount: 0, completedMonth: 0, overdueCount: 0 });
+                setTodaysSchedule([]);
             } finally {
                 setLoading(false);
             }
@@ -95,10 +74,10 @@ const InspectionDashboard = () => {
     return (
         <div className="officer-portal">
             <OfficerHeader
-                officerName="Vikram Singh"
+                officerName={officerInfo?.name || officerInfo?.username || 'Inspection Officer'}
                 officerRole="INSPECTION"
-                officerDesignation="Field Inspector"
-                district="Jaipur"
+                officerDesignation={officerInfo?.designation || 'Field Inspector'}
+                district={officerInfo?.district || 'Jaipur'}
             />
 
             <div className="officer-layout">
@@ -163,7 +142,7 @@ const InspectionDashboard = () => {
                         {/* Today's Schedule */}
                         <div className="officer-mt-4">
                             <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem', color: 'var(--officer-text-primary)' }}>
-                                Today's Schedule (2026-01-16)
+                                Today's Schedule ({new Date().toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })})
                             </h2>
 
                             <div style={{ display: 'grid', gap: '1rem' }}>

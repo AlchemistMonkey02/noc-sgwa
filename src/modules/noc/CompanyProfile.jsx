@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -14,6 +14,33 @@ const CompanyProfile = () => {
     const [sameAsCommunication, setSameAsCommunication] = useState(false);
     const [companyTypeOptions, setCompanyTypeOptions] = useState([]);
     const [loading, setLoading] = useState(true);
+    const sectionRefs = useRef([]);
+
+    const addRef = (el) => {
+        if (el && !sectionRefs.current.includes(el)) {
+            sectionRefs.current.push(el);
+        }
+    };
+
+    useEffect(() => {
+        if (!loading) {
+            const observer = new IntersectionObserver(
+                (entries) => {
+                    entries.forEach((entry) => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('nd-visible');
+                        }
+                    });
+                },
+                { threshold: 0.1 }
+            );
+
+            sectionRefs.current.forEach((el) => el && observer.observe(el));
+            return () => {
+                sectionRefs.current.forEach((el) => el && observer.unobserve(el));
+            };
+        }
+    }, [loading]);
 
     // Location State
     const [stateOptions, setStateOptions] = useState([]);
@@ -32,7 +59,7 @@ const CompanyProfile = () => {
         commAddress: {
             line1: '',
             line2: '',
-            state: '',
+            state: 'Rajasthan',
             district: '',
             subDistrict: '',
             pincode: ''
@@ -42,7 +69,7 @@ const CompanyProfile = () => {
         regAddress: {
             line1: '',
             line2: '',
-            state: '',
+            state: 'Rajasthan',
             district: '',
             subDistrict: '',
             pincode: ''
@@ -85,7 +112,7 @@ const CompanyProfile = () => {
     };
 
     // Fetch Master Data & Existing Profile on Mount
-    React.useEffect(() => {
+    useEffect(() => {
         const initData = async () => {
             try {
                 // 1. Fetch Company Types
@@ -145,7 +172,7 @@ const CompanyProfile = () => {
                     regAddress: {
                         line1: company.registeredAddress?.addressLine1 || '',
                         line2: company.registeredAddress?.addressLine2 || '',
-                        state: company.registeredAddress?.state || '',
+                        state: company.registeredAddress?.state || 'Rajasthan',
                         district: company.registeredAddress?.district || '',
                         subDistrict: '', // Not in response, leave empty
                         pincode: company.registeredAddress?.pincode || ''
@@ -155,7 +182,7 @@ const CompanyProfile = () => {
                     commAddress: {
                         line1: company.communicationAddress?.addressLine1 || '',
                         line2: company.communicationAddress?.addressLine2 || '',
-                        state: company.communicationAddress?.state || '',
+                        state: company.communicationAddress?.state || 'Rajasthan',
                         district: company.communicationAddress?.district || '',
                         subDistrict: '',
                         pincode: company.communicationAddress?.pincode || ''
@@ -201,7 +228,7 @@ const CompanyProfile = () => {
     };
 
     // Fetch Communication Districts when State Changes
-    React.useEffect(() => {
+    useEffect(() => {
         const fetchDistricts = async () => {
             if (!formData.commAddress.state) {
                 setCommDistrictOptions([]);
@@ -225,7 +252,7 @@ const CompanyProfile = () => {
     }, [formData.commAddress.state]);
 
     // Fetch Registered Districts when State Changes
-    React.useEffect(() => {
+    useEffect(() => {
         const fetchDistricts = async () => {
             if (!formData.regAddress.state) {
                 setRegDistrictOptions([]);
@@ -259,7 +286,7 @@ const CompanyProfile = () => {
                 regAddress: {
                     line1: '',
                     line2: '',
-                    state: '',
+                    state: 'Rajasthan',
                     district: '',
                     subDistrict: '',
                     pincode: ''
@@ -355,37 +382,45 @@ const CompanyProfile = () => {
                     <span className="current">Company Profile</span>
                 </div>
 
-                <div className="page-title-section">
+                <div className="page-title-section nd-animate" ref={addRef}>
                     <h1 className="page-main-title">Company Profile</h1>
-                    <p className="page-subtitle">Manage your company registration details</p>
+                    <p className="page-subtitle">Manage your <span className="nd-user-highlight">Organizational Identity</span> and registration details</p>
                 </div>
 
                 {loading ? (
                     <div className="application-form">
-                        <div className="form-section">
-                            <h3 className="section-title">
-                                <span className="icon">🏢</span> <SkeletonLoader width="200px" height="1.5rem" style={{ display: 'inline-block' }} />
-                            </h3>
-                            <div className="form-grid-3">
-                                {Array(6).fill(0).map((_, i) => (
-                                    <div key={i} className="form-group">
-                                        <SkeletonLoader width="40%" height="1rem" style={{ marginBottom: '0.5rem' }} />
-                                        <SkeletonLoader width="100%" height="2.5rem" />
-                                    </div>
-                                ))}
+                        <div className="dashboard-card" style={{ background: 'rgba(255,255,255,0.4)' }}>
+                            <div className="card-title-bar">
+                                <h3 className="card-main-title">
+                                    <SkeletonLoader width="250px" height="1.5rem" />
+                                </h3>
+                            </div>
+                            <div className="card-content-area">
+                                <div className="form-grid-3">
+                                    {Array(6).fill(0).map((_, i) => (
+                                        <div key={i} className="form-group">
+                                            <SkeletonLoader width="40%" height="1rem" style={{ marginBottom: '0.5rem' }} />
+                                            <SkeletonLoader width="100%" height="2.5rem" style={{ borderRadius: '12px' }} />
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </div>
-                        <div className="form-section">
-                            <h3 className="section-title">
-                                <span className="icon">📍</span> <SkeletonLoader width="200px" height="1.5rem" style={{ display: 'inline-block' }} />
-                            </h3>
-                            <div className="form-grid-2">
-                                {Array(2).fill(0).map((_, i) => (
-                                    <div key={i} className="form-group">
-                                        <SkeletonLoader width="40%" height="1rem" style={{ marginBottom: '0.5rem' }} />
-                                        <SkeletonLoader width="100%" height="2.5rem" />
-                                    </div>
-                                ))}
+                        <div className="dashboard-card" style={{ background: 'rgba(255,255,255,0.4)' }}>
+                            <div className="card-title-bar">
+                                <h3 className="card-main-title">
+                                    <SkeletonLoader width="250px" height="1.5rem" />
+                                </h3>
+                            </div>
+                            <div className="card-content-area">
+                                <div className="form-grid-2">
+                                    {Array(2).fill(0).map((_, i) => (
+                                        <div key={i} className="form-group">
+                                            <SkeletonLoader width="40%" height="1rem" style={{ marginBottom: '0.5rem' }} />
+                                            <SkeletonLoader width="100%" height="2.5rem" style={{ borderRadius: '12px' }} />
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -393,214 +428,236 @@ const CompanyProfile = () => {
                     <form onSubmit={handleSubmit} className="application-form">
 
                         {/* Company Details Section */}
-                        <div className="form-section">
-                            <h3 className="section-title">
-                                <span className="icon">🏢</span> Company Information
-                            </h3>
-                            <div className="form-grid-3">
-                                <div className="form-group">
-                                    <label>Company Name <span className="required">*</span></label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={formData.companyName}
-                                        onChange={(e) => handleInputChange(null, 'companyName', e.target.value)}
-                                        required
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>Company Type <span className="required">*</span></label>
-                                    <select
-                                        className="form-control"
-                                        value={formData.companyType}
-                                        onChange={(e) => handleInputChange(null, 'companyType', e.target.value)}
-                                        required
-                                    >
-                                        <option value="">Select Type</option>
-                                        {companyTypeOptions.length > 0 ? (
-                                            companyTypeOptions.map((type, index) => (
-                                                <option key={index} value={type}>
-                                                    {type.replace(/_/g, ' ')}
-                                                </option>
-                                            ))
-                                        ) : (
-                                            <>
-                                                <option value="Government">Government Dept.</option>
-                                                <option value="PSU">Public Sector Undertaking</option>
-                                                <option value="Private">Private Limited</option>
-                                                <option value="Public">Public Limited</option>
-                                                <option value="Partnership">Partnership</option>
-                                                <option value="Proprietorship">Proprietorship</option>
-                                                <option value="Trust">Trust/Society</option>
-                                                <option value="Individual">Individual</option>
-                                            </>
-                                        )}
-                                    </select>
-                                </div>
-                                <div className="form-group">
-                                    <label>Date of Incorporation</label>
-                                    <input
-                                        type="date"
-                                        className="form-control"
-                                        value={formData.incorporationDate}
-                                        onChange={(e) => handleInputChange(null, 'incorporationDate', e.target.value)}
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>Incorporation ID <span className="required">*</span></label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={formData.incorporationId}
-                                        onChange={(e) => handleInputChange(null, 'incorporationId', e.target.value)}
-                                        required
-                                        placeholder="e.g. U12345RJ2023PTC123456"
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>GST Number</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={formData.gstNumber}
-                                        onChange={(e) => handleInputChange(null, 'gstNumber', e.target.value)}
-                                        placeholder="e.g. 22AAAAA0000A1Z5"
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>PAN Number <span className="required">*</span></label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={formData.panNumber}
-                                        onChange={(e) => handleInputChange(null, 'panNumber', e.target.value)}
-                                        required
-                                        placeholder=" ABCDE1234F"
-                                    />
+                        <div className="dashboard-card nd-animate" ref={addRef}>
+                            <div className="card-title-bar">
+                                <h3 className="card-main-title">
+                                    🏢 Company Information
+                                </h3>
+                            </div>
+                            <div className="card-content-area">
+                                <div className="form-grid-3">
+                                    <div className="form-group">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Company Name <span className="required">*</span></label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={formData.companyName}
+                                            onChange={(e) => handleInputChange(null, 'companyName', e.target.value)}
+                                            required
+                                            style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Company Type <span className="required">*</span></label>
+                                        <select
+                                            className="form-control"
+                                            value={formData.companyType}
+                                            onChange={(e) => handleInputChange(null, 'companyType', e.target.value)}
+                                            required
+                                            style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
+                                        >
+                                            <option value="">Select Type</option>
+                                            {companyTypeOptions.length > 0 ? (
+                                                companyTypeOptions.map((type, index) => (
+                                                    <option key={index} value={type}>
+                                                        {type.replace(/_/g, ' ')}
+                                                    </option>
+                                                ))
+                                            ) : (
+                                                <>
+                                                    <option value="Government">Government Dept.</option>
+                                                    <option value="PSU">Public Sector Undertaking</option>
+                                                    <option value="Private">Private Limited</option>
+                                                    <option value="Public">Public Limited</option>
+                                                    <option value="Partnership">Partnership</option>
+                                                    <option value="Proprietorship">Proprietorship</option>
+                                                    <option value="Trust">Trust/Society</option>
+                                                    <option value="Individual">Individual</option>
+                                                </>
+                                            )}
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Date of Incorporation</label>
+                                        <input
+                                            type="date"
+                                            className="form-control"
+                                            value={formData.incorporationDate}
+                                            onChange={(e) => handleInputChange(null, 'incorporationDate', e.target.value)}
+                                            style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
+                                        />
+                                    </div>
+                                    <div className="form-group mt-4">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Incorporation ID <span className="required">*</span></label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={formData.incorporationId}
+                                            onChange={(e) => handleInputChange(null, 'incorporationId', e.target.value)}
+                                            required
+                                            placeholder="e.g. U12345RJ2023PTC123456"
+                                            style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
+                                        />
+                                    </div>
+                                    <div className="form-group mt-4">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>GST Number</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={formData.gstNumber}
+                                            onChange={(e) => handleInputChange(null, 'gstNumber', e.target.value)}
+                                            placeholder="e.g. 22AAAAA0000A1Z5"
+                                            style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
+                                        />
+                                    </div>
+                                    <div className="form-group mt-4">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>PAN Number <span className="required">*</span></label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={formData.panNumber}
+                                            onChange={(e) => handleInputChange(null, 'panNumber', e.target.value)}
+                                            required
+                                            placeholder=" ABCDE1234F"
+                                            style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Communication Address Section */}
-                        <div className="form-section">
-                            <h3 className="section-title">
-                                <span className="icon">📍</span> Communication Address
-                            </h3>
-                            <div className="form-grid-2">
-                                <div className="form-group">
-                                    <label>Address Line 1 <span className="required">*</span></label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={formData.commAddress.line1}
-                                        onChange={(e) => handleInputChange('commAddress', 'line1', e.target.value)}
-                                        required
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>Address Line 2</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={formData.commAddress.line2}
-                                        onChange={(e) => handleInputChange('commAddress', 'line2', e.target.value)}
-                                    />
-                                </div>
+                        <div className="dashboard-card nd-animate" ref={addRef}>
+                            <div className="card-title-bar">
+                                <h3 className="card-main-title">
+                                    📍 Communication Address
+                                </h3>
                             </div>
-                            <div className="form-grid-3">
-                                <div className="form-group">
-                                    <label>State <span className="required">*</span></label>
-                                    <select
-                                        className="form-control"
-                                        value={formData.commAddress.state}
-                                        onChange={(e) => {
-                                            handleInputChange('commAddress', 'state', e.target.value);
-                                            handleInputChange('commAddress', 'district', ''); // Reset district
-                                        }}
-                                        required
-                                    >
-                                        <option value="">Select State</option>
-                                        {stateOptions.map((state, index) => (
-                                            <option key={index} value={state.name || state.stateName || state.stateId || state.id}>
-                                                {state.stateName || state.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                            <div className="card-content-area">
+                                <div className="form-grid-2">
+                                    <div className="form-group">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Address Line 1 <span className="required">*</span></label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={formData.commAddress.line1}
+                                            onChange={(e) => handleInputChange('commAddress', 'line1', e.target.value)}
+                                            required
+                                            style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Address Line 2</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={formData.commAddress.line2}
+                                            onChange={(e) => handleInputChange('commAddress', 'line2', e.target.value)}
+                                            style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
+                                        />
+                                    </div>
                                 </div>
-                                <div className="form-group">
-                                    <label>District <span className="required">*</span></label>
-                                    <select
-                                        className="form-control"
-                                        value={formData.commAddress.district}
-                                        onChange={(e) => handleInputChange('commAddress', 'district', e.target.value)}
-                                        required
-                                        disabled={!formData.commAddress.state}
-                                    >
-                                        <option value="">Select District</option>
-                                        {commDistrictOptions.map((district, index) => (
-                                            <option key={index} value={district.name || district.districtName || district.districtId || district.id}>
-                                                {district.districtName || district.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="form-group">
-                                    <label>Pin Code <span className="required">*</span></label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={formData.commAddress.pincode}
-                                        onChange={(e) => handleInputChange('commAddress', 'pincode', e.target.value)}
-                                        required
-                                        maxLength="6"
-                                    />
+                                <div className="form-grid-3 mt-4">
+                                    <div className="form-group">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>State <span className="required">*</span></label>
+                                        <select
+                                            className="form-control"
+                                            value={formData.commAddress.state}
+                                            onChange={(e) => {
+                                                handleInputChange('commAddress', 'state', e.target.value);
+                                                handleInputChange('commAddress', 'district', ''); // Reset district
+                                            }}
+                                            required
+                                            style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
+                                        >
+                                            <option value="">Select State</option>
+                                            {stateOptions.map((state, index) => (
+                                                <option key={index} value={state.name || state.stateName || state.stateId || state.id}>
+                                                    {state.stateName || state.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>District <span className="required">*</span></label>
+                                        <select
+                                            className="form-control"
+                                            value={formData.commAddress.district}
+                                            onChange={(e) => handleInputChange('commAddress', 'district', e.target.value)}
+                                            required
+                                            disabled={!formData.commAddress.state}
+                                            style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
+                                        >
+                                            <option value="">Select District</option>
+                                            {commDistrictOptions.map((district, index) => (
+                                                <option key={index} value={district.name || district.districtName || district.districtId || district.id}>
+                                                    {district.districtName || district.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Pin Code <span className="required">*</span></label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={formData.commAddress.pincode}
+                                            onChange={(e) => handleInputChange('commAddress', 'pincode', e.target.value)}
+                                            required
+                                            maxLength="6"
+                                            style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Registered Address Section */}
-                        <div className="form-section">
-                            <div className="section-header-row">
-                                <h3 className="section-title" style={{ marginBottom: 0 }}>
-                                    <span className="icon">🏢</span> Registered Office Address
+                        <div className="dashboard-card nd-animate" ref={addRef}>
+                            <div className="card-title-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <h3 className="card-main-title">
+                                    🏢 Registered Office Address
                                 </h3>
-                                <div className="checkbox-group">
+                                <div className="checkbox-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                     <input
                                         type="checkbox"
                                         id="sameAddress"
                                         checked={sameAsCommunication}
                                         onChange={handleSameAddressChange}
+                                        style={{ width: '18px', height: '18px', borderRadius: '4px', cursor: 'pointer' }}
                                     />
-                                    <label htmlFor="sameAddress">Same as Communication Address</label>
+                                    <label htmlFor="sameAddress" style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748b', cursor: 'pointer' }}>Same as Communication</label>
                                 </div>
                             </div>
 
                             {!sameAsCommunication && (
-                                <>
-                                    <div className="form-grid-2 mt-4">
+                                <div className="card-content-area">
+                                    <div className="form-grid-2">
                                         <div className="form-group">
-                                            <label>Address Line 1 <span className="required">*</span></label>
+                                            <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Address Line 1 <span className="required">*</span></label>
                                             <input
                                                 type="text"
                                                 className="form-control"
                                                 value={formData.regAddress.line1}
                                                 onChange={(e) => handleInputChange('regAddress', 'line1', e.target.value)}
                                                 required
+                                                style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
                                             />
                                         </div>
                                         <div className="form-group">
-                                            <label>Address Line 2</label>
+                                            <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Address Line 2</label>
                                             <input
                                                 type="text"
                                                 className="form-control"
                                                 value={formData.regAddress.line2}
                                                 onChange={(e) => handleInputChange('regAddress', 'line2', e.target.value)}
+                                                style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
                                             />
                                         </div>
                                     </div>
-                                    <div className="form-grid-3">
+                                    <div className="form-grid-3 mt-4">
                                         <div className="form-group">
-                                            <label>State <span className="required">*</span></label>
+                                            <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>State <span className="required">*</span></label>
                                             <select
                                                 className="form-control"
                                                 value={formData.regAddress.state}
@@ -609,6 +666,7 @@ const CompanyProfile = () => {
                                                     handleInputChange('regAddress', 'district', ''); // Reset district
                                                 }}
                                                 required
+                                                style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
                                             >
                                                 <option value="">Select State</option>
                                                 {stateOptions.map((state, index) => (
@@ -619,13 +677,14 @@ const CompanyProfile = () => {
                                             </select>
                                         </div>
                                         <div className="form-group">
-                                            <label>District <span className="required">*</span></label>
+                                            <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>District <span className="required">*</span></label>
                                             <select
                                                 className="form-control"
                                                 value={formData.regAddress.district}
                                                 onChange={(e) => handleInputChange('regAddress', 'district', e.target.value)}
                                                 required
                                                 disabled={!formData.regAddress.state}
+                                                style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
                                             >
                                                 <option value="">Select District</option>
                                                 {regDistrictOptions.map((district, index) => (
@@ -636,7 +695,7 @@ const CompanyProfile = () => {
                                             </select>
                                         </div>
                                         <div className="form-group">
-                                            <label>Pin Code <span className="required">*</span></label>
+                                            <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Pin Code <span className="required">*</span></label>
                                             <input
                                                 type="text"
                                                 className="form-control"
@@ -644,109 +703,131 @@ const CompanyProfile = () => {
                                                 onChange={(e) => handleInputChange('regAddress', 'pincode', e.target.value)}
                                                 required
                                                 maxLength="6"
+                                                style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
                                             />
                                         </div>
                                     </div>
-                                </>
+                                </div>
+                            )}
+                            {sameAsCommunication && (
+                                <div className="card-content-area" style={{ textAlign: 'center', padding: '3rem' }}>
+                                    <div style={{ color: '#059669', fontSize: '1.25rem', fontWeight: 700 }}>
+                                        ✓ Using Communication Address for Registration
+                                    </div>
+                                </div>
                             )}
                         </div>
 
                         {/* Contact Details Section */}
-                        <div className="form-section">
-                            <h3 className="section-title">
-                                <span className="icon">📞</span> Contact Details
-                            </h3>
-                            <div className="form-grid-3">
-                                <div className="form-group">
-                                    <label>Mobile Number <span className="required">*</span></label>
-                                    <input
-                                        type="tel"
-                                        className="form-control"
-                                        value={formData.contact.mobile}
-                                        onChange={(e) => handleInputChange('contact', 'mobile', e.target.value)}
-                                        required
-                                        maxLength="10"
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>Email Address <span className="required">*</span></label>
-                                    <input
-                                        type="email"
-                                        className="form-control"
-                                        value={formData.contact.email}
-                                        onChange={(e) => handleInputChange('contact', 'email', e.target.value)}
-                                        required
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>Landline No.</label>
-                                    <input
-                                        type="tel"
-                                        className="form-control"
-                                        value={formData.contact.landline}
-                                        onChange={(e) => handleInputChange('contact', 'landline', e.target.value)}
-                                    />
+                        <div className="dashboard-card nd-animate" ref={addRef}>
+                            <div className="card-title-bar">
+                                <h3 className="card-main-title">
+                                    📞 Contact Details
+                                </h3>
+                            </div>
+                            <div className="card-content-area">
+                                <div className="form-grid-3">
+                                    <div className="form-group">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Primary Mobile <span className="required">*</span></label>
+                                        <input
+                                            type="tel"
+                                            className="form-control"
+                                            value={formData.contact.mobile}
+                                            onChange={(e) => handleInputChange('contact', 'mobile', e.target.value)}
+                                            required
+                                            maxLength="10"
+                                            style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Primary Email <span className="required">*</span></label>
+                                        <input
+                                            type="email"
+                                            className="form-control"
+                                            value={formData.contact.email}
+                                            onChange={(e) => handleInputChange('contact', 'email', e.target.value)}
+                                            required
+                                            style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Secondary Landline</label>
+                                        <input
+                                            type="tel"
+                                            className="form-control"
+                                            value={formData.contact.landline}
+                                            onChange={(e) => handleInputChange('contact', 'landline', e.target.value)}
+                                            style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Authorized Person Section */}
-                        <div className="form-section">
-                            <h3 className="section-title">
-                                <span className="icon">👤</span> Authorized Person Details
-                            </h3>
-                            <div className="form-grid-3">
-                                <div className="form-group">
-                                    <label>Name <span className="required">*</span></label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={formData.authPerson.name}
-                                        onChange={(e) => handleInputChange('authPerson', 'name', e.target.value)}
-                                        required
-                                    />
+                        <div className="dashboard-card nd-animate" ref={addRef}>
+                            <div className="card-title-bar">
+                                <h3 className="card-main-title">
+                                    👤 Authorized Representative
+                                </h3>
+                            </div>
+                            <div className="card-content-area">
+                                <div className="form-grid-3">
+                                    <div className="form-group">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Full Legal Name <span className="required">*</span></label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={formData.authPerson.name}
+                                            onChange={(e) => handleInputChange('authPerson', 'name', e.target.value)}
+                                            required
+                                            style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Official Designation <span className="required">*</span></label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={formData.authPerson.designation}
+                                            onChange={(e) => handleInputChange('authPerson', 'designation', e.target.value)}
+                                            required
+                                            style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Mobile Connection <span className="required">*</span></label>
+                                        <input
+                                            type="tel"
+                                            className="form-control"
+                                            value={formData.authPerson.mobile}
+                                            onChange={(e) => handleInputChange('authPerson', 'mobile', e.target.value)}
+                                            required
+                                            maxLength="10"
+                                            style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
+                                        />
+                                    </div>
+                                    <div className="form-group mt-4">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Official Email ID <span className="required">*</span></label>
+                                        <input
+                                            type="email"
+                                            className="form-control"
+                                            value={formData.authPerson.email}
+                                            onChange={(e) => handleInputChange('authPerson', 'email', e.target.value)}
+                                            required
+                                            style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
+                                        />
+                                    </div>
                                 </div>
-                                <div className="form-group">
-                                    <label>Designation <span className="required">*</span></label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={formData.authPerson.designation}
-                                        onChange={(e) => handleInputChange('authPerson', 'designation', e.target.value)}
-                                        required
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>Mobile Number <span className="required">*</span></label>
-                                    <input
-                                        type="tel"
-                                        className="form-control"
-                                        value={formData.authPerson.mobile}
-                                        onChange={(e) => handleInputChange('authPerson', 'mobile', e.target.value)}
-                                        required
-                                        maxLength="10"
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>Email ID <span className="required">*</span></label>
-                                    <input
-                                        type="email"
-                                        className="form-control"
-                                        value={formData.authPerson.email}
-                                        onChange={(e) => handleInputChange('authPerson', 'email', e.target.value)}
-                                        required
-                                    />
-                                </div>
-
                             </div>
                         </div>
 
-                        <div className="form-actions-footer">
-                            <button type="button" className="btn-secondary" onClick={() => navigate('/noc/dashboard')}>
-                                Cancel
+                        <div className="form-actions-footer nd-animate" ref={addRef}>
+                            <button type="button" className="nd-btn-outline-sm" onClick={() => navigate('/noc/dashboard')} style={{ padding: '12px 40px' }}>
+                                Back to Dashboard
                             </button>
-                            <button type="submit" className="btn-primary">
-                                Save Company Profile
+                            <button type="submit" className="nd-btn-primary-sm" style={{ padding: '12px 40px' }}>
+                                Synchronize Organization Profile
                             </button>
                         </div>
 

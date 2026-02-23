@@ -1,0 +1,555 @@
+/* OfficerLogin — Premium Split Panel Design */
+
+.ol-page {
+    min-height: 100vh;
+    display: flex;
+    background: #f0f4f8;
+}
+
+/* ── Left decorative panel ── */
+.ol-left {
+    width: 380px;
+    flex-shrink: 0;
+    background: linear-gradient(160deg, #0f172a 0%, #1e3a8a 40%, #2563eb 80%, #3b82f6 100%);
+    background-size: 200% 200%;
+    animation: olGradientShift 8s ease infinite;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+@keyframes olGradientShift {
+
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+/* Animated grid overlay */
+.ol-left::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: fadeIn 1s ease-out;
+}
+
+/* Subtle floating orbs */
+.ol-left::after {
+    content: '';
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+    top: -80px;
+    right: -80px;
+    animation: olOrb 6s ease-in-out infinite alternate;
+    pointer-events: none;
+}
+
+@keyframes olOrb {
+    0% {
+        transform: translate(0, 0) scale(1);
+    }
+
+    100% {
+        transform: translate(-20px, 30px) scale(1.15);
+    }
+}
+
+.ol-left-emblem {
+    margin-bottom: 1.5rem;
+    position: relative;
+    animation: slideUp 0.6s ease-out;
+}
+
+.ol-emblem-img {
+    height: 80px;
+    filter: brightness(0) invert(1) opacity(0.9);
+    transition: transform 0.4s ease;
+}
+
+.ol-emblem-img:hover {
+    transform: scale(1.08);
+}
+
+.ol-left-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #fff;
+    margin: 0 0 0.25rem 0;
+    position: relative;
+    letter-spacing: -0.3px;
+    animation: slideUp 0.7s ease-out;
+}
+
+.ol-left-sub {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.85);
+    margin: 0 0 0.125rem 0;
+    font-weight: 500;
+    position: relative;
+    animation: slideUp 0.8s ease-out;
+}
+
+.ol-left-dept {
+    font-size: 0.8125rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin: 0 0 2.5rem 0;
+    font-weight: 400;
+    position: relative;
+    animation: slideUp 0.9s ease-out;
+}
+
+.ol-left-roles {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    width: 100%;
+    position: relative;
+}
+
+.ol-role-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: left;
+    animation: slideInLeft 0.5s ease-out backwards;
+}
+
+.ol-role-pill:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.ol-role-pill:nth-child(2) {
+    animation-delay: 0.15s;
+}
+
+.ol-role-pill:nth-child(3) {
+    animation-delay: 0.2s;
+}
+
+.ol-role-pill:nth-child(4) {
+    animation-delay: 0.25s;
+}
+
+.ol-role-pill.active {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: #fff;
+    transform: translateX(6px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.ol-role-pill:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.35);
+    color: #fff;
+    transform: translateX(4px);
+}
+
+.ol-role-pill span:first-child {
+    font-size: 1.25rem;
+    transition: transform 0.3s ease;
+}
+
+.ol-role-pill:hover span:first-child,
+.ol-role-pill.active span:first-child {
+    transform: scale(1.15);
+}
+
+.ol-back-link {
+    position: relative;
+    margin-top: 2.5rem;
+    color: rgba(255, 255, 255, 0.6);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: color 0.25s ease;
+    animation: fadeIn 1s ease-out;
+}
+
+.ol-back-link:hover {
+    color: #fff;
+}
+
+/* ── Right form panel ── */
+.ol-right {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.ol-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 24px;
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.1),
+        0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 460px;
+    animation: scaleIn 0.5s ease-out;
+}
+
+.ol-role-indicator {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.875rem 1.25rem;
+    border-radius: 14px;
+    margin-bottom: 1.5rem;
+    font-family: 'Poppins', sans-serif;
+    transition: background 0.4s ease, color 0.3s ease;
+    animation: slideUp 0.4s ease-out;
+}
+
+.ol-role-icon {
+    font-size: 2rem;
+    transition: transform 0.3s ease;
+}
+
+.ol-role-indicator:hover .ol-role-icon {
+    transform: scale(1.1) rotate(-5deg);
+}
+
+.ol-role-name {
+    font-size: 0.9375rem;
+    font-weight: 700;
+}
+
+.ol-role-sub {
+    font-size: 0.8125rem;
+    opacity: 0.7;
+    font-weight: 500;
+}
+
+.ol-card-title {
+    font-size: 1.625rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 0.25rem 0;
+}
+
+.ol-card-sub {
+    font-size: 0.9375rem;
+    color: #64748b;
+    margin: 0 0 1.75rem 0;
+}
+
+.ol-error {
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    border-radius: 12px;
+    padding: 0.875rem 1rem;
+    color: #dc2626;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    animation: slideUp 0.3s ease-out;
+}
+
+.ol-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.ol-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.ol-role-select-group {
+    display: none;
+}
+
+.ol-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.ol-input,
+.ol-select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 0.9375rem;
+    font-family: 'Poppins', sans-serif;
+    color: #0f172a;
+    background: #f8fafc;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.2s ease, transform 0.15s ease;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.ol-input:focus,
+.ol-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    background: #fff;
+    transform: scale(1.005);
+}
+
+.ol-pwd-wrap {
+    position: relative;
+}
+
+.ol-pwd-wrap .ol-input {
+    padding-right: 3rem;
+}
+
+.ol-eye-btn {
+    position: absolute;
+    right: 0.875rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.125rem;
+    color: #94a3b8;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.ol-eye-btn:hover {
+    color: #3b82f6;
+    transform: translateY(-50%) scale(1.1);
+}
+
+.ol-submit-btn {
+    margin-top: 0.5rem;
+    padding: 0.875rem;
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: 'Poppins', sans-serif;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.3s ease, opacity 0.2s ease;
+    letter-spacing: 0.3px;
+    position: relative;
+    overflow: hidden;
+}
+
+.ol-submit-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.ol-submit-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(30, 58, 138, 0.35);
+}
+
+.ol-submit-btn:hover:not(:disabled)::after {
+    opacity: 1;
+}
+
+.ol-submit-btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+/* Test Credentials */
+.ol-creds-section {
+    margin-top: 1.5rem;
+    animation: slideUp 0.5s ease-out 0.2s backwards;
+}
+
+.ol-creds-toggle {
+    width: 100%;
+    padding: 0.625rem;
+    background: #f1f5f9;
+    border: 1px dashed #cbd5e1;
+    border-radius: 10px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+    transition: all 0.25s ease;
+}
+
+.ol-creds-toggle:hover {
+    background: #e2e8f0;
+    border-color: #94a3b8;
+}
+
+.ol-creds-panel {
+    margin-top: 0.75rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1rem;
+    animation: slideUp 0.3s ease-out;
+}
+
+.ol-creds-note {
+    font-size: 0.8125rem;
+    color: #475569;
+    margin-bottom: 0.75rem;
+    text-align: center;
+}
+
+.ol-creds-note strong {
+    color: #1e3a8a;
+}
+
+.ol-creds-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.ol-creds-table th {
+    background: #e2e8f0;
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.ol-creds-table td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #475569;
+    transition: background 0.15s ease;
+}
+
+.ol-creds-table tr:hover td {
+    background: #eef2ff;
+}
+
+.ol-creds-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Footer links */
+.ol-footer-links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+    font-size: 0.8125rem;
+    color: #94a3b8;
+}
+
+.ol-forgot,
+.ol-pub-link {
+    color: #3b82f6;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+    position: relative;
+}
+
+.ol-forgot::after,
+.ol-pub-link::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 1.5px;
+    background: #2563eb;
+    transition: width 0.3s ease;
+}
+
+.ol-forgot:hover::after,
+.ol-pub-link:hover::after {
+    width: 100%;
+}
+
+.ol-forgot:hover,
+.ol-pub-link:hover {
+    color: #1d4ed8;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .ol-page {
+        flex-direction: column;
+    }
+
+    .ol-left {
+        width: 100%;
+        padding: 2rem 1.5rem;
+        min-height: auto;
+    }
+
+    .ol-left-roles {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .ol-role-pill {
+        flex: 1;
+        min-width: 120px;
+        justify-content: center;
+    }
+
+    .ol-right {
+        padding: 1.5rem 1rem;
+    }
+
+    .ol-card {
+        padding: 1.75rem 1.5rem;
+        border-radius: 18px;
+    }
+
+    .ol-role-select-group {
+        display: flex !important;
+    }
+}

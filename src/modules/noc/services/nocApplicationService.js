@@ -118,16 +118,8 @@ export const nocApplicationService = {
         );
     },
     getUtilizationSectors: async () => {
-        // API endpoint /master/utilization-sectors no longer exists
-        // Returning static list directly to avoid 404 errors
-        return {
-            success: true,
-            data: [
-                { id: '1', name: 'Industry' },
-                { id: '2', name: 'Infrastructure' },
-                { id: '3', name: 'Mining' }
-            ]
-        };
+        const response = await fetch(`${API_BASE_URL}/master/utilization-sectors`);
+        return handleResponse(response);
     },
 
     getIndustryTypes: async (category) => {
@@ -575,21 +567,7 @@ export const nocApplicationService = {
 
     // Flow Meter Data
     getFlowMeterConfig: async () => {
-        // Consolidated config fetch
-        // If API doesn't exist, we might need individual calls or return mock
         const response = await fetch(`${API_BASE_URL}/master/flow-meter-config`);
-        // Fallback for dev if API missing
-        if (!response.ok) {
-            return {
-                success: true,
-                data: {
-                    manufacturers: ["Kranti", "Dasmesh", "It's Yours", "Other"],
-                    telemetryProviders: ["Provider A", "Provider B"],
-                    bisStandards: ["IS 779", "IS 13779"],
-                    meterTypes: ["Digital", "Mechanical", "Electromagnetic"]
-                }
-            };
-        }
         return handleResponse(response);
     },
     getMeterModels: async (manufacturer) => {

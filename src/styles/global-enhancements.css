@@ -1,0 +1,524 @@
+/* ============================================================
+   SGWA — GLOBAL UI ENHANCEMENTS
+   Smooth transitions, micro-animations, premium polish
+   ============================================================ */
+
+/* ─── PAGE ENTER ANIMATION ─── */
+@keyframes pageEnter {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes subtlePulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+@keyframes gradientShift {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+@keyframes bounceIn {
+    0% {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+
+    60% {
+        transform: scale(1.02);
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* ─── GLOBAL SMOOTH TRANSITIONS ─── */
+*,
+*::before,
+*::after {
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── CONTENT ANIMATION CLASSES ─── */
+.content-container,
+.officer-container,
+.officer-content,
+.auth-card,
+.help-content-card,
+.public-section {
+    animation: pageEnter 0.4s ease-out;
+}
+
+.gov-portal {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* ─── STAGGERED CHILDREN ANIMATIONS ─── */
+.dashboard-stats-grid>*,
+.officer-stats-grid>*,
+.quick-actions-grid>*,
+.services-grid>*,
+.utility-tools-grid>* {
+    animation: slideUp 0.45s ease-out backwards;
+}
+
+.dashboard-stats-grid>*:nth-child(1),
+.officer-stats-grid>*:nth-child(1),
+.quick-actions-grid>*:nth-child(1),
+.services-grid>*:nth-child(1) {
+    animation-delay: 0.05s;
+}
+
+.dashboard-stats-grid>*:nth-child(2),
+.officer-stats-grid>*:nth-child(2),
+.quick-actions-grid>*:nth-child(2),
+.services-grid>*:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.dashboard-stats-grid>*:nth-child(3),
+.officer-stats-grid>*:nth-child(3),
+.quick-actions-grid>*:nth-child(3),
+.services-grid>*:nth-child(3) {
+    animation-delay: 0.15s;
+}
+
+.dashboard-stats-grid>*:nth-child(4),
+.officer-stats-grid>*:nth-child(4),
+.quick-actions-grid>*:nth-child(4) {
+    animation-delay: 0.2s;
+}
+
+.dashboard-stats-grid>*:nth-child(5),
+.officer-stats-grid>*:nth-child(5),
+.quick-actions-grid>*:nth-child(5) {
+    animation-delay: 0.25s;
+}
+
+.dashboard-stats-grid>*:nth-child(6),
+.officer-stats-grid>*:nth-child(6),
+.quick-actions-grid>*:nth-child(6) {
+    animation-delay: 0.3s;
+}
+
+/* Dashboard cards stagger */
+.dashboard-card,
+.officer-table-card,
+.report-form-card {
+    animation: slideUp 0.5s ease-out backwards;
+}
+
+.dashboard-card:nth-of-type(1) {
+    animation-delay: 0.1s;
+}
+
+.dashboard-card:nth-of-type(2) {
+    animation-delay: 0.18s;
+}
+
+.dashboard-card:nth-of-type(3) {
+    animation-delay: 0.26s;
+}
+
+.dashboard-card:nth-of-type(4) {
+    animation-delay: 0.34s;
+}
+
+/* ─── ENHANCED FOCUS RINGS ─── */
+*:focus-visible {
+    outline: 2px solid var(--color-primary-500, #3b82f6);
+    outline-offset: 2px;
+    border-radius: 4px;
+    transition: outline-offset 0.15s ease;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: none;
+    border-color: var(--color-primary-500, #3b82f6) !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15),
+        0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+button:focus-visible {
+    outline: 2px solid var(--color-primary-400, #60a5fa);
+    outline-offset: 2px;
+}
+
+/* ─── ENHANCED BUTTONS ─── */
+button,
+.btn,
+[role="button"],
+a.quick-action-item,
+a.utility-tool-card,
+a.create-account-btn {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Button active press effect */
+button:active:not(:disabled),
+.btn:active:not(:disabled),
+[role="button"]:active,
+.bhuneer-submit-btn:active:not(:disabled),
+.login-btn-gov:active:not(:disabled),
+.auth-btn:active:not(:disabled),
+.ol-submit-btn:active:not(:disabled) {
+    transform: translateY(0) scale(0.98) !important;
+    transition-duration: 0.1s;
+}
+
+/* ─── ENHANCED CARDS ─── */
+.dashboard-stat-card,
+.dashboard-card,
+.officer-stat-card,
+.officer-app-card,
+.officer-table-card,
+.service-card-gov,
+.sidebar-section,
+.login-panel,
+.report-form-card {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        border-color 0.3s ease;
+}
+
+/* Card hover glow effect */
+.dashboard-stat-card:hover,
+.officer-stat-card:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08),
+        0 0 0 1px rgba(59, 130, 246, 0.08);
+}
+
+.dashboard-card:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
+}
+
+/* ─── ENHANCED INPUTS ─── */
+input,
+select,
+textarea {
+    transition: border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background-color 0.2s ease;
+}
+
+.gov-input,
+.gov-select,
+.ol-input,
+.ol-select,
+.auth-input,
+.officer-filter-input,
+.officer-filter-select,
+.report-field input,
+.report-field select,
+.report-field textarea,
+.form-input,
+.form-select,
+.form-textarea {
+    transition: border-color 0.2s ease,
+        box-shadow 0.25s ease,
+        background-color 0.2s ease,
+        transform 0.15s ease;
+}
+
+/* Subtle input scale on focus */
+.gov-input:focus,
+.gov-select:focus,
+.ol-input:focus,
+.ol-select:focus {
+    transform: scale(1.005);
+}
+
+/* ─── ENHANCED TABLE ROWS ─── */
+.professional-table tbody tr,
+.officer-table tbody tr {
+    transition: background-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.professional-table tbody tr:hover,
+.officer-table tbody tr:hover {
+    background: linear-gradient(90deg, #f8faff 0%, #f0f4ff 100%) !important;
+}
+
+/* ─── ENHANCED STATUS BADGES ─── */
+.status-badge,
+.officer-badge {
+    transition: all 0.2s ease;
+}
+
+.status-badge.warning,
+.status-badge.danger,
+.officer-badge-warning,
+.officer-badge-error {
+    animation: subtlePulse 2.5s ease-in-out infinite;
+}
+
+/* ─── QUICK ACTION HOVER ─── */
+.quick-action-item .action-icon-badge {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.quick-action-item:hover .action-icon-badge {
+    transform: scale(1.12) rotate(-3deg);
+}
+
+/* ─── ENHANCED LINKS ─── */
+a {
+    transition: color 0.2s ease, text-decoration-color 0.2s ease;
+}
+
+.card-view-all,
+.ol-back-link,
+.ol-pub-link,
+.login-links a,
+.officer-login-link a,
+.view-all-link {
+    position: relative;
+}
+
+.card-view-all::after,
+.view-all-link::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--color-primary-500, #3b82f6);
+    transition: width 0.3s ease;
+}
+
+.card-view-all:hover::after,
+.view-all-link:hover::after {
+    width: 100%;
+}
+
+/* ─── SIDEBAR MENU ENHANCEMENTS ─── */
+.sidebar-menu li a,
+.officer-nav-link {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.officer-nav-link::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--color-primary-600, #2563eb);
+    transform: scaleY(0);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.officer-nav-link:hover::before,
+.officer-nav-link.active::before {
+    transform: scaleY(1);
+}
+
+/* ─── MODAL / OVERLAY ENHANCEMENTS ─── */
+.registration-modal-overlay {
+    animation: fadeIn 0.25s ease-out;
+}
+
+.registration-modal-content {
+    animation: bounceIn 0.35s ease-out;
+}
+
+/* ─── LOADING SKELETON ENHANCEMENT ─── */
+.skeleton,
+[class*="skeleton"] {
+    background: linear-gradient(90deg,
+            #f0f4f8 25%,
+            #e4e9ef 37%,
+            #f0f4f8 63%);
+    background-size: 400% 100%;
+    animation: shimmer 1.6s ease infinite;
+}
+
+/* ─── GRADIENT HEADER ANIMATION ─── */
+.page-gradient-header {
+    background-size: 200% 100%;
+    animation: gradientShift 4s ease infinite;
+}
+
+/* ─── TOOLTIP STYLE ─── */
+[title] {
+    cursor: help;
+}
+
+/* ─── SCROLL BAR ENHANCEMENT ─── */
+::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.5);
+    border-radius: 100px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.7);
+    background-clip: content-box;
+}
+
+/* Only show scrollbar on hover for content areas */
+.professional-table-wrapper,
+.officer-content {
+    scrollbar-gutter: stable;
+}
+
+/* ─── BREADCRUMB ANIMATION ─── */
+.breadcrumb {
+    animation: slideInLeft 0.35s ease-out;
+}
+
+/* ─── NOTIFICATION / TOAST SPRING ─── */
+@keyframes toastSpring {
+    0% {
+        opacity: 0;
+        transform: translateX(40px) scale(0.96);
+    }
+
+    70% {
+        transform: translateX(-4px) scale(1.01);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+.toast {
+    animation: toastSpring 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── PRINT: DISABLE ALL ANIMATIONS ─── */
+@media print {
+
+    *,
+    *::before,
+    *::after {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* ─── REDUCED MOTION PREFERENCE ─── */
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

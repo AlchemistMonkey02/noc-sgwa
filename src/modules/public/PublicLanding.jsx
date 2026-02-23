@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import NOCRegister from '../noc/NOCRegister';
 import PublicHeader from './components/PublicHeader';
 import { EXTERNAL_URLS } from '../../config/constants';
+import './styles/public-landing.css';
 // Native Web Crypto API Implementation for Token Signing/Verification
 // This removes dependency on 'jsonwebtoken' and Node polyfills like Buffer/Crypto
 const textEncoder = new TextEncoder();
@@ -156,7 +157,30 @@ const PublicLanding = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { login, selectUserType, user } = useAuth();
-    // ... existing state ...
+    const sectionRefs = useRef([]);
+
+    const addRef = (el) => {
+        if (el && !sectionRefs.current.includes(el)) {
+            sectionRefs.current.push(el);
+        }
+    };
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('pl-visible');
+                    }
+                });
+            },
+            { threshold: 0.1 }
+        );
+
+        sectionRefs.current.forEach((el) => el && observer.observe(el));
+        return () => sectionRefs.current.forEach((el) => el && observer.unobserve(el));
+    }, []);
+
     const [formData, setFormData] = useState({
         userType: '',
         username: '',
@@ -171,6 +195,7 @@ const PublicLanding = () => {
     const [flashMessage, setFlashMessage] = useState('');
     const [captchaJwt, setCaptchaJwt] = useState('');
     const [captchaImage, setCaptchaImage] = useState('');
+    const [activeTab, setActiveTab] = useState('apply'); // 'apply' or 'track'
 
     const HASH_SECRET = 'sgwa_secret_key_2026'; // In production, this should be backend-side
     const RANDOM_KEY = 'sgwa_random_key_987';
@@ -230,18 +255,22 @@ const PublicLanding = () => {
         setLoading(true);
         setError('');
 
+        // Determine if this is an applicant or an officer
+        const officerTypes = ['dgo', 'rsgwa', 'enforcement', 'inspection'];
+        const isOfficer = officerTypes.includes(formData.userType);
+
+        if (isOfficer) {
+            // Officers should use the Officer Portal login — redirect there
+            const roleMap = { dgo: 'DGO', rsgwa: 'SGWA', enforcement: 'ENFORCEMENT', inspection: 'INSPECTION' };
+            navigate('/officer/login', { state: { prefilledRole: roleMap[formData.userType] } });
+            setLoading(false);
+            return;
+        }
+
         try {
-            // Map frontend service type to backend userType
-            let backendUserType = 'APPLICANT';
-            if (['dgo', 'rsgwa', 'enforcement'].includes(formData.userType)) {
-                backendUserType = formData.userType.toUpperCase();
-            }
-
-            const result = await login(formData.username, formData.password, backendUserType);
-
+            const result = await login(formData.username, formData.password, 'APPLICANT');
             if (result.success) {
                 selectUserType(formData.userType);
-                // Redirect to dashboard after successful login
                 navigate('/noc/dashboard');
             } else {
                 setError(result.error || 'Invalid username or password');
@@ -255,13 +284,51 @@ const PublicLanding = () => {
     };
 
     const onlineServices = [
-        { title: 'Groundwater NOC', icon: '📄', link: '/public/services/noc' },
-        { title: 'Rig Registration', icon: '🏗️', link: '/public/services/rig' },
-        { title: 'Vendor Registration', icon: '⚙️', link: '/public/services/vendor' },
-        { title: 'Know Your EC', icon: '💰', link: '/public/know-your-ec' },
-        { title: 'Know Your Abstraction Cost', icon: '🧮', link: EXTERNAL_URLS.CHARGES_CALCULATOR, external: true },
-        { title: 'Application Status', icon: '📋', link: '/noc/track-status' }
+        {
+            title: 'Groundwater NOC',
+            icon: '📄',
+            link: '/public/services/noc',
+            description: 'Apply for new groundwater extraction permission',
+            group: 'apply'
+        },
+        {
+            title: 'Rig Registration',
+            icon: '🏗️',
+            link: '/public/services/rig',
+            description: 'Register drilling rigs and equipment',
+            group: 'apply'
+        },
+        {
+            title: 'Vendor Registration',
+            icon: '⚙️',
+            link: '/public/services/vendor',
+            description: 'Register as an approved vendor',
+            group: 'apply'
+        },
+        {
+            title: 'Track Application',
+            icon: '📋',
+            link: '/noc/track-status',
+            description: 'Track your NOC application status',
+            group: 'track'
+        },
+        {
+            title: 'Know Your EC',
+            icon: '💰',
+            link: '/public/know-your-ec',
+            description: 'Check environmental clearance requirements',
+            group: 'track'
+        },
+        {
+            title: 'Know Your Abstraction Cost',
+            icon: '🧮',
+            link: EXTERNAL_URLS.CHARGES_CALCULATOR,
+            external: true,
+            description: 'Calculate groundwater usage charges',
+            group: 'track'
+        }
     ];
+
 
     const handleServiceCardClick = (service) => {
 
@@ -361,64 +428,123 @@ const PublicLanding = () => {
             {/* Main Content Area */}
             <div className="portal-main">
                 {/* Left Sidebar */}
-                <aside className="left-sidebar">
+                <aside className="left-sidebar pl-animate" ref={addRef}>
+                    {/* Quick Help & Info Section */}
                     <div className="sidebar-section">
-                        <h3 className="sidebar-title">Online Services</h3>
+                        <h3 className="sidebar-title">📚 Quick Help & Info</h3>
                         <ul className="sidebar-menu">
-                            <li><Link to="/public/services/noc">➤ Groundwater NOC</Link></li>
-                            <li><Link to="/public/services/rig">➤ Rig Registration</Link></li>
-                            <li><Link to="/public/services/vendor">➤ Vendor Registration</Link></li>
-                            {/* NOC Renewal likely needs login/dashboard access */}
-                            <li><Link to="/noc/login">➤ NOC Renewal (Login Required)</Link></li>
-                            <li><Link to="/noc/track-status">➤ Track Application</Link></li>
+                            <li><Link to="/help/process-flow">➤ Process Flow</Link></li>
+                            <li><Link to="/help/timelines">➤ Expected Timelines</Link></li>
+                            <li><Link to="/help/documents">➤ Required Documents</Link></li>
+                            <li><Link to="/help/faqs">➤ FAQs</Link></li>
+                            <li><Link to="/help/contact">➤ Contact / Helpline</Link></li>
+                            <li><Link to="/help/how-to-apply">➤ How to Apply</Link></li>
                         </ul>
                     </div>
+
+                    {/* Important Notices - Sticky */}
+                    <div className="sidebar-section sticky-notices">
+                        <h3 className="sidebar-title">🔔 Important Notices</h3>
+                        <ul className="sidebar-menu notice-list">
+                            {notifications.map((notif, idx) => (
+                                <li key={idx} className="notice-item">
+                                    <span className="notice-icon">{notif.icon}</span>
+                                    <span className="notice-text">{notif.text}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    {/* Acts & Policies Section */}
                     <div className="sidebar-section">
-                        <h3 className="sidebar-title">Guidelines</h3>
+                        <h3 className="sidebar-title">📖 Acts & Policies</h3>
                         <ul className="sidebar-menu">
                             <li><Link to="/public/guidelines?tab=act">➤ Groundwater Act</Link></li>
-                            <li><Link to="/public/guidelines?tab=fee">➤ Fee Structure</Link></li>
                             <li><Link to="/public/guidelines?tab=eligibility">➤ Eligibility Criteria</Link></li>
-                        </ul>
-                    </div>
-                    <div className="sidebar-section">
-                        <h3 className="sidebar-title">Notifications</h3>
-                        <ul className="sidebar-menu">
-                            <li><Link to="/public/guidelines?tab=act">➤ Groundwater Act</Link></li>
                             <li><Link to="/public/guidelines?tab=fee">➤ Fee Structure</Link></li>
+                            <li><Link to="/public/guidelines?tab=penalty">➤ Penalty Provisions</Link></li>
+                            <li><Link to="/public/guidelines?tab=environment">➤ Environmental Compliance</Link></li>
                         </ul>
                     </div>
                 </aside>
 
                 {/* Center Content */}
                 <main className="center-content">
-                    <section className="services-section">
-                        <h2 className="section-title">Online Services</h2>
-                        <div className="services-grid">
-                            {onlineServices.map((service, idx) => (
-                                <div
-                                    key={idx}
-                                    className="service-card-gov"
-                                    onClick={() => handleServiceCardClick(service)}
-                                >
-                                    <div className="service-icon-gov">{service.icon}</div>
-                                    <h3>{service.title}</h3>
-                                </div>
-                            ))}
+                    {/* Premium Hero Section */}
+                    <section className="pl-hero pl-animate" ref={addRef}>
+                        <div className="pl-hero-badge">Official Portal</div>
+                        <h1 className="pl-hero-title">Rajasthan Ground Water Authority</h1>
+                        <p className="pl-hero-subtitle">
+                            Single window system for Groundwater Abstraction Permissions,
+                            Equitable Distribution, and Mineral Water Regulation.
+                        </p>
+
+                        <div className="pl-stats-bar">
+                            <div className="pl-stat">
+                                <span className="pl-stat-val">12,450+</span>
+                                <span className="pl-stat-lbl">NOCs Issued</span>
+                            </div>
+                            <div className="pl-stat-sep" />
+                            <div className="pl-stat">
+                                <span className="pl-stat-val">840+</span>
+                                <span className="pl-stat-lbl">Registered Rigs</span>
+                            </div>
+                            <div className="pl-stat-sep" />
+                            <div className="pl-stat">
+                                <span className="pl-stat-val">100%</span>
+                                <span className="pl-stat-lbl">Digital Process</span>
+                            </div>
                         </div>
                     </section>
 
-                    <section className="notifications-bar">
-                        <h3 className="notif-bar-title">Online Services</h3>
-                        <div className="notif-items">
-                            {notifications.map((notif, idx) => (
-                                <div key={idx} className="notif-item">
-                                    <span className="notif-icon">{notif.icon}</span>
-                                    <span>{notif.text}</span>
+                    {/* Dynamic Services Section with Switcher */}
+                    <section className="pl-services-dynamic pl-animate" ref={addRef}>
+                        <div className="pl-section-header">
+                            <div className="pl-title-area">
+                                <span className={`pl-meta-badge ${activeTab === 'track' ? 'pl-meta-track' : ''}`}>
+                                    {activeTab === 'apply' ? 'New Requests' : 'Status & Tools'}
+                                </span>
+                                <h2 className="section-title">
+                                    {activeTab === 'apply' ? 'Apply Services' : 'Track & Know'}
+                                </h2>
+                            </div>
+
+                            {/* Stylized Switcher Dropdown */}
+                            <div className="pl-category-switcher">
+                                <div className="pl-dropdown-wrapper">
+                                    <select
+                                        className="pl-category-select"
+                                        value={activeTab}
+                                        onChange={(e) => setActiveTab(e.target.value)}
+                                    >
+                                        <option value="apply">Apply Online</option>
+                                        <option value="track">Track Status & Tools</option>
+                                    </select>
+                                    <div className="pl-select-arrow">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className={`services-grid pl-transition-grid ${activeTab}`}>
+                            {onlineServices.filter(s => s.group === activeTab).map((service, idx) => (
+                                <div
+                                    key={`${activeTab}-${idx}`}
+                                    className="service-card-gov pl-fade-in"
+                                    onClick={() => handleServiceCardClick(service)}
+                                    style={{ animationDelay: `${idx * 80}ms` }}
+                                >
+                                    <div className="service-icon-gov">{service.icon}</div>
+                                    <h3>{service.title}</h3>
+                                    <p className="service-description">{service.description}</p>
+                                    <div className="service-card-footer">
+                                        <span>{activeTab === 'apply' ? 'Proceed Online' : 'Check Status'}</span>
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
+                                    </div>
                                 </div>
                             ))}
                         </div>
-                        <a href="#all-notif" className="view-all-link">View All Notifications</a>
                     </section>
                 </main>
 
@@ -442,12 +568,11 @@ const PublicLanding = () => {
                                         className="gov-select"
                                     >
                                         <option value="">— Select Service Type —</option>
-                                        <option value="water_abstractor">Noc Applicant (Individual)</option>
-                                        {/* <option value="rig_registration">Rig Registration & Operations</option>
-                                        <option value="vendor_registration">Vendor/Equipment Registration</option>
+                                        <option value="water_abstractor">NOC Applicant (Individual)</option>
                                         <option value="dgo">District Groundwater Officer (DGO)</option>
-                                        <option value="rsgwa">RSGWA Officer</option>
-                                        <option value="enforcement">Enforcement Officer</option> */}
+                                        <option value="rsgwa">RSGWA / SGWA Officer</option>
+                                        <option value="enforcement">Enforcement Officer</option>
+                                        <option value="inspection">Inspection Officer</option>
                                     </select>
                                 </div>
 
@@ -464,13 +589,25 @@ const PublicLanding = () => {
 
                                 <div className="form-field">
                                     <label>Password</label>
-                                    <input
-                                        type={showPassword ? 'text' : 'password'}
-                                        name="password"
-                                        value={formData.password}
-                                        onChange={handleChange}
-                                        className="gov-input"
-                                    />
+                                    <div className="password-wrapper">
+                                        <input
+                                            type={showPassword ? 'text' : 'password'}
+                                            name="password"
+                                            value={formData.password}
+                                            onChange={handleChange}
+                                            className="gov-input"
+                                            placeholder="Enter your password"
+                                        />
+                                        <button
+                                            type="button"
+                                            className="show-pwd-btn"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            tabIndex={-1}
+                                            aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                        >
+                                            {showPassword ? '🙈' : '👁️'}
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="form-field">
@@ -506,13 +643,24 @@ const PublicLanding = () => {
                                 <button type="submit" className="login-btn-gov" disabled={loading}>
                                     {loading ? 'Logging in...' : 'Login'}
                                 </button>
+
+                                <div className="login-divider">
+                                    <span>or</span>
+                                </div>
+
+                                <div className="create-account-section">
+                                    <p className="helper-text">For new applicants, registration is mandatory</p>
+                                    <Link to="/noc/register" className="create-account-btn">
+                                        Create New Account
+                                    </Link>
+                                </div>
                             </form>
 
                             <div className="login-links">
                                 <Link to="/forgot-password">Forgot Password?</Link>
-                                <div className="create-account-link">
-                                    Create <Link to="/noc/register">New Account</Link>
-                                </div>
+                            </div>
+                            <div className="officer-login-link">
+                                Government officer? <Link to="/officer/login">Officer Portal →</Link>
                             </div>
                         </>
                     </div>

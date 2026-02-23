@@ -17,7 +17,7 @@ const AbstractionChargesCalculator = () => {
         areaTypeCategory: '',
         quantityKLD: '',
         quantityKLY: '',
-        state: '',
+        state: 'Rajasthan',
         district: '',
         block: '',
         nocDuration: 5 // Default 5 years
@@ -205,7 +205,7 @@ const AbstractionChargesCalculator = () => {
             areaTypeCategory: '',
             quantityKLD: '',
             quantityKLY: '',
-            state: '',
+            state: 'Rajasthan',
             district: '',
             block: '',
             nocDuration: 5
@@ -230,8 +230,8 @@ const AbstractionChargesCalculator = () => {
 
             <div className="noc-container" style={{ padding: '30px 15px' }}>
                 <div className="noc-card">
-                    <h1 style={{ 
-                        color: 'var(--cgwa-primary)', 
+                    <h1 style={{
+                        color: 'var(--cgwa-primary)',
                         marginBottom: '30px',
                         fontSize: '2rem',
                         borderBottom: '3px solid var(--cgwa-primary)',
@@ -419,7 +419,7 @@ const AbstractionChargesCalculator = () => {
                         </div>
 
                         {/* Note Section */}
-                        <div className="noc-alert noc-alert-danger" style={{ 
+                        <div className="noc-alert noc-alert-danger" style={{
                             marginBottom: '30px',
                             background: '#ffebee',
                             border: '1px solid #f44336'
@@ -454,7 +454,7 @@ const AbstractionChargesCalculator = () => {
 
                     {/* Calculated Charges Result */}
                     {calculatedCharges && submitted && (
-                        <div className="noc-card" style={{ 
+                        <div className="noc-card" style={{
                             marginTop: '40px',
                             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                             color: 'white',

@@ -115,22 +115,7 @@ const ApplicationStatusTracker = () => {
                         </span>
                     </div>
                     <div className="noc-card-body">
-                        <div className="responsive-grid" style={{ marginBottom: '24px' }}>
-                            <div>
-                                <label style={{ color: '#64748b', fontSize: '0.875rem', display: 'block', marginBottom: '4px' }}>Project Name</label>
-                                <div style={{ fontWeight: '600', color: '#1e293b' }}>{application.projectName}</div>
-                            </div>
-                            <div>
-                                <label style={{ color: '#64748b', fontSize: '0.875rem', display: 'block', marginBottom: '4px' }}>Application Type</label>
-                                <div style={{ fontWeight: '600', color: '#1e293b' }}>{application.applicationType}</div>
-                            </div>
-                            <div>
-                                <label style={{ color: '#64748b', fontSize: '0.875rem', display: 'block', marginBottom: '4px' }}>Submitted Date</label>
-                                <div style={{ fontWeight: '600', color: '#1e293b' }}>{application.submittedDate}</div>
-                            </div>
-                        </div>
-
-                        <div style={{ paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
+                        <div>
                             <label style={{ color: '#64748b', fontSize: '0.875rem', display: 'block', marginBottom: '4px' }}>Current Location / Pending With</label>
                             <div style={{ fontWeight: '700', color: '#1e3a8a', fontSize: '1.1rem' }}>{application.pendingWith}</div>
                         </div>
@@ -332,8 +317,8 @@ const ApplicationStatusTracker = () => {
                 )}
 
                 <div style={{ marginTop: '20px', textAlign: 'center' }}>
-                    <button className="noc-btn noc-btn-secondary" onClick={() => navigate('/noc/applications')}>
-                        Back to List
+                    <button className="noc-btn noc-btn-secondary" onClick={() => navigate(-1)}>
+                        Back
                     </button>
                     {/* Only show Track another if coming from deep link, otherwise list is better */}
                 </div>

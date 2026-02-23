@@ -1,23 +1,37 @@
 import React from 'react';
-import '../styles/noc-portal.css';
 
 const ProgressSteps = ({ steps, currentStep, onStepClick }) => {
+    const isCompleted = (stepId) => currentStep > stepId;
+    const isActive = (stepId) => currentStep === stepId;
+
     return (
-        <div className="form-stepper">
-            {steps.map((step, index) => (
-                <div
-                    key={step.id}
-                    className={`step-item ${currentStep === step.id ? 'active' : ''} ${currentStep > step.id ? 'completed' : ''}`}
-                    onClick={() => onStepClick && onStepClick(step.id)}
-                    style={{ cursor: onStepClick ? 'pointer' : 'default' }}
-                    title={`Click to go to: ${step.title}`}
-                >
-                    <div className="step-circle">
-                        {currentStep > step.id ? '✓' : step.id}
+        <div className="nd-stepper-container">
+            {steps.map((step, index) => {
+                const completed = isCompleted(step.id);
+                const active = isActive(step.id);
+                const isLast = index === steps.length - 1;
+
+                return (
+                    <div
+                        key={step.id}
+                        onClick={() => onStepClick && onStepClick(step.id)}
+                        className={`nd-step-item ${active ? 'active' : ''} ${completed ? 'completed' : ''}`}
+                        title={`Step ${step.id}: ${step.title}`}
+                    >
+                        {!isLast && (
+                            <div className={`nd-step-line ${completed ? 'completed' : ''}`} />
+                        )}
+
+                        <div className="nd-step-circle">
+                            {completed ? '✓' : step.id}
+                        </div>
+
+                        <div className="nd-step-label">
+                            {step.title}
+                        </div>
                     </div>
-                    <div className="step-label">{step.title}</div>
-                </div>
-            ))}
+                );
+            })}
         </div>
     );
 };

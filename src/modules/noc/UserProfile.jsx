@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import PublicHeader from '../public/components/PublicHeader';
 import SkeletonLoader from '../../components/SkeletonLoader';
@@ -11,6 +11,31 @@ const UserProfile = () => {
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [loading, setLoading] = useState(true);
+    const sectionRefs = useRef([]);
+
+    const addRef = (el) => {
+        if (el && !sectionRefs.current.includes(el)) {
+            sectionRefs.current.push(el);
+        }
+    };
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('nd-visible');
+                    }
+                });
+            },
+            { threshold: 0.1 }
+        );
+
+        sectionRefs.current.forEach((el) => el && observer.observe(el));
+        return () => {
+            sectionRefs.current.forEach((el) => el && observer.unobserve(el));
+        };
+    }, [loading]);
 
     const [formData, setFormData] = useState({
         firstName: '',
@@ -23,7 +48,7 @@ const UserProfile = () => {
             line1: '',
             line2: '',
             city: '',
-            state: '',
+            state: 'Rajasthan',
             district: '',
             pincode: ''
         },
@@ -294,6 +319,13 @@ const UserProfile = () => {
         <div className="noc-portal">
             <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
 
+            {/* Background Decor */}
+            <div className="nd-premium-bg">
+                <div className="nd-shape nd-shape-1"></div>
+                <div className="nd-shape nd-shape-2"></div>
+                <div className="nd-shape nd-shape-3"></div>
+            </div>
+
             <button className="sidebar-toggle-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
 
             <PublicHeader />
@@ -303,238 +335,258 @@ const UserProfile = () => {
 
                 <div className="content-container">
                     {/* Breadcrumb */}
-                    <div className="breadcrumb">
+                    <div className="breadcrumb nd-animate" ref={addRef}>
                         <Link to="/noc/dashboard">Dashboard</Link>
                         <span className="separator">›</span>
                         <span className="current">User Profile</span>
                     </div>
 
-                    <div className="page-title-section">
+                    <div className="page-title-section nd-animate" ref={addRef}>
                         <h1 className="page-main-title">User Profile</h1>
-                        <p className="page-subtitle">Manage your personal information and preferences</p>
+                        <p className="page-subtitle">Welcome back! Manage your <span className="nd-user-highlight">Identity</span> and Preferences</p>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="application-form">
+                    <div className="application-form">
 
                         {/* Profile Photo Section */}
-                        <div className="form-section">
-                            <h3 className="section-title">
-                                <span className="icon">📸</span> Profile Photo
-                            </h3>
-                            <div className="profile-photo-container" style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                                <div className="photo-preview" style={{
-                                    width: '100px',
-                                    height: '100px',
-                                    borderRadius: '50%',
-                                    background: '#eff6ff',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '2rem',
-                                    color: '#1e3a8a',
-                                    border: '2px solid #e5e7eb'
-                                }}>
-                                    {profilePictureUrl ? (
-                                        <img
-                                            src={profilePictureUrl}
-                                            alt="Profile"
-                                            style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
-                                            onError={(e) => {
-                                                console.error('Image failed to load:', profilePictureUrl);
-                                                e.target.style.display = 'none';
-                                                e.target.nextSibling.style.display = 'flex';
-                                            }}
-                                        />
-                                    ) : null}
-                                    <span style={{ display: profilePictureUrl ? 'none' : 'flex' }}>
-                                        {formData.firstName?.[0]}{formData.lastName?.[0]}
-                                    </span>
-                                </div>
-                                <div>
-                                    <div className="file-upload-wrapper">
-                                        <label htmlFor="profile-upload" className="btn-secondary" style={{ display: 'inline-block', marginBottom: '0.5rem' }}>
-                                            Change Photo
-                                        </label>
-                                        <input
-                                            id="profile-upload"
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handlePhotoUpload}
-                                            style={{ display: 'none' }}
-                                        />
-                                        <span className="help-text">Recommended: Square image, max 2MB.</span>
+                        <div className="dashboard-card nd-animate" ref={addRef}>
+                            <div className="card-title-bar">
+                                <h3 className="card-main-title">📸 Identity Photo</h3>
+                            </div>
+                            <div className="card-content-area">
+                                <div className="profile-photo-container" style={{ display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
+                                    <div className="photo-preview-wrapper dashboard-stat-card" style={{
+                                        padding: '10px',
+                                        borderRadius: '50%',
+                                        minHeight: 'auto',
+                                        width: '140px',
+                                        height: '140px'
+                                    }}>
+                                        <div className="photo-preview" style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            borderRadius: '50%',
+                                            background: '#eff6ff',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: '3rem',
+                                            color: '#1e3a8a',
+                                            overflow: 'hidden',
+                                            boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.05)'
+                                        }}>
+                                            {profilePictureUrl ? (
+                                                <img
+                                                    src={profilePictureUrl}
+                                                    alt="Profile"
+                                                    style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                                                    onError={(e) => {
+                                                        console.error('Image failed to load:', profilePictureUrl);
+                                                        e.target.style.display = 'none';
+                                                        e.target.nextSibling.style.display = 'flex';
+                                                    }}
+                                                />
+                                            ) : null}
+                                            <span style={{ display: profilePictureUrl ? 'none' : 'flex', fontWeight: 900 }}>
+                                                {formData.firstName?.[0]}{formData.lastName?.[0]}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="file-upload-wrapper">
+                                            <h4 style={{ margin: '0 0 1rem 0', fontWeight: 800, color: '#1e293b' }}>Official Personal Photo</h4>
+                                            <label htmlFor="profile-upload" className="nd-btn-primary-sm" style={{ display: 'inline-block', marginBottom: '0.75rem', textAlign: 'center' }}>
+                                                Update Photo
+                                            </label>
+                                            <input
+                                                id="profile-upload"
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handlePhotoUpload}
+                                                style={{ display: 'none' }}
+                                            />
+                                            <p className="help-text" style={{ fontSize: '0.85rem', color: '#94a3b8' }}>High quality JPEG or PNG recommended (Max 2MB)</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Personal Information Section */}
-                        <div className="form-section">
-                            <h3 className="section-title">
-                                <span className="icon">👤</span> Personal Information
-                            </h3>
-                            <div className="form-grid-2">
-                                <div className="form-group">
-                                    <label>First Name</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={formData.firstName}
-                                        readOnly
-                                        disabled
-                                        style={{ backgroundColor: '#f9fafb' }}
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>Last Name</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={formData.lastName}
-                                        readOnly
-                                        disabled
-                                        style={{ backgroundColor: '#f9fafb' }}
-                                    />
-                                </div>
+                        <div className="dashboard-card nd-animate" ref={addRef}>
+                            <div className="card-title-bar">
+                                <h3 className="card-main-title">👤 Personal Information</h3>
                             </div>
-                            <div className="form-grid-2 mt-4">
-                                <div className="form-group">
-                                    <label>Security Question</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={userDetails?.securityQuestion || ''}
-                                        readOnly
-                                        style={{ backgroundColor: '#f9fafb' }}
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>User Type</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={userDetails?.userType || ''}
-                                        readOnly
-                                        style={{ backgroundColor: '#f9fafb' }}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Company Details Section - NEW */}
-                        {companyDetails && (
-                            <div className="form-section">
-                                <h3 className="section-title">
-                                    <span className="icon">🏢</span> Company Details
-                                </h3>
+                            <div className="card-content-area">
                                 <div className="form-grid-2">
                                     <div className="form-group">
-                                        <label>Company Name</label>
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>First Name</label>
                                         <input
                                             type="text"
                                             className="form-control"
-                                            value={companyDetails.companyName || ''}
+                                            value={formData.firstName}
                                             readOnly
-                                            style={{ backgroundColor: '#f9fafb' }}
+                                            disabled
+                                            style={{ background: 'rgba(248, 250, 252, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 700 }}
                                         />
                                     </div>
                                     <div className="form-group">
-                                        <label>Company Type</label>
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Last Name</label>
                                         <input
                                             type="text"
                                             className="form-control"
-                                            value={companyDetails.companyType || ''}
+                                            value={formData.lastName}
                                             readOnly
-                                            style={{ backgroundColor: '#f9fafb' }}
+                                            disabled
+                                            style={{ background: 'rgba(248, 250, 252, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 700 }}
                                         />
                                     </div>
                                 </div>
                                 <div className="form-grid-2 mt-4">
                                     <div className="form-group">
-                                        <label>GST Number</label>
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Security Question</label>
                                         <input
                                             type="text"
                                             className="form-control"
-                                            value={companyDetails.gstNumber || ''}
+                                            value={userDetails?.securityQuestion || ''}
                                             readOnly
-                                            style={{ backgroundColor: '#f9fafb' }}
+                                            style={{ background: 'rgba(248, 250, 252, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
                                         />
                                     </div>
                                     <div className="form-group">
-                                        <label>PAN Number</label>
-                                        <input
-                                            type="text"
-                                            className="form-control"
-                                            value={companyDetails.panNumber || ''}
-                                            readOnly
-                                            style={{ backgroundColor: '#f9fafb' }}
-                                        />
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>User Classification</label>
+                                        <div style={{ padding: '12px 16px', borderRadius: '12px', background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)', color: 'white', fontWeight: 800, textAlign: 'center' }}>
+                                            {userDetails?.userType || 'APPLICANT'}
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="form-group mt-4">
-                                    <label>Registered Address</label>
-                                    <textarea
-                                        className="form-control"
-                                        value={companyDetails.fullRegisteredAddress || `${companyDetails.registeredAddress?.addressLine1}, ${companyDetails.registeredAddress?.district}, ${companyDetails.registeredAddress?.state} - ${companyDetails.registeredAddress?.pincode}`}
-                                        readOnly
-                                        rows="2"
-                                        style={{ backgroundColor: '#f9fafb' }}
-                                    />
+                            </div>
+                        </div>
+
+                        {/* Company Details Section */}
+                        {companyDetails && (
+                            <div className="dashboard-card nd-animate" ref={addRef}>
+                                <div className="card-title-bar">
+                                    <h3 className="card-main-title">🏢 Organization Details</h3>
+                                </div>
+                                <div className="card-content-area">
+                                    <div className="form-grid-2">
+                                        <div className="form-group">
+                                            <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Legal Name</label>
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                value={companyDetails.companyName || ''}
+                                                readOnly
+                                                style={{ background: 'rgba(248, 250, 252, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 800, color: '#1e3a8a' }}
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Entity Type</label>
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                value={companyDetails.companyType || ''}
+                                                readOnly
+                                                style={{ background: 'rgba(248, 250, 252, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="form-grid-2 mt-6">
+                                        <div className="form-group">
+                                            <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>GST Identification Number</label>
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                value={companyDetails.gstNumber || ''}
+                                                readOnly
+                                                style={{ background: 'rgba(254, 252, 232, 0.5)', border: '1px solid #fde047', borderRadius: '12px', padding: '12px 16px', fontWeight: 700, fontFamily: 'monospace' }}
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Permanent Account Number</label>
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                value={companyDetails.panNumber || ''}
+                                                readOnly
+                                                style={{ background: 'rgba(254, 252, 232, 0.5)', border: '1px solid #fde047', borderRadius: '12px', padding: '12px 16px', fontWeight: 700, fontFamily: 'monospace' }}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="form-group mt-6">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Registered Headquarters Address</label>
+                                        <textarea
+                                            className="form-control"
+                                            value={companyDetails.fullRegisteredAddress || `${companyDetails.registeredAddress?.addressLine1}, ${companyDetails.registeredAddress?.district}, ${companyDetails.registeredAddress?.state} - ${companyDetails.registeredAddress?.pincode}`}
+                                            readOnly
+                                            rows="2"
+                                            style={{ background: 'rgba(248, 250, 252, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 500, resize: 'none' }}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         )}
 
                         {/* Contact Details Section */}
-                        <div className="form-section">
-                            <h3 className="section-title">
-                                <span className="icon">📞</span> Contact Details
-                            </h3>
-                            <div className="form-grid-2">
-                                <div className="form-group">
-                                    <label>Email Address</label>
-                                    <div style={{ position: 'relative' }}>
-                                        <input
-                                            type="email"
-                                            className="form-control"
-                                            value={formData.email}
-                                            readOnly
-                                            style={{ backgroundColor: '#f9fafb' }}
-                                        />
-                                        <div style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            {userDetails?.emailVerified && (
-                                                <span style={{ color: '#059669', fontSize: '1.2rem' }} title="Verified">✓</span>
-                                            )}
-                                            <button
-                                                type="button"
-                                                onClick={() => navigate('/noc/update-contact')}
-                                                style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}
-                                            >
-                                                Update
-                                            </button>
+                        <div className="dashboard-card nd-animate" ref={addRef}>
+                            <div className="card-title-bar">
+                                <h3 className="card-main-title">📞 Verification & Contact</h3>
+                            </div>
+                            <div className="card-content-area">
+                                <div className="form-grid-2">
+                                    <div className="form-group">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Verified Email Address</label>
+                                        <div style={{ position: 'relative' }}>
+                                            <input
+                                                type="email"
+                                                className="form-control"
+                                                value={formData.email}
+                                                readOnly
+                                                style={{ background: 'rgba(240, 253, 244, 0.5)', border: '1px solid #86efac', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
+                                            />
+                                            <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                {userDetails?.emailVerified && (
+                                                    <span style={{ color: '#059669', fontSize: '1.25rem', display: 'flex', alignItems: 'center' }} title="Verified Official Email">
+                                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>
+                                                    </span>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => navigate('/noc/update-contact')}
+                                                    className="nd-table-view-btn"
+                                                    style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                                                >
+                                                    Modify
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="form-group">
-                                    <label>Mobile Number</label>
-                                    <div style={{ position: 'relative' }}>
-                                        <input
-                                            type="tel"
-                                            className="form-control"
-                                            value={formData.mobile}
-                                            readOnly
-                                            style={{ backgroundColor: '#f9fafb' }}
-                                        />
-                                        <div style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            {userDetails?.phoneVerified && (
-                                                <span style={{ color: '#059669', fontSize: '1.2rem' }} title="Verified">✓</span>
-                                            )}
-                                            <button
-                                                type="button"
-                                                onClick={() => navigate('/noc/update-contact')}
-                                                style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}
-                                            >
-                                                Update
-                                            </button>
+                                    <div className="form-group">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Verified Mobile Link</label>
+                                        <div style={{ position: 'relative' }}>
+                                            <input
+                                                type="tel"
+                                                className="form-control"
+                                                value={formData.mobile}
+                                                readOnly
+                                                style={{ background: 'rgba(240, 253, 244, 0.5)', border: '1px solid #86efac', borderRadius: '12px', padding: '12px 16px', fontWeight: 600 }}
+                                            />
+                                            <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                {userDetails?.phoneVerified && (
+                                                    <span style={{ color: '#059669', fontSize: '1.25rem', display: 'flex', alignItems: 'center' }} title="Verified Official Mobile">
+                                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>
+                                                    </span>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => navigate('/noc/update-contact')}
+                                                    className="nd-table-view-btn"
+                                                    style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                                                >
+                                                    Modify
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -542,80 +594,81 @@ const UserProfile = () => {
                         </div>
 
                         {/* Address Section */}
-                        <div className="form-section">
-                            <h3 className="section-title">
-                                <span className="icon">📍</span> Personal/Communication Address
-                            </h3>
-                            <div className="form-grid-2">
-                                <div className="form-group">
-                                    <label>Address Line 1</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={formData.address.line1}
-                                        readOnly
-                                        style={{ backgroundColor: '#f9fafb' }}
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>Address Line 2</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={formData.address.line2}
-                                        readOnly
-                                        style={{ backgroundColor: '#f9fafb' }}
-                                    />
-                                </div>
+                        <div className="dashboard-card nd-animate" ref={addRef}>
+                            <div className="card-title-bar">
+                                <h3 className="card-main-title">📍 Official Communication Address</h3>
                             </div>
-                            <div className="form-grid-3 mt-4">
-                                <div className="form-group">
-                                    <label>District</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={formData.address.district}
-                                        readOnly
-                                        style={{ backgroundColor: '#f9fafb' }}
-                                    />
+                            <div className="card-content-area">
+                                <div className="form-grid-2">
+                                    <div className="form-group">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Building / Street</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={formData.address.line1}
+                                            readOnly
+                                            style={{ background: 'rgba(248, 250, 252, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 500 }}
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Locality / Area</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={formData.address.line2}
+                                            readOnly
+                                            style={{ background: 'rgba(248, 250, 252, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 500 }}
+                                        />
+                                    </div>
                                 </div>
-                                <div className="form-group">
-                                    <label>State</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={formData.address.state}
-                                        readOnly
-                                        style={{ backgroundColor: '#f9fafb' }}
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>Pin Code</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={formData.address.pincode}
-                                        readOnly
-                                        style={{ backgroundColor: '#f9fafb' }}
-                                    />
+                                <div className="form-grid-3 mt-6">
+                                    <div className="form-group">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>District / City</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={formData.address.district}
+                                            readOnly
+                                            style={{ background: 'rgba(248, 250, 252, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 700 }}
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>State / Union Territory</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={formData.address.state}
+                                            readOnly
+                                            style={{ background: 'rgba(248, 250, 252, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 700 }}
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="stat-label-text" style={{ marginBottom: '0.75rem', display: 'block' }}>Postal Index Number</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={formData.address.pincode}
+                                            readOnly
+                                            style={{ background: 'rgba(248, 250, 252, 0.5)', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px 16px', fontWeight: 800, letterSpacing: '0.1em' }}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="form-actions-footer">
-                            <button type="button" className="btn-secondary" onClick={() => navigate('/noc/dashboard')}>
-                                Cancel
+                        <div className="form-actions-footer nd-animate" ref={addRef}>
+                            <button type="button" className="nd-btn-outline-sm" onClick={() => navigate('/noc/dashboard')} style={{ padding: '12px 40px' }}>
+                                Back to Portal
                             </button>
-                            <button type="submit" className="btn-primary">
-                                Save User Profile
+                            <button type="button" className="nd-btn-primary-sm" onClick={handleSubmit} style={{ padding: '12px 40px' }}>
+                                Synchronize Profile
                             </button>
                         </div>
 
-                    </form>
+                    </div>
                 </div>
             </div>
 
-            <NOCFooter />
         </div>
     );
 };

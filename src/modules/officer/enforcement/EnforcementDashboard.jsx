@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import officerService from '../services/officerService';
+import { getOfficerData } from '../shared/utils/officerAuth';
 import OfficerHeader from '../shared/components/OfficerHeader';
 import OfficerSidebar from '../shared/components/OfficerSidebar';
 import ApplicationCard from '../shared/components/ApplicationCard';
@@ -7,6 +9,7 @@ import '../shared/styles/officer-portal.css';
 
 const EnforcementDashboard = () => {
     const navigate = useNavigate();
+    const [officerInfo, setOfficerInfo] = useState(null);
     const [statistics, setStatistics] = useState({
         total: 0,
         pendingFinalApproval: 0,
@@ -18,43 +21,52 @@ const EnforcementDashboard = () => {
     const [approvalQueue, setApprovalQueue] = useState([]);
 
     useEffect(() => {
+        setOfficerInfo(getOfficerData());
         fetchStatistics();
         fetchApprovalQueue();
     }, []);
 
     const fetchStatistics = async () => {
-        // Mock data
-        setStatistics({
-            total: 20,
-            pendingFinalApproval: 8,
-            approved: 10,
-            rejected: 2,
-            nocIssued: 8
-        });
+        try {
+            const response = await officerService.getEnforcementDashboard();
+            if (response.success && response.data) {
+                const stats = response.data;
+                setStatistics({
+                    total: stats.total || 0,
+                    pendingFinalApproval: stats.pending || 0,
+                    approved: stats.approved || 0,
+                    rejected: stats.rejected || 0,
+                    nocIssued: stats.nocIssued || stats.approved || 0
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching dashboard stats:', error);
+        }
     };
 
     const fetchApprovalQueue = async () => {
-        // Mock data
-        setApprovalQueue([
-            {
-                applicationId: 'NOC2026001234',
-                applicationNumber: 'RJ/CGWA/NOC/2026/001234',
-                applicantName: 'Rajesh Kumar Sharma',
-                projectName: 'ABC Textile Manufacturing Unit',
-                projectType: 'Industrial',
-                district: 'Jaipur',
-                block: 'Sanganer',
-                blockCategory: 'SEMI_CRITICAL',
-                waterRequirement: '150.25 m³/day',
-                submittedDate: '2026-01-09T08:00:00Z',
-                dgoRecommendation: 'RECOMMEND_APPROVAL',
-                sgwaRecommendation: 'RECOMMEND_APPROVAL_WITH_CONDITIONS',
-                proposedValidityYears: 3,
-                conditionsCount: 5,
-                status: 'PENDING_FINAL_APPROVAL',
-                daysInQueue: 1
-            }
-        ]);
+        try {
+            const response = await officerService.getApprovalQueue();
+            const applications = response.data || [];
+            // Map backend data to frontend model
+            const mappedData = applications.map(app => ({
+                applicationId: app.applicationId || app._id,
+                applicationNumber: app.applicationNumber,
+                applicantName: app.projectDetails?.applicantName || 'N/A',
+                projectName: app.projectDetails?.projectName || 'N/A',
+                district: app.location?.districtId || 'N/A',
+                waterRequirement: app.projectDetails?.waterRequirement?.totalRequirement || 0,
+                submittedDate: app.submittedAt,
+                dgoRecommendation: app.approvalFlow?.dgo?.status || 'PENDING',
+                sgwaRecommendation: app.approvalFlow?.sgwa?.status || 'PENDING',
+                conditionsCount: app.approvalFlow?.sgwa?.conditions?.length || 0,
+                status: app.status,
+                daysInQueue: Math.floor((new Date() - new Date(app.approvalFlow?.enforcement?.assignedAt || app.updatedAt)) / (1000 * 60 * 60 * 24))
+            }));
+            setApprovalQueue(mappedData.slice(0, 5));
+        } catch (error) {
+            console.error('Error fetching approval queue:', error);
+        }
     };
 
     const handleApplicationClick = (application) => {
@@ -64,10 +76,10 @@ const EnforcementDashboard = () => {
     return (
         <div className="officer-portal">
             <OfficerHeader
-                officerName="Suresh Patel"
+                officerName={officerInfo?.name || officerInfo?.username || 'Enforcement Officer'}
                 officerRole="ENFORCEMENT"
-                officerDesignation="Chief Engineer"
-                district=""
+                officerDesignation={officerInfo?.designation || 'Chief Engineer'}
+                district={officerInfo?.district || ''}
             />
 
             <div className="officer-layout">

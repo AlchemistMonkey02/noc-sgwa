@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -13,9 +13,15 @@ const NOCDashboard = () => {
     console.log("NOCDashboard mounting");
     const navigate = useNavigate();
     const { user, loading, isLoggingOut } = useAuth();
-    console.log("NOCDashboard auth state:", { user, loading, isLoggingOut });
     const [dashboardData, setDashboardData] = useState(null);
     const [dashboardLoading, setDashboardLoading] = useState(true);
+    const sectionRefs = useRef([]);
+
+    const addRef = (el) => {
+        if (el && !sectionRefs.current.includes(el)) {
+            sectionRefs.current.push(el);
+        }
+    };
 
     // Fetch dashboard data
     useEffect(() => {
@@ -24,10 +30,6 @@ const NOCDashboard = () => {
                 setDashboardLoading(true);
                 const response = await nocApplicationService.getDashboardData();
                 if (response.success) {
-                    console.log("Dashboard Data received:", response.data);
-                    if (response.data?.recentApplications?.length > 0) {
-                        console.log("First Application Structure:", response.data.recentApplications[0]);
-                    }
                     setDashboardData(response.data);
                 }
             } catch (error) {
@@ -41,6 +43,22 @@ const NOCDashboard = () => {
             fetchDashboardData();
         }
     }, [user]);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('nd-visible');
+                    }
+                });
+            },
+            { threshold: 0.1 }
+        );
+
+        sectionRefs.current.forEach((el) => el && observer.observe(el));
+        return () => sectionRefs.current.forEach((el) => el && observer.unobserve(el));
+    }, [dashboardData]);
 
     // Redirect if not authenticated
     useEffect(() => {
@@ -237,10 +255,15 @@ const NOCDashboard = () => {
 
     return (
         <LayoutWithSidebar>
-            {/* Gradient Header Bar */}
             <div className="page-gradient-header"></div>
 
-            <div className="content-container">
+            <div className="nd-premium-bg">
+                <div className="nd-shape nd-shape-1"></div>
+                <div className="nd-shape nd-shape-2"></div>
+                <div className="nd-shape nd-shape-3"></div>
+            </div>
+
+            <div className="content-container nd-dashboard-wrapper">
                 {/* Breadcrumb */}
                 <div className="breadcrumb">
                     <Link to="/">Home</Link>
@@ -252,22 +275,25 @@ const NOCDashboard = () => {
                 <BackButton />
 
                 {/* Page Title */}
-                <div className="page-title-section">
-                    <h1 className="page-main-title">Dashboard</h1>
-                    <p className="page-subtitle">Welcome back, {user?.username || 'User'}! Here's your overview</p>
+                <div className="page-title-section nd-animate" ref={addRef}>
+                    <h1 className="page-main-title">NOC Dashboard</h1>
+                    <p className="page-subtitle">Welcome back, <span className="nd-user-highlight">{user?.username || 'User'}</span>! Here's your abstraction overview.</p>
                 </div>
 
                 {/* Dashboard Stats */}
-                <div className="dashboard-stats-grid">
+                <div className="dashboard-stats-grid nd-animate" ref={addRef}>
                     {dashboardStats.map((stat, index) => (
                         <div
                             key={index}
-                            className={`dashboard-stat-card ${stat.color}`}
+                            className={`dashboard-stat-card nd-stat-${stat.color}`}
                             onClick={() => {
                                 if (stat.label === 'Total Applications') navigate('/noc/track-status');
                                 if (stat.label === 'Pending Payments') navigate('/noc/payment-details');
                             }}
-                            style={{ cursor: stat.label === 'Total Applications' || stat.label === 'Pending Payments' ? 'pointer' : 'default' }}
+                            style={{
+                                cursor: stat.label === 'Total Applications' || stat.label === 'Pending Payments' ? 'pointer' : 'default',
+                                transitionDelay: `${index * 100}ms`
+                            }}
                         >
                             <div className="stat-card-content">
                                 <div className="stat-icon-wrapper">
@@ -278,99 +304,89 @@ const NOCDashboard = () => {
                                     <div className="stat-label-text">{stat.label}</div>
                                 </div>
                             </div>
+                            <div className="stat-card-bg-glow"></div>
                         </div>
                     ))}
                 </div>
 
                 {/* Quick Actions */}
-                <div className="dashboard-card">
+                <div className="dashboard-card nd-animate" ref={addRef}>
                     <div className="card-title-bar">
                         <h2 className="card-main-title">⚡ Quick Actions</h2>
                     </div>
                     <div className="card-content-area">
                         <div className="quick-actions-grid">
-                            <Link to="/noc/application" className="quick-action-item">
+                            <Link to="/noc/application" className="quick-action-item nd-action-card">
                                 <span className="action-icon-badge blue">📝</span>
                                 <span className="action-text">Apply For Fresh NOC</span>
                                 <span className="action-chevron">→</span>
                             </Link>
-                            <Link to="/noc/check-eligibility" className="quick-action-item">
+                            <Link to="/noc/check-eligibility" className="quick-action-item nd-action-card">
                                 <span className="action-icon-badge indigo">✨</span>
                                 <span className="action-text">Check Eligibility</span>
                                 <span className="action-chevron">→</span>
                             </Link>
-                            <Link to="/noc/application?type=renewal" className="quick-action-item">
+                            <Link to="/noc/application?type=renewal" className="quick-action-item nd-action-card">
                                 <span className="action-icon-badge orange">🔄</span>
                                 <span className="action-text">Renew Existing NOC</span>
                                 <span className="action-chevron">→</span>
                             </Link>
-                            <Link to="/noc/track-status" className="quick-action-item">
+                            <Link to="/noc/track-status" className="quick-action-item nd-action-card">
                                 <span className="action-icon-badge red">🔍</span>
                                 <span className="action-text">Track Application</span>
                                 <span className="action-chevron">→</span>
                             </Link>
-                            <Link to="/noc/queries" className="quick-action-item">
+                            <Link to="/noc/queries" className="quick-action-item nd-action-card">
                                 <span className="action-icon-badge purple">❓</span>
                                 <span className="action-text">View Queries</span>
                                 <span className="action-chevron">→</span>
                             </Link>
-                            <Link to="/noc/payment-details" className="quick-action-item">
+                            <Link to="/noc/payment-details" className="quick-action-item nd-action-card">
                                 <span className="action-icon-badge teal">💳</span>
                                 <span className="action-text">Payment Details</span>
                                 <span className="action-chevron">→</span>
                             </Link>
-
                         </div>
                     </div>
                 </div>
 
                 {/* Approved NOC Certificates */}
                 {approvedNOCs.length > 0 && (
-                    <div className="dashboard-card">
+                    <div className="dashboard-card nd-animate" ref={addRef}>
                         <div className="card-title-bar">
                             <h2 className="card-main-title">📜 Your NOC Certificates</h2>
                             <span className="status-badge success">{approvedNOCs.length} Active</span>
                         </div>
                         <div className="card-content-area">
-                            <div style={{ display: 'grid', gap: '1rem' }}>
+                            <div className="nd-certificates-list">
                                 {approvedNOCs.map((noc, index) => (
                                     <div
                                         key={index}
-                                        style={{
-                                            background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-                                            border: '2px solid #0284c7',
-                                            borderRadius: '12px',
-                                            padding: '1.5rem',
-                                            display: 'flex',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center'
-                                        }}
+                                        className="nd-cert-premium-card"
                                     >
-                                        <div>
-                                            <h3 style={{ margin: '0 0 0.5rem 0', color: '#0c4a6e', fontSize: '1.125rem' }}>
+                                        <div className="nd-cert-info">
+                                            <h3 className="nd-cert-project">
                                                 📋 {noc.projectName}
                                             </h3>
-                                            <p style={{ margin: '0.25rem 0', fontSize: '0.875rem', color: '#075985' }}>
+                                            <p className="nd-cert-detail">
                                                 <strong>NOC Number:</strong> {noc.nocNumber}
                                             </p>
-                                            <p style={{ margin: '0.25rem 0', fontSize: '0.875rem', color: '#075985' }}>
+                                            <p className="nd-cert-detail">
                                                 <strong>Issue Date:</strong> {noc.issueDate} | <strong>Valid Until:</strong> 2 years from issue date
                                             </p>
-                                            <span className="status-badge success" style={{ marginTop: '0.5rem', display: 'inline-block' }}>
+                                            <span className="status-badge success nd-status-tag">
                                                 ✅ {noc.status}
                                             </span>
                                         </div>
-                                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                        <div className="nd-cert-actions">
                                             <button
                                                 onClick={() => handleViewCertificate(noc.uuid, noc.nocNumber)}
-                                                className="bhuneer-submit-btn"
-                                                style={{ fontSize: '0.9375rem', padding: '0.75rem 1.25rem' }}
+                                                className="nd-btn-primary-sm"
                                             >
                                                 👁️ View Certificate
                                             </button>
                                             <button
-                                                className="bhuneer-secondary-btn"
-                                                style={{ fontSize: '0.9375rem', padding: '0.75rem 1.25rem' }}
+                                                className="nd-btn-outline-sm"
                                                 onClick={() => handleDownloadCertificate(noc.uuid)}
                                             >
                                                 📥 Download
@@ -384,14 +400,14 @@ const NOCDashboard = () => {
                 )}
 
                 {/* Recent Applications */}
-                <div className="dashboard-card">
+                <div className="dashboard-card nd-animate" ref={addRef}>
                     <div className="card-title-bar">
                         <h2 className="card-main-title">📄 Recent Applications</h2>
                         <Link to="/noc/track-status" className="card-view-all">View All →</Link>
                     </div>
                     <div className="card-content-area no-padding">
                         <div className="professional-table-wrapper">
-                            <table className="professional-table">
+                            <table className="professional-table nd-dashboard-table">
                                 <thead>
                                     <tr>
                                         <th>Application ID</th>
@@ -414,14 +430,13 @@ const NOCDashboard = () => {
                                             </td>
                                             <td data-label="Actions">
                                                 <button
-                                                    className="table-action-btn"
+                                                    className="nd-table-view-btn"
                                                     onClick={() => {
-                                                        // Use MongoDB _id as that's what the /summary endpoint expects
                                                         const targetId = app._id;
                                                         navigate(`/noc/application/${targetId}`);
                                                     }}
                                                 >
-                                                    View
+                                                    View Details
                                                 </button>
                                             </td>
                                         </tr>
@@ -433,7 +448,7 @@ const NOCDashboard = () => {
                 </div>
 
                 {/* Two Column Layout */}
-                <div className="dashboard-two-column">
+                <div className="dashboard-two-column nd-animate" ref={addRef}>
                     {/* Upcoming Deadlines */}
                     <div className="dashboard-card">
                         <div className="card-title-bar">
@@ -442,7 +457,7 @@ const NOCDashboard = () => {
                         <div className="card-content-area">
                             <div className="deadline-list">
                                 {upcomingDeadlines.map((deadline, index) => (
-                                    <div key={index} className="deadline-item">
+                                    <div key={index} className="deadline-item nd-hover-lift">
                                         <div className="deadline-info">
                                             <div className="deadline-task">{deadline.task}</div>
                                             <div className="deadline-date">Due: {deadline.dueDate}</div>
@@ -463,14 +478,14 @@ const NOCDashboard = () => {
                         </div>
                         <div className="card-content-area">
                             <div className="announcement-list">
-                                <div className="announcement-item">
+                                <div className="announcement-item nd-hover-lift">
                                     <span className="announcement-badge new">NEW</span>
                                     <div className="announcement-text">
                                         <strong>Revised Water Extraction Charges</strong>
                                         <p>New tariff rates effective from January 1, 2026</p>
                                     </div>
                                 </div>
-                                <div className="announcement-item">
+                                <div className="announcement-item nd-hover-lift">
                                     <span className="announcement-badge important">IMPORTANT</span>
                                     <div className="announcement-text">
                                         <strong>Mandatory Piezometer Installation</strong>
@@ -483,21 +498,21 @@ const NOCDashboard = () => {
                 </div>
 
                 {/* Utility Tools */}
-                <div className="dashboard-card">
+                <div className="dashboard-card nd-animate" ref={addRef}>
                     <div className="card-title-bar">
                         <h2 className="card-main-title">🛠️ Tools & Calculators</h2>
                     </div>
                     <div className="card-content-area">
                         <div className="utility-tools-grid">
-                            <a href={EXTERNAL_URLS.CHARGES_CALCULATOR} target="_blank" rel="noopener noreferrer" className="utility-tool-card" style={{ textDecoration: 'none' }}>
+                            <a href={EXTERNAL_URLS.CHARGES_CALCULATOR} target="_blank" rel="noopener noreferrer" className="utility-tool-card nd-tool-premium" style={{ textDecoration: 'none' }}>
                                 <div className="utility-icon">💰</div>
                                 <div className="utility-name">Abstraction Charges</div>
                             </a>
-                            <Link to="/noc/check-eligibility" className="utility-tool-card">
+                            <Link to="/noc/check-eligibility" className="utility-tool-card nd-tool-premium">
                                 <div className="utility-icon">✅</div>
                                 <div className="utility-name">Eligibility Checker</div>
                             </Link>
-                            <Link to="/tools/document-checklist" className="utility-tool-card">
+                            <Link to="/tools/document-checklist" className="utility-tool-card nd-tool-premium">
                                 <div className="utility-icon">📋</div>
                                 <div className="utility-name">Document Checklist</div>
                             </Link>
@@ -505,7 +520,7 @@ const NOCDashboard = () => {
                     </div>
                 </div>
             </div>
-        </LayoutWithSidebar>
+        </LayoutWithSidebar >
     );
 };
 

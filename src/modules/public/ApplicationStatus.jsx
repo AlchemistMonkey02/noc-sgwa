@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import API_BASE_URL from '../../config/apiConfig';
 import './styles/public-landing.css';
 
 import PublicHeader from './components/PublicHeader';
@@ -23,45 +24,33 @@ const ApplicationStatus = () => {
         setError('');
         setStatusData(null);
 
-        // Simulate API call / Mock Logic
-        setTimeout(() => {
-            setLoading(false);
+        try {
+            const response = await fetch(`${API_BASE_URL}/public/track/${searchId}`);
+            const result = await response.json();
 
-            // Mock Status Logic based on ID patterns (matching internal tracker logic)
-            if (searchId.toUpperCase().includes('RJ-NOC')) {
-                let mockStage = 2;
-                let mockStatus = 'Under Scrutiny';
-                let mockColor = 'warning';
-
-                if (searchId.includes('APP')) {
-                    mockStage = 5;
-                    mockStatus = 'Approved';
-                    mockColor = 'success';
-                } else if (searchId.includes('REJ')) {
-                    mockStage = 2;
-                    mockStatus = 'Rejected';
-                    mockColor = 'danger';
-                }
-
+            if (result.success && result.data) {
+                const app = result.data;
+                // Backend returns steps with status. Map to UI expectations.
+                // We'll use the backend steps directly as they are well formatted.
                 setStatusData({
-                    id: searchId,
-                    projectName: 'Groundwater Extraction Project',
-                    applicantName: 'Demo Applicant',
-                    submittedDate: '2025-12-15',
-                    status: mockStatus,
-                    statusColor: mockColor,
-                    currentStage: mockStage,
-                    stages: [
-                        { id: 1, label: 'Submitted', date: '2025-12-15' },
-                        { id: 2, label: 'Document Verification', date: '2025-12-18' },
-                        { id: 3, label: 'Technical Review', date: 'Pending' },
-                        { id: 4, label: 'NOC Issuance', date: 'Pending' }
-                    ]
+                    id: app.applicationNumber,
+                    projectName: app.projectDetails?.projectName || 'N/A',
+                    applicantName: app.projectDetails?.applicantName || 'N/A',
+                    submittedDate: app.submittedAt ? new Date(app.submittedAt).toLocaleDateString() : 'N/A',
+                    status: app.status.replace(/_/g, ' '),
+                    statusColor: app.status === 'NOC_ISSUED' ? 'success' : app.status.includes('REJECTED') ? 'danger' : 'warning',
+                    currentStage: app.approvalFlow ? 0 : 0, // Not used with new step logic
+                    stages: result.data.steps || [] // Use steps from backend logic (nocService returns steps in trackApplication)
                 });
             } else {
-                setError('Application not found. Please check the reference number.');
+                setError(result.message || 'Application not found. Please check the reference number.');
             }
-        }, 1000);
+        } catch (err) {
+            console.error(err);
+            setError('Unable to fetch application status. Please try again later.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -196,47 +185,52 @@ const ApplicationStatus = () => {
                                 {/* Simple Timeline */}
                                 <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative' }}>
                                     {/* Line */}
+                                    {/* Line - simplified static line behind steps for now */}
                                     <div style={{
                                         position: 'absolute',
                                         top: '15px',
-                                        left: '40px',
-                                        right: '40px',
+                                        left: '5%',
+                                        right: '5%',
                                         height: '3px',
                                         background: '#e2e8f0',
                                         zIndex: 0
                                     }}>
-                                        <div style={{
-                                            height: '100%',
-                                            width: `${(statusData.currentStage / 4) * 100}%`,
-                                            background: '#3b82f6',
-                                            transition: 'width 0.5s ease'
-                                        }}></div>
                                     </div>
 
                                     {statusData.stages.map((stage, idx) => {
-                                        const isCompleted = idx + 1 <= statusData.currentStage;
+                                        const isCompleted = stage.status === 'COMPLETED';
+                                        const isCurrent = stage.status === 'IN_PROGRESS';
+                                        const isRejected = stage.status === 'REJECTED';
+
+                                        let stepColor = '#e2e8f0'; // default gray
+                                        let textColor = '#94a3b8';
+
+                                        if (isCompleted) { stepColor = '#3b82f6'; textColor = '#1e293b'; }
+                                        if (isCurrent) { stepColor = '#f59e0b'; textColor = '#1e293b'; }
+                                        if (isRejected) { stepColor = '#ef4444'; textColor = '#1e293b'; }
+
                                         return (
-                                            <div key={stage.id} style={{ position: 'relative', zIndex: 1, textAlign: 'center', width: '25%' }}>
+                                            <div key={stage.id} style={{ position: 'relative', zIndex: 1, textAlign: 'center', width: '16%' }}>
                                                 <div style={{
                                                     width: '32px',
                                                     height: '32px',
                                                     borderRadius: '50%',
-                                                    background: isCompleted ? '#3b82f6' : '#fff',
-                                                    border: `3px solid ${isCompleted ? '#3b82f6' : '#e2e8f0'}`,
-                                                    color: isCompleted ? 'white' : '#94a3b8',
+                                                    background: isCompleted || isCurrent || isRejected ? stepColor : '#fff',
+                                                    border: `3px solid ${stepColor}`,
+                                                    color: isCompleted || isCurrent || isRejected ? 'white' : '#94a3b8',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
                                                     fontWeight: '700',
                                                     margin: '0 auto 10px'
                                                 }}>
-                                                    {isCompleted ? '✓' : idx + 1}
+                                                    {isCompleted ? '✓' : isRejected ? '✕' : idx + 1}
                                                 </div>
-                                                <div style={{ fontSize: '0.85rem', fontWeight: '600', color: isCompleted ? '#1e293b' : '#94a3b8' }}>
+                                                <div style={{ fontSize: '0.85rem', fontWeight: '600', color: textColor }}>
                                                     {stage.label}
                                                 </div>
-                                                <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '2px' }}>
-                                                    {stage.date}
+                                                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
+                                                    {stage.timestamp ? new Date(stage.timestamp).toLocaleDateString() : stage.status === 'PENDING' ? 'Pending' : stage.status}
                                                 </div>
                                             </div>
                                         );

@@ -225,227 +225,48 @@ const officerService = {
         return handleResponse(response);
     },
 
-    // ==================== INSPECTIONS (STATEFUL MOCK) ====================
+    // ==================== INSPECTIONS ====================
 
-    // Helper to get or initialize mock inspections
-    _getMockInspections: () => {
-        const stored = localStorage.getItem('mock_inspections');
-        if (stored) return JSON.parse(stored);
-
-        // Initial Seed Data
-        const seedData = [
-            {
-                inspectionId: 'insp-001',
-                applicationNumber: 'RJ/CGWA/NOC/2026/001234',
-                holderName: 'Rajesh Kumar Sharma',
-                location: 'Sanganer, Jaipur',
-                inspectionType: 'New NOC Verification',
-                scheduledDate: new Date().toISOString().split('T')[0] + 'T10:00:00',
-                status: 'SCHEDULED', // SCHEDULED, COMPLETED, OVERDUE
-                priority: 'HIGH',
-                address: 'Plot 45, Industrial Area, Sanganer, Jaipur',
-                projectType: 'Industrial (Textile)',
-                reportResult: null,
-                reportRemarks: null
-            },
-            {
-                inspectionId: 'insp-002',
-                applicationNumber: 'RJ/CGWA/NOC/2026/01452',
-                holderName: 'Hotel Blue Diamond',
-                location: 'Ajmer Road, Jaipur',
-                inspectionType: 'New NOC Verification',
-                scheduledDate: new Date().toISOString().split('T')[0] + 'T14:00:00',
-                status: 'SCHEDULED',
-                priority: 'MEDIUM',
-                address: 'Near 200ft Bypass, Ajmer Road, Jaipur',
-                projectType: 'Infrastructure (Hotel)',
-                reportResult: null,
-                reportRemarks: null
-            },
-            {
-                inspectionId: 'insp-003',
-                applicationNumber: 'RJ/CGWA/NOC/2026/01111',
-                holderName: 'Green Valley Gardens',
-                location: 'Jhotwara, Jaipur',
-                inspectionType: 'Compliance Check',
-                scheduledDate: '2026-01-20T11:00:00',
-                status: 'SCHEDULED',
-                priority: 'LOW',
-                address: 'Plot 12, Kalwar Road, Jhotwara',
-                projectType: 'Infrastructure (Residential)',
-                reportResult: null,
-                reportRemarks: null
-            },
-            {
-                inspectionId: 'insp-004',
-                applicationNumber: 'RJ/CGWA/NOC/2026/00099',
-                holderName: 'Apex Hospitals',
-                location: 'Malviya Nagar, Jaipur',
-                inspectionType: 'Renewal Verification',
-                scheduledDate: '2026-01-17T09:30:00',
-                status: 'SCHEDULED',
-                priority: 'HIGH',
-                address: 'Sector 5, Malviya Nagar, Jaipur',
-                projectType: 'Infrastructure (Hospital)',
-                reportResult: null,
-                reportRemarks: null
-            },
-            {
-                inspectionId: 'insp-005',
-                applicationNumber: 'RJ/CGWA/NOC/2026/0098',
-                holderName: 'Modern Tex Corp',
-                location: 'Sitapura, Jaipur',
-                inspectionType: 'New NOC Verification',
-                scheduledDate: '2026-01-10T14:30:00',
-                status: 'COMPLETED',
-                priority: 'MEDIUM',
-                address: 'Sitapura Ind. Area, Tonk Road',
-                projectType: 'Industrial',
-                reportResult: 'RECOMMENDED',
-                reportRemarks: 'All documents verified on site.',
-                submittedAt: '2026-01-10T16:45:00',
-                locationMatch: true,
-                landUseMatch: true,
-                existingSources: 2,
-                meterInstalled: true,
-                rainwaterHarvesting: 'implemented',
-                officerName: 'Vikram Singh',
-                geoLocation: { lat: 26.7891, lng: 75.8231, accuracy: 15 }
-            }
-        ];
-
-        localStorage.setItem('mock_inspections', JSON.stringify(seedData));
-        return seedData;
-    },
-
-    // Get Inspection Dashboard Stats (Mock with persistence)
+    // Get Inspection Dashboard Stats
     getInspectionDashboard: async () => {
-        try {
-            // Try API first
-            const response = await apiRequest('/officer/inspection/dashboard');
-            return handleResponse(response);
-            // throw new Error("Use Mock");
-        } catch (e) {
-            const inspections = officerService._getMockInspections();
-            const today = new Date().toISOString().split('T')[0];
-
-            const stats = {
-                todayCount: inspections.filter(i => i.scheduledDate.startsWith(today) && i.status === 'SCHEDULED').length,
-                pendingCount: inspections.filter(i => i.status === 'SCHEDULED').length,
-                completedMonth: inspections.filter(i => i.status === 'COMPLETED').length,
-                overdueCount: inspections.filter(i => {
-                    const d = new Date(i.scheduledDate);
-                    const now = new Date();
-                    return i.status === 'SCHEDULED' && d < now && !i.scheduledDate.startsWith(today);
-                }).length
-            };
-
-            return { success: true, data: { stats } };
-        }
+        const response = await apiRequest('/officer/inspection/dashboard');
+        return handleResponse(response);
     },
 
-    // Get My Assigned Inspections (Mock with persistence)
+    // Get My Assigned Inspections
     getMyInspections: async (filters = {}) => {
-        try {
-            // const response = await apiRequest('/officer/inspection/my-inspections');
-            // return handleResponse(response);
-            throw new Error("Use Mock");
-        } catch (e) {
-            let inspections = officerService._getMockInspections();
-
-            // Apply Date Filter if present
-            if (filters.date) {
-                inspections = inspections.filter(i => i.scheduledDate.startsWith(filters.date));
-            }
-
-            // Apply Status Filter
-            if (filters.status) {
-                inspections = inspections.filter(i => i.status === filters.status);
-            }
-
-            // Sort by Date
-            inspections.sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
-
-            return { success: true, data: { inspections } };
-        }
+        const response = await apiRequest('/officer/inspection/my-inspections');
+        return handleResponse(response);
     },
 
-    // Get Inspection Details (Mock with persistence)
+    // Get Inspection Details
     getInspectionDetails: async (inspectionId) => {
-        try {
-            // const response = await apiRequest(`/officer/inspection/${inspectionId}/details`);
-            // return handleResponse(response);
-            throw new Error("Use Mock");
-        } catch (e) {
-            const inspections = officerService._getMockInspections();
-            const item = inspections.find(i => i.inspectionId === inspectionId);
-
-            if (item) {
-                return {
-                    success: true,
-                    data: {
-                        appId: item.applicationNumber,
-                        applicantName: item.holderName,
-                        projectType: item.projectType,
-                        address: item.address,
-                        coordinates: { lat: 26.9124, lng: 75.7873 }, // Default for now
-                        waterSource: 'Borewell',
-                        proposedExtraction: '150 m³/day'
-                    }
-                };
-            }
-            return { success: false, message: 'Inspection not found' };
-        }
+        const response = await apiRequest(`/officer/inspection/${inspectionId}/details`);
+        return handleResponse(response);
     },
 
-    // Submit Inspection Report (Updates Mock State)
+    // Submit Inspection Report
     submitInspectionReport: async (inspectionId, reportData) => {
-        try {
-            // const response = await apiRequest(...)
-            // return handleResponse(response);
-            throw new Error("Use Mock");
-        } catch (e) {
-            const inspections = officerService._getMockInspections();
-            const index = inspections.findIndex(i => i.inspectionId === inspectionId);
-
-            if (index !== -1) {
-                // Update the record
-                inspections[index] = {
-                    ...inspections[index],
-                    status: 'COMPLETED',
-                    reportResult: reportData.recommendation,
-                    reportRemarks: reportData.remarks,
-                    submittedAt: new Date().toISOString(),
-                    ...reportData // Spread all form data
-                };
-
-                // Save back to storage
-                localStorage.setItem('mock_inspections', JSON.stringify(inspections));
-                return { success: true, message: 'Report submitted successfully' };
-            }
-            return { success: false, message: 'Inspection not found' };
-        }
+        const response = await apiRequest(`/officer/inspection/${inspectionId}/submit`, {
+            method: 'POST',
+            body: JSON.stringify(reportData)
+        });
+        return handleResponse(response);
     },
 
-    // Get Inspection Report (Mock with persistence)
+    // Get Inspection Report
     getInspectionReport: async (inspectionId) => {
-        try {
-            // const response = await apiRequest(...)
-            throw new Error("Use Mock");
-        } catch (e) {
-            const inspections = officerService._getMockInspections();
-            const item = inspections.find(i => i.inspectionId === inspectionId);
-
-            if (item && item.status === 'COMPLETED') {
-                return { success: true, data: item };
-            }
-            return { success: false, message: 'Report not found' };
-        }
+        const response = await apiRequest(`/officer/inspection/${inspectionId}/report`);
+        return handleResponse(response);
     },
 
-    // Start Inspection (Mock no-op)
+    // Start Inspection
     startInspection: async (inspectionId, locationData) => {
-        return { success: true };
+        const response = await apiRequest(`/officer/inspection/${inspectionId}/start`, {
+            method: 'POST',
+            body: JSON.stringify(locationData)
+        });
+        return handleResponse(response);
     },
 
     // Schedule Site Inspection (DGO Action - for reference, keeping original)
@@ -457,6 +278,26 @@ const officerService = {
                 body: JSON.stringify(inspectionData)
             }
         );
+        return handleResponse(response);
+    },
+
+    // ==================== ENFORCEMENT ====================
+
+    // Get Enforcement Dashboard Stats
+    getEnforcementDashboard: async () => {
+        const response = await apiRequest('/officer/enforcement/dashboard');
+        return handleResponse(response);
+    },
+
+    // Get Enforcement Approval Queue
+    getApprovalQueue: async (filters = {}) => {
+        const queryParams = new URLSearchParams();
+        Object.keys(filters).forEach(key => {
+            if (filters[key]) queryParams.append(key, filters[key]);
+        });
+        const queryString = queryParams.toString();
+        const endpoint = `/officer/enforcement/approval-queue${queryString ? `?${queryString}` : ''}`;
+        const response = await apiRequest(endpoint);
         return handleResponse(response);
     },
 

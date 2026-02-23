@@ -172,68 +172,68 @@ const ApplicationsList = () => {
                         </div>
 
                         {/* Applications Table */}
-                        <div style={{ overflowX: 'auto' }}>
-                            <table className="officer-table">
-                                <thead>
-                                    <tr>
-                                        <th>Application No.</th>
-                                        <th>Applicant Name</th>
-                                        <th>Project Name</th>
-                                        <th>Type</th>
-                                        <th>Location</th>
-                                        <th>Date</th>
-                                        <th>Status</th>
-                                        <th>Days</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {applications.map((app) => (
-                                        <tr key={app._id || app.applicationId}>
-                                            <td style={{ fontWeight: '600', color: 'var(--officer-primary)' }}>
-                                                {app.applicationNumber}
-                                            </td>
-                                            <td>{getNestedValue(app, 'projectDetails.applicantName') || app.applicantName || 'N/A'}</td>
-                                            <td>{getNestedValue(app, 'projectDetails.projectName') || app.projectName || 'N/A'}</td>
-                                            <td>{app.sectorType || app.applicationSubType || 'N/A'}</td>
-                                            <td>
-                                                <div style={{ fontSize: '0.85rem' }}>
-                                                    {getNestedValue(app, 'location.village')}<br />
-                                                    <span style={{ color: '#666' }}>{getNestedValue(app, 'location.blockId')}</span>
-                                                </div>
-                                            </td>
-                                            <td>{app.submittedAt ? new Date(app.submittedAt).toLocaleDateString() : 'N/A'}</td>
-                                            <td>{getStatusBadge(app.status)}</td>
-                                            <td>
-                                                <span style={{
-                                                    color: getDaysInQueue(app.submittedAt) > 3 ? 'var(--officer-danger)' : 'var(--officer-text-light)',
-                                                    fontWeight: getDaysInQueue(app.submittedAt) > 3 ? '600' : '400'
-                                                }}>
-                                                    {getDaysInQueue(app.submittedAt)} days
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <button
-                                                    className="officer-btn officer-btn-primary"
-                                                    style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
-                                                    onClick={() => handleViewApplication(app.applicationId || app._id)}
-                                                >
-                                                    View
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                        <div className="dashboard-card" style={{ marginTop: '1rem' }}>
+                            <div className="card-content-area no-padding">
+                                <div className="professional-table-wrapper">
+                                    <table className="professional-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Application No.</th>
+                                                <th>Applicant Name</th>
+                                                <th>Project Name</th>
+                                                <th>Type</th>
+                                                <th>Location</th>
+                                                <th>Date</th>
+                                                <th>Status</th>
+                                                <th>Days</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {applications.map((app) => (
+                                                <tr key={app._id || app.applicationId}>
+                                                    <td><strong className="text-blue">{app.applicationNumber}</strong></td>
+                                                    <td>{getNestedValue(app, 'projectDetails.applicantName') || app.applicantName || 'N/A'}</td>
+                                                    <td>{getNestedValue(app, 'projectDetails.projectName') || app.projectName || 'N/A'}</td>
+                                                    <td>{app.sectorType || app.applicationSubType || 'N/A'}</td>
+                                                    <td>
+                                                        <div style={{ fontSize: '0.8125rem' }}>
+                                                            {getNestedValue(app, 'location.village')}<br />
+                                                            <span style={{ color: '#6b7280' }}>{getNestedValue(app, 'location.blockId')}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td>{app.submittedAt ? new Date(app.submittedAt).toLocaleDateString('en-GB') : 'N/A'}</td>
+                                                    <td>{getStatusBadge(app.status)}</td>
+                                                    <td>
+                                                        <span style={{
+                                                            color: getDaysInQueue(app.submittedAt) > 3 ? '#dc2626' : '#6b7280',
+                                                            fontWeight: getDaysInQueue(app.submittedAt) > 3 ? 700 : 400,
+                                                            fontSize: '0.875rem'
+                                                        }}>
+                                                            {getDaysInQueue(app.submittedAt)}d
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <button
+                                                            className="table-action-btn"
+                                                            onClick={() => handleViewApplication(app.applicationId || app._id)}
+                                                        >
+                                                            View
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
 
                         {applications.length === 0 && (
-                            <div style={{
-                                textAlign: 'center',
-                                padding: '3rem',
-                                color: 'var(--officer-text-light)'
-                            }}>
-                                <p style={{ fontSize: '1.125rem' }}>No applications found matching your filters</p>
+                            <div className="empty-state">
+                                <div className="empty-state-icon">🔍</div>
+                                <div className="empty-state-title">No Applications Found</div>
+                                <p className="empty-state-text">No applications match your current filters.</p>
                                 <button
                                     className="officer-btn officer-btn-primary"
                                     onClick={clearFilters}

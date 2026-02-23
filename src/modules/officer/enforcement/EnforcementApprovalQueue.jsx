@@ -18,51 +18,26 @@ const EnforcementApprovalQueue = () => {
     const fetchApprovalQueue = async () => {
         try {
             setLoading(true);
-            // Simulate fetching
-            const mockData = [
-                {
-                    id: 'NOC2026001234',
-                    applicationNumber: 'RJ/CGWA/NOC/2026/001234',
-                    applicantName: 'Rajesh Kumar Sharma',
-                    projectName: 'ABC Textile Manufacturing Unit',
-                    district: 'Jaipur',
-                    waterRequirement: 150.25,
-                    submittedDate: '2026-01-09',
-                    status: 'PENDING_FINAL_APPROVAL',
-                    dgoRecommendation: 'APPROVED',
-                    sgwaRecommendation: 'APPROVED_WITH_CONDITIONS',
-                    daysInQueue: 1
-                },
-                {
-                    id: 'NOC2026001235',
-                    applicationNumber: 'RJ/CGWA/NOC/2026/001235',
-                    applicantName: 'Modern Foods Pvt Ltd',
-                    projectName: 'Food Processing Plant',
-                    district: 'Alwar',
-                    waterRequirement: 300.50,
-                    submittedDate: '2026-01-08',
-                    status: 'PENDING_FINAL_APPROVAL',
-                    dgoRecommendation: 'APPROVED',
-                    sgwaRecommendation: 'APPROVED',
-                    daysInQueue: 2
-                },
-                {
-                    id: 'NOC2026001236',
-                    applicationNumber: 'RJ/CGWA/NOC/2026/001236',
-                    applicantName: 'City Infrastructure Ltd',
-                    projectName: 'Commercial Complex',
-                    district: 'Udaipur',
-                    waterRequirement: 75.00,
-                    submittedDate: '2026-01-07',
-                    status: 'PENDING_FINAL_APPROVAL',
-                    dgoRecommendation: 'CONDITIONAL',
-                    sgwaRecommendation: 'APPROVED_WITH_CONDITIONS',
-                    daysInQueue: 3
-                }
-            ];
-            setApplications(mockData);
+            const data = await officerService.getApprovalQueue();
+
+            const mappedData = data.map(app => ({
+                id: app.applicationId || app._id,
+                applicationNumber: app.applicationNumber,
+                applicantName: app.projectDetails?.applicantName || 'N/A',
+                projectName: app.projectDetails?.projectName || 'N/A',
+                district: app.location?.districtId || 'N/A',
+                waterRequirement: app.projectDetails?.waterRequirement?.totalRequirement || 0,
+                submittedDate: app.submittedAt,
+                status: app.status,
+                dgoRecommendation: app.approvalFlow?.dgo?.status || 'PENDING',
+                sgwaRecommendation: app.approvalFlow?.sgwa?.status || 'PENDING',
+                daysInQueue: Math.floor((new Date() - new Date(app.approvalFlow?.enforcement?.assignedAt || app.updatedAt)) / (1000 * 60 * 60 * 24))
+            }));
+
+            setApplications(mappedData);
         } catch (error) {
             console.error('Error fetching queue:', error);
+            // setApplications([]); // Optional: clear on error
         } finally {
             setLoading(false);
         }

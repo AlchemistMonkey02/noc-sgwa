@@ -43,7 +43,7 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
         communicationAddress: {
             addressLine1: '',
             addressLine2: '',
-            state: '',
+            state: 'Rajasthan',
             district: '',
             subDistrict: '',
             pincode: ''

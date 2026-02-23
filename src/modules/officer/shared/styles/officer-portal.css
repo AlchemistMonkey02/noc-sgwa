@@ -1,36 +1,39 @@
-/* Officer Portal - BhuNeer Theme Styles */
+/* Officer Portal - Using Global Theme */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+@import url('/src/styles/theme.css');
+@import url('/src/styles/components.css');
 
-/* Color Variables */
+/* Officer-specific aliases */
 :root {
-    --officer-primary: #1e3a8a;
-    --officer-primary-light: #3b82f6;
-    --officer-primary-lighter: #60a5fa;
-    --officer-secondary: #475569;
-    --officer-success: #22c55e;
-    --officer-warning: #f59e0b;
-    --officer-danger: #ef4444;
-    --officer-info: #3b82f6;
-    --officer-text: #1e293b;
-    --officer-text-light: #64748b;
-    --officer-border: #e2e8f0;
-    --officer-bg-light: #f8fafc;
-    --officer-white: #ffffff;
+    --officer-primary: var(--color-primary-900);
+    --officer-primary-light: var(--color-primary-600);
+    --officer-primary-lighter: var(--color-primary-400);
+    --officer-secondary: var(--gray-600);
+    --officer-success: var(--color-success-500);
+    --officer-warning: var(--color-warning-500);
+    --officer-danger: var(--color-error-500);
+    --officer-info: var(--color-info-500);
+    --officer-text: var(--gray-800);
+    --officer-text-light: var(--gray-500);
+    --officer-text-primary: var(--color-primary-900);
+    /* alias for components that use this */
+    --officer-border: var(--gray-300);
+    --officer-bg-light: var(--gray-50);
+    --officer-white: var(--white);
 }
 
 /* Scenic Background */
 .officer-portal {
     min-height: 100vh;
-    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #60a5fa 100%);
-    background-image:
-        linear-gradient(135deg, rgba(30, 58, 138, 0.9) 0%, rgba(59, 130, 246, 0.85) 50%, rgba(96, 165, 250, 0.8) 100%),
-        url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxwYXR0ZXJuIGlkPSJzbWFsbEdyaWQiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMC4yIiBvcGFjaXR5PSIwLjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjc21hbGxHcmlkKSIvPjwvc3ZnPg==');
-    padding: 0;
+    background: #f0f4f8;
 }
 
 /* Officer Header */
 .officer-header {
-    background: var(--officer-white);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04);
     padding: 1rem 2rem;
     display: flex;
     justify-content: space-between;
@@ -38,6 +41,7 @@
     position: sticky;
     top: 0;
     z-index: 1000;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.6);
 }
 
 .officer-header-left {
@@ -127,8 +131,39 @@
 .officer-sidebar {
     width: 260px;
     background: var(--officer-white);
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
-    padding: 1.5rem 0;
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.04);
+    padding: 0 0 1.5rem 0;
+    transition: box-shadow 0.3s ease;
+    border-right: 1px solid rgba(226, 232, 240, 0.5);
+}
+
+/* Sidebar Brand Header */
+.officer-sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-200);
+    border-left: 4px solid #1e3a8a;
+    margin-bottom: 0.75rem;
+}
+
+.officer-sidebar-brand-icon {
+    font-size: 1.5rem;
+}
+
+.officer-sidebar-brand-label {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--color-primary-900);
+    line-height: 1.2;
+}
+
+.officer-sidebar-brand-sub {
+    font-size: 0.75rem;
+    color: var(--gray-500);
+    margin-top: 0.1rem;
 }
 
 .officer-nav {
@@ -148,24 +183,32 @@
     padding: 0.875rem 1.5rem;
     color: var(--officer-text);
     text-decoration: none;
-    transition: all 0.2s;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     font-weight: 500;
     border-left: 3px solid transparent;
+    position: relative;
 }
 
 .officer-nav-link:hover {
     background: var(--officer-bg-light);
     border-left-color: var(--officer-primary-light);
+    padding-left: 1.75rem;
 }
 
 .officer-nav-link.active {
     background: linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0%, transparent 100%);
     color: var(--officer-primary);
     border-left-color: var(--officer-primary);
+    font-weight: 600;
 }
 
 .officer-nav-icon {
     font-size: 1.25rem;
+    transition: transform 0.2s ease;
+}
+
+.officer-nav-link:hover .officer-nav-icon {
+    transform: scale(1.1);
 }
 
 /* Main Content */
@@ -216,14 +259,32 @@
 .officer-stat-card {
     background: var(--officer-white);
     border: 1px solid var(--officer-border);
-    border-radius: 12px;
+    border-radius: 14px;
     padding: 1.5rem;
-    transition: all 0.3s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.officer-stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--officer-primary), var(--officer-primary-light));
+    transition: height 0.3s ease;
 }
 
 .officer-stat-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(59, 130, 246, 0.08);
+    border-color: rgba(59, 130, 246, 0.2);
+}
+
+.officer-stat-card:hover::before {
+    height: 4px;
 }
 
 .officer-stat-header {
@@ -249,6 +310,11 @@
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
+    transition: transform 0.3s ease;
+}
+
+.officer-stat-card:hover .officer-stat-icon {
+    transform: scale(1.08);
 }
 
 .officer-stat-icon.primary {
@@ -291,17 +357,17 @@
 .officer-app-card {
     background: var(--officer-white);
     border: 1px solid var(--officer-border);
-    border-radius: 12px;
+    border-radius: 14px;
     padding: 1.5rem;
     margin-bottom: 1rem;
-    transition: all 0.3s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
 }
 
 .officer-app-card:hover {
     border-color: var(--officer-primary-light);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.12);
+    transform: translateY(-3px);
 }
 
 .officer-app-header {
@@ -401,15 +467,17 @@
 /* Buttons */
 .officer-btn {
     padding: 0.75rem 1.5rem;
-    border-radius: 8px;
+    border-radius: 10px;
     font-weight: 600;
     font-size: 0.9375rem;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     border: none;
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
+    position: relative;
+    overflow: hidden;
 }
 
 .officer-btn-primary {
@@ -547,7 +615,7 @@
 }
 
 .officer-table tbody tr:hover {
-    background: var(--officer-bg-light);
+    background: linear-gradient(90deg, rgba(59, 130, 246, 0.04), transparent);
 }
 
 /* Forms */
@@ -584,7 +652,8 @@
 .officer-textarea:focus {
     outline: none;
     border-color: var(--officer-primary);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.08);
+    transform: scale(1.002);
 }
 
 .officer-textarea {

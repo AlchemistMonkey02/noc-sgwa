@@ -19,7 +19,7 @@ const ECCalculator = () => {
         abstractionToDate: '',
         dailyQuantum: '',
         annualQuantum: '',
-        state: '',
+        state: 'Rajasthan',
         district: '',
         block: ''
     });
@@ -182,13 +182,13 @@ const ECCalculator = () => {
         const endYear = toDate.getFullYear();
 
         while (currentYear <= endYear) {
-            const yearStart = currentYear === fromDate.getFullYear() 
-                ? fromDate 
+            const yearStart = currentYear === fromDate.getFullYear()
+                ? fromDate
                 : new Date(currentYear, 0, 1);
-            const yearEnd = currentYear === endYear 
-                ? toDate 
+            const yearEnd = currentYear === endYear
+                ? toDate
                 : new Date(currentYear, 11, 31);
-            
+
             const yearDays = Math.ceil((yearEnd - yearStart) / (1000 * 60 * 60 * 24)) + 1;
             const yearQty = (parseFloat(formData.dailyQuantum) || 0) * yearDays;
             const yearEC = (rate * yearQty) * 15;
@@ -211,7 +211,7 @@ const ECCalculator = () => {
             baseEC: baseEC,
             ecAmount: ecAmount,
             years: years,
-            note: formData.waterQualityType === 'Saline' 
+            note: formData.waterQualityType === 'Saline'
                 ? 'For Saline Water, EC Rates for Safe category have been applied, irrespective of actual category of Block.'
                 : null
         });
@@ -228,7 +228,7 @@ const ECCalculator = () => {
             abstractionToDate: '',
             dailyQuantum: '',
             annualQuantum: '',
-            state: '',
+            state: 'Rajasthan',
             district: '',
             block: ''
         });
@@ -251,8 +251,8 @@ const ECCalculator = () => {
             {/* <NOCHeader />            */}
             <div className="noc-container" style={{ padding: '30px 15px' }}>
                 <div className="noc-card">
-                    <h1 style={{ 
-                        color: 'var(--cgwa-primary)', 
+                    <h1 style={{
+                        color: 'var(--cgwa-primary)',
                         marginBottom: '30px',
                         fontSize: '2rem',
                         borderBottom: '3px solid var(--cgwa-primary)',
@@ -439,7 +439,7 @@ const ECCalculator = () => {
                         </div>
 
                         {/* Note Section */}
-                        <div className="noc-alert noc-alert-info" style={{ 
+                        <div className="noc-alert noc-alert-info" style={{
                             marginBottom: '30px',
                             background: '#e3f2fd',
                             border: '1px solid #2196f3'
@@ -477,7 +477,7 @@ const ECCalculator = () => {
 
                     {/* Calculated EC Result */}
                     {calculatedEC && submitted && (
-                        <div className="noc-card" style={{ 
+                        <div className="noc-card" style={{
                             marginTop: '40px',
                             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                             color: 'white',
@@ -512,9 +512,9 @@ const ECCalculator = () => {
                                         <div>
                                             <h4 style={{ marginBottom: '10px' }}>Year-wise Breakdown:</h4>
                                             {calculatedEC.years.map((year, idx) => (
-                                                <div key={idx} style={{ 
-                                                    background: 'rgba(255,255,255,0.1)', 
-                                                    padding: '10px', 
+                                                <div key={idx} style={{
+                                                    background: 'rgba(255,255,255,0.1)',
+                                                    padding: '10px',
                                                     borderRadius: '5px',
                                                     marginBottom: '10px'
                                                 }}>

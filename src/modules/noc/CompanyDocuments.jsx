@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -12,9 +12,29 @@ const CompanyDocuments = () => {
     // const [sidebarOpen, setSidebarOpen] = useState(false); // Removed manual sidebar state
     const [companyId, setCompanyId] = useState(null);
     const [documents, setDocuments] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [uploadingFiles, setUploadingFiles] = useState({});
     const [viewerModal, setViewerModal] = useState({ isOpen: false, documentUrl: '', documentName: '' });
+
+    // Animation Refs
+    const statsRef = useRef(null);
+    const docsRef = useRef(null);
+
+    useEffect(() => {
+        const observerOptions = { threshold: 0.1, rootMargin: '0px 0px -50px 0px' };
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('nd-visible');
+                }
+            });
+        }, observerOptions);
+
+        if (statsRef.current) observer.observe(statsRef.current);
+        if (docsRef.current) observer.observe(docsRef.current);
+
+        return () => observer.disconnect();
+    }, [isLoading]);
 
     const documentTypes = [
         { type: 'GST_CERTIFICATE', label: 'GST Certificate', icon: '📄' },
@@ -37,6 +57,7 @@ const CompanyDocuments = () => {
                         await fetchDocuments(user.companyId);
                     } else {
                         console.warn('No company ID found for user');
+                        setIsLoading(false);
                     }
                 }
             } catch (error) {
@@ -252,79 +273,66 @@ const CompanyDocuments = () => {
 
             <div className="content-container">
                 {/* Breadcrumb */}
-                <div className="breadcrumb">
+                <div className="breadcrumb nd-animate nd-visible">
                     <Link to="/noc/dashboard">Dashboard</Link>
                     <span className="separator">›</span>
                     <span className="current">Company Documents</span>
                 </div>
 
-                <div className="page-title-section">
+                <div className="page-title-section nd-animate nd-visible">
                     <h1 className="page-main-title">Company Documents</h1>
                     <p className="page-subtitle">Securely upload and manage your company documents</p>
                 </div>
 
-                {/* Statistics Cards */}
-                <div className="stats-grid" style={{ marginBottom: '25px' }}>
-                    <div className="stat-card blue" style={{ padding: '15px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ fontSize: '2rem' }}>📊</div>
-                            <div>
-                                <div className="stat-label" style={{ fontSize: '0.8rem' }}>Total Documents</div>
-                                <div className="stat-value" style={{ fontSize: '1.75rem' }}>{totalDocuments}</div>
-                                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
-                                    {categoryCount} categories
-                                </div>
-                            </div>
+                {/* Statistics Row */}
+                <div className="nd-stats-row nd-animate" ref={statsRef} style={{ marginBottom: '30px' }}>
+                    <div className="nd-stat-card" style={{ '--delay': '0.1s' }}>
+                        <div className="nd-stat-icon blue">📊</div>
+                        <div className="nd-stat-info">
+                            <span className="nd-stat-label">Total Documents</span>
+                            <span className="nd-stat-value">{totalDocuments}</span>
+                            <span className="nd-stat-meta">{categoryCount} categories</span>
                         </div>
                     </div>
-                    <div className="stat-card green" style={{ padding: '15px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ fontSize: '2rem' }}>💾</div>
-                            <div>
-                                <div className="stat-label" style={{ fontSize: '0.8rem' }}>Total Storage</div>
-                                <div className="stat-value" style={{ fontSize: '1.75rem' }}>{formatFileSize(totalSize)}</div>
-                                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
-                                    Used space
-                                </div>
-                            </div>
+
+                    <div className="nd-stat-card" style={{ '--delay': '0.2s' }}>
+                        <div className="nd-stat-icon green">💾</div>
+                        <div className="nd-stat-info">
+                            <span className="nd-stat-label">Total Storage</span>
+                            <span className="nd-stat-value">{formatFileSize(totalSize)}</span>
+                            <span className="nd-stat-meta">Used space</span>
                         </div>
                     </div>
-                    <div className="stat-card orange" style={{ padding: '15px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ fontSize: '2rem' }}>📅</div>
-                            <div>
-                                <div className="stat-label" style={{ fontSize: '0.8rem' }}>Last Updated</div>
-                                <div className="stat-value" style={{ fontSize: '1.25rem' }}>
-                                    {documents.length > 0 ? formatDate(documents[documents.length - 1].uploadedAt) : 'N/A'}
-                                </div>
-                                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
-                                    Recent upload
-                                </div>
-                            </div>
+
+                    <div className="nd-stat-card" style={{ '--delay': '0.3s' }}>
+                        <div className="nd-stat-icon orange">📅</div>
+                        <div className="nd-stat-info">
+                            <span className="nd-stat-label">Last Updated</span>
+                            <span className="nd-stat-value" style={{ fontSize: '1.2rem' }}>
+                                {documents.length > 0 ? formatDate(documents[documents.length - 1].uploadedAt) : 'N/A'}
+                            </span>
+                            <span className="nd-stat-meta">Recent upload</span>
                         </div>
                     </div>
                 </div>
 
                 {isLoading ? (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '18px' }}>
-                        {documentTypes.map((type) => (
-                            <div key={type.type} className="form-section">
-                                <div className="section-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <span style={{ fontSize: '1.5rem' }}>📄</span>
-                                        <SkeletonLoader width="150px" height="1.5rem" />
-                                    </div>
+                    <div className="nd-animate nd-visible" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+                        {[1, 2, 3, 4].map((i) => (
+                            <div key={i} className="dashboard-card" style={{ height: '240px' }}>
+                                <div className="card-header" style={{ marginBottom: '20px' }}>
+                                    <SkeletonLoader width="60%" height="1.5rem" />
                                 </div>
-                                <div style={{ padding: '0 20px 20px 20px' }}>
-                                    <SkeletonLoader width="100%" height="3rem" style={{ marginBottom: '10px' }} />
-                                    <SkeletonLoader width="100%" height="3rem" />
+                                <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                    <SkeletonLoader width="100%" height="60px" borderRadius="12px" />
+                                    <SkeletonLoader width="80%" height="40px" borderRadius="12px" />
                                 </div>
                             </div>
                         ))}
                     </div>
                 ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '18px' }}>
-                        {documentTypes.map((docCategory) => {
+                    <div className="nd-animate" ref={docsRef} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '24px' }}>
+                        {documentTypes.map((docCategory, index) => {
                             const allCategoryDocs = getDocumentsByType(docCategory.type);
                             // Sort by uploadedAt desc and take only the latest one
                             const categoryDocs = allCategoryDocs
@@ -334,12 +342,13 @@ const CompanyDocuments = () => {
                             const isUploading = uploadingFiles[docCategory.type];
 
                             return (
-                                <div key={docCategory.type} className="form-section">
+                                <div key={docCategory.type} className="dashboard-card" style={{ '--delay': `${0.1 * (index + 1)}s`, display: 'flex', flexDirection: 'column' }}>
                                     {/* Section Header */}
-                                    <div className="section-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <h3 className="section-title" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <span className="icon">{docCategory.icon}</span> {docCategory.label}
-                                            <span className="badge badge-primary">
+                                    <div className="card-header" style={{ marginBottom: '15px' }}>
+                                        <h3 className="section-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <span className="icon" style={{ fontSize: '1.5rem' }}>{docCategory.icon}</span>
+                                            <span style={{ fontWeight: '700', letterSpacing: '-0.01em' }}>{docCategory.label}</span>
+                                            <span className="badge badge-primary" style={{ marginLeft: 'auto', background: 'rgba(56, 189, 248, 0.2)', color: 'var(--cgwa-primary)', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
                                                 {categoryDocs.length}
                                             </span>
                                         </h3>
@@ -347,26 +356,33 @@ const CompanyDocuments = () => {
 
                                     {/* Document List */}
                                     {categoryDocs.length === 0 ? (
-                                        <div className="empty-state" style={{ padding: '30px 20px' }}>
-                                            <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>📭</div>
-                                            <p style={{ margin: '0 0 4px 0', fontSize: '0.9rem', color: '#64748b' }}>No documents uploaded yet</p>
-                                            <p style={{ margin: '0 0 16px 0', fontSize: '0.8rem', color: '#94a3b8' }}>Upload your document below</p>
-                                            <label className="btn-primary btn-sm" style={{
+                                        <div className="empty-state" style={{
+                                            padding: '40px 20px',
+                                            background: 'rgba(255, 255, 255, 0.03)',
+                                            borderRadius: '16px',
+                                            border: '2px dashed rgba(255, 255, 255, 0.1)',
+                                            textAlign: 'center'
+                                        }}>
+                                            <div style={{ fontSize: '3rem', marginBottom: '15px', opacity: 0.6 }}>📭</div>
+                                            <p style={{ margin: '0 0 6px 0', fontSize: '1rem', fontWeight: '600', color: 'rgba(255, 255, 255, 0.9)' }}>No Document Uploaded</p>
+                                            <p style={{ margin: '0 0 24px 0', fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.5)' }}>Please upload the {docCategory.label}</p>
+
+                                            <label className="btn-primary" style={{
                                                 cursor: isUploading ? 'not-allowed' : 'pointer',
                                                 opacity: isUploading ? 0.6 : 1,
-                                                width: '110px',
-                                                textAlign: 'center',
-                                                padding: '8px 12px',
-                                                fontSize: '0.85rem',
+                                                padding: '12px 24px',
+                                                fontSize: '0.9rem',
                                                 display: 'inline-flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
-                                                gap: '6px',
-                                                whiteSpace: 'nowrap',
-                                                fontWeight: '600'
+                                                gap: '10px',
+                                                borderRadius: '12px',
+                                                fontWeight: '600',
+                                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                boxShadow: '0 8px 16px rgba(0, 0, 0, 0.2)'
                                             }}>
-                                                <span style={{ fontSize: '1rem' }}>📤</span>
-                                                <span>{isUploading ? 'Uploading...' : 'Upload'}</span>
+                                                <span style={{ fontSize: '1.2rem' }}>{isUploading ? '⏳' : '📤'}</span>
+                                                <span>{isUploading ? 'Uploading...' : 'Upload Document'}</span>
                                                 <input
                                                     type="file"
                                                     style={{ display: 'none' }}
@@ -383,44 +399,45 @@ const CompanyDocuments = () => {
                                                     key={doc.documentId || doc._id}
                                                     className="document-item-row"
                                                     style={{
-                                                        padding: '16px',
-                                                        borderBottom: index < categoryDocs.length - 1 ? '1px solid #f1f5f9' : 'none',
+                                                        padding: '20px',
+                                                        borderRadius: '16px',
                                                         display: 'flex',
                                                         flexWrap: 'wrap',
                                                         justifyContent: 'space-between',
                                                         alignItems: 'center',
-                                                        gap: '15px',
-                                                        backgroundColor: '#fff',
-                                                        transition: 'background-color 0.2s'
+                                                        gap: '20px',
+                                                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                        marginTop: '10px'
                                                     }}
-                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
-                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fff'}
                                                 >
                                                     {/* File Info */}
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flex: '1 1 300px', minWidth: 0 }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '18px', flex: '1 1 300px', minWidth: 0 }}>
                                                         <div style={{
-                                                            width: '40px',
-                                                            height: '40px',
-                                                            borderRadius: '8px',
-                                                            backgroundColor: '#eff6ff',
+                                                            width: '48px',
+                                                            height: '48px',
+                                                            borderRadius: '12px',
+                                                            backgroundColor: 'rgba(56, 189, 248, 0.15)',
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             justifyContent: 'center',
-                                                            fontSize: '1.5rem',
-                                                            color: '#2563eb'
+                                                            fontSize: '1.75rem',
+                                                            color: 'var(--cgwa-primary)',
+                                                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
                                                         }}>
                                                             📄
                                                         </div>
                                                         <div style={{ flex: 1, minWidth: 0 }}>
-                                                            <div style={{ fontWeight: '600', color: '#1e293b', fontSize: '0.95rem', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                            <div style={{ fontWeight: '700', color: 'rgba(255, 255, 255, 0.95)', fontSize: '1rem', marginBottom: '6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                                                 {doc.fileName}
                                                             </div>
-                                                            <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                            <div style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.5)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                                <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                                                                     📊 {formatFileSize(doc.fileSize)}
                                                                 </span>
-                                                                <span style={{ width: '3px', height: '3px', borderRadius: '50%', backgroundColor: '#cbd5e1' }}></span>
-                                                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                <span style={{ width: '4px', height: '4px', borderRadius: '50%', backgroundColor: 'rgba(255, 255, 255, 0.2)' }}></span>
+                                                                <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                                                                     📅 {formatDate(doc.uploadedAt)}
                                                                 </span>
                                                             </div>
@@ -433,82 +450,69 @@ const CompanyDocuments = () => {
                                                             <span style={{
                                                                 display: 'inline-flex',
                                                                 alignItems: 'center',
-                                                                gap: '6px',
-                                                                padding: '6px 12px',
-                                                                borderRadius: '20px',
-                                                                backgroundColor: '#dcfce7',
-                                                                color: '#166534',
+                                                                gap: '8px',
+                                                                padding: '8px 16px',
+                                                                borderRadius: '24px',
+                                                                backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                                                                color: '#34d399',
                                                                 fontSize: '0.8rem',
-                                                                fontWeight: '600',
-                                                                border: '1px solid #bbf7d0'
+                                                                fontWeight: '700',
+                                                                border: '1px solid rgba(16, 185, 129, 0.3)',
+                                                                textTransform: 'uppercase',
+                                                                letterSpacing: '0.05em'
                                                             }}>
-                                                                <span style={{ display: 'block', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#166534' }}></span>
+                                                                <span style={{ display: 'block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#34d399', boxShadow: '0 0 8px #34d399' }}></span>
                                                                 Verified
                                                             </span>
                                                         ) : (
                                                             <span style={{
                                                                 display: 'inline-flex',
                                                                 alignItems: 'center',
-                                                                gap: '6px',
-                                                                padding: '6px 12px',
-                                                                borderRadius: '20px',
-                                                                backgroundColor: '#fff7ed',
-                                                                color: '#9a3412',
+                                                                gap: '8px',
+                                                                padding: '8px 16px',
+                                                                borderRadius: '24px',
+                                                                backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                                                                color: '#fbbf24',
                                                                 fontSize: '0.8rem',
-                                                                fontWeight: '600',
-                                                                border: '1px solid #fed7aa'
+                                                                fontWeight: '700',
+                                                                border: '1px solid rgba(245, 158, 11, 0.3)',
+                                                                textTransform: 'uppercase',
+                                                                letterSpacing: '0.05em'
                                                             }}>
-                                                                <span style={{ display: 'block', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#f97316' }}></span>
+                                                                <span style={{ display: 'block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#fbbf24', boxShadow: '0 0 8px #fbbf24' }}></span>
                                                                 Pending Review
                                                             </span>
                                                         )}
                                                     </div>
 
                                                     {/* Actions */}
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
                                                         <button
                                                             onClick={() => handleViewDocument(doc.documentId || doc._id, doc.fileName)}
+                                                            className="nd-action-btn"
+                                                            title="View Document"
                                                             style={{
-                                                                display: 'inline-flex',
-                                                                alignItems: 'center',
-                                                                gap: '6px',
-                                                                padding: '8px 14px',
-                                                                borderRadius: '6px',
-                                                                border: '1px solid #e2e8f0',
-                                                                backgroundColor: '#fff',
-                                                                color: '#475569',
-                                                                fontSize: '0.85rem',
-                                                                fontWeight: '500',
-                                                                cursor: 'pointer',
-                                                                transition: 'all 0.2s'
+                                                                backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                                                                color: 'var(--cgwa-primary)',
+                                                                border: '1px solid rgba(56, 189, 248, 0.2)'
                                                             }}
-                                                            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.backgroundColor = '#f8fafc'; }}
-                                                            onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.backgroundColor = '#fff'; }}
                                                         >
-                                                            <span>👁️</span> View
+                                                            👁️
                                                         </button>
 
                                                         <label
+                                                            className="nd-action-btn"
+                                                            title="Update Document"
                                                             style={{
-                                                                display: 'inline-flex',
-                                                                alignItems: 'center',
-                                                                gap: '6px',
-                                                                padding: '8px 14px',
-                                                                borderRadius: '6px',
-                                                                border: '1px solid #bfdbfe',
-                                                                backgroundColor: '#eff6ff',
-                                                                color: '#2563eb',
-                                                                fontSize: '0.85rem',
-                                                                fontWeight: '500',
+                                                                backgroundColor: 'rgba(129, 140, 248, 0.1)',
+                                                                color: '#818cf8',
+                                                                border: '1px solid rgba(129, 140, 248, 0.2)',
                                                                 cursor: isUploading ? 'not-allowed' : 'pointer',
                                                                 opacity: isUploading ? 0.7 : 1,
-                                                                margin: 0,
-                                                                transition: 'all 0.2s'
+                                                                margin: 0
                                                             }}
-                                                            onMouseEnter={(e) => { if (!isUploading) e.currentTarget.style.backgroundColor = '#dbeafe'; }}
-                                                            onMouseLeave={(e) => { if (!isUploading) e.currentTarget.style.backgroundColor = '#eff6ff'; }}
                                                         >
-                                                            <span>🔄</span> Update
+                                                            🔄
                                                             <input
                                                                 type="file"
                                                                 style={{ display: 'none' }}
@@ -520,23 +524,13 @@ const CompanyDocuments = () => {
 
                                                         <button
                                                             onClick={() => handleDeleteDocument(doc.documentId || doc._id)}
+                                                            className="nd-action-btn"
+                                                            title="Delete Document"
                                                             style={{
-                                                                display: 'inline-flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                width: '36px',
-                                                                height: '36px',
-                                                                borderRadius: '6px',
-                                                                border: '1px solid #fecaca',
-                                                                backgroundColor: '#fff',
-                                                                color: '#dc2626',
-                                                                cursor: 'pointer',
-                                                                transition: 'all 0.2s',
-                                                                fontSize: '1rem'
+                                                                backgroundColor: 'rgba(244, 63, 94, 0.1)',
+                                                                color: '#f43f5e',
+                                                                border: '1px solid rgba(244, 63, 94, 0.2)'
                                                             }}
-                                                            title="Delete file"
-                                                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#fef2f2'; }}
-                                                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#fff'; }}
                                                         >
                                                             🗑️
                                                         </button>
@@ -566,63 +560,81 @@ const CompanyDocuments = () => {
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                    backdropFilter: 'blur(12px)',
                     zIndex: 9999,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    padding: '20px'
+                    padding: '20px',
+                    animation: 'nd-fade-in 0.3s ease'
                 }} onClick={closeViewerModal}>
                     <div style={{
-                        backgroundColor: 'white',
-                        borderRadius: '12px',
-                        width: '90%',
+                        backgroundColor: 'rgba(15, 23, 42, 0.8)',
+                        borderRadius: '24px',
+                        width: '95%',
                         maxWidth: '1200px',
                         height: '90vh',
                         display: 'flex',
                         flexDirection: 'column',
                         overflow: 'hidden',
-                        boxShadow: '0 25px 50px rgba(0, 0, 0, 0.3)'
+                        boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        animation: 'nd-slide-up 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
                     }} onClick={(e) => e.stopPropagation()}>
                         {/* Modal Header */}
                         <div style={{
-                            padding: '20px 24px',
-                            borderBottom: '1px solid #e2e8f0',
+                            padding: '24px 30px',
+                            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
                             display: 'flex',
                             justifyContent: 'space-between',
                             alignItems: 'center',
-                            backgroundColor: '#f8fafc'
+                            background: 'rgba(255, 255, 255, 0.03)'
                         }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <span style={{ fontSize: '1.5rem' }}>📄</span>
-                                <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#1e293b' }}>{viewerModal.documentName}</h3>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                <div style={{
+                                    width: '40px',
+                                    height: '40px',
+                                    borderRadius: '10px',
+                                    backgroundColor: 'rgba(56, 189, 248, 0.15)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '1.25rem',
+                                    color: 'var(--cgwa-primary)'
+                                }}>📄</div>
+                                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '700', color: 'white' }}>{viewerModal.documentName}</h3>
                             </div>
                             <button
                                 onClick={closeViewerModal}
                                 style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    fontSize: '1.5rem',
+                                    background: 'rgba(255, 255, 255, 0.05)',
+                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                    fontSize: '1.25rem',
                                     cursor: 'pointer',
-                                    color: '#64748b',
-                                    padding: '4px 8px',
-                                    borderRadius: '4px',
+                                    color: 'rgba(255, 255, 255, 0.6)',
+                                    width: '40px',
+                                    height: '40px',
+                                    borderRadius: '10px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
                                     transition: 'all 0.2s'
                                 }}
                                 onMouseEnter={(e) => {
-                                    e.currentTarget.style.backgroundColor = '#f1f5f9';
-                                    e.currentTarget.style.color = '#1e293b';
+                                    e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.2)';
+                                    e.currentTarget.style.color = '#ef4444';
                                 }}
                                 onMouseLeave={(e) => {
-                                    e.currentTarget.style.backgroundColor = 'transparent';
-                                    e.currentTarget.style.color = '#64748b';
+                                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                                    e.currentTarget.style.color = 'rgba(255, 255, 255, 0.6)';
                                 }}
                             >
                                 ✕
                             </button>
                         </div>
                         {/* Modal Body */}
-                        <div style={{ flex: 1, overflow: 'auto', backgroundColor: '#f8fafc' }}>
+                        <div style={{ flex: 1, backgroundColor: 'white', position: 'relative' }}>
                             <iframe
                                 src={viewerModal.documentUrl}
                                 style={{

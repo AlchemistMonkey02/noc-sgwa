@@ -2,8 +2,16 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import '../styles/officer-portal.css';
 
+const ROLE_META = {
+    DGO: { label: 'DGO Portal', icon: '🏛️', color: '#1e3a8a' },
+    SGWA: { label: 'SGWA Portal', icon: '🌊', color: '#065f46' },
+    ENFORCEMENT: { label: 'Enforcement Portal', icon: '⚖️', color: '#92400e' },
+    INSPECTION: { label: 'Inspection Portal', icon: '🔍', color: '#581c87' }
+};
+
 const OfficerSidebar = ({ role }) => {
     const location = useLocation();
+    const meta = ROLE_META[role] || { label: 'Officer Portal', icon: '🏛️', color: '#1e3a8a' };
 
     const getNavItems = () => {
         const navItems = {
@@ -32,7 +40,6 @@ const OfficerSidebar = ({ role }) => {
                 { path: '/officer/inspection/history', label: 'History', icon: '📜' }
             ]
         };
-
         return navItems[role] || [];
     };
 
@@ -42,6 +49,17 @@ const OfficerSidebar = ({ role }) => {
 
     return (
         <aside className="officer-sidebar">
+            {/* Brand Header Strip */}
+            <div className="officer-sidebar-brand" style={{ borderLeftColor: meta.color }}>
+                <span className="officer-sidebar-brand-icon">{meta.icon}</span>
+                <div>
+                    <div className="officer-sidebar-brand-label" style={{ color: meta.color }}>
+                        {meta.label}
+                    </div>
+                    <div className="officer-sidebar-brand-sub">State Groundwater Authority</div>
+                </div>
+            </div>
+
             <nav className="officer-nav">
                 <ul className="officer-nav">
                     {getNavItems().map((item) => (
@@ -62,3 +80,4 @@ const OfficerSidebar = ({ role }) => {
 };
 
 export default OfficerSidebar;
+

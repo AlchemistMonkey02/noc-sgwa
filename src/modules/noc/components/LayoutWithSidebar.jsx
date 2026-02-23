@@ -50,6 +50,13 @@ const LayoutWithSidebar = ({ children, showSidebar = true, defaultCollapsed = fa
                 </>
             )}
 
+            {/* Background Decor */}
+            <div className="nd-premium-bg">
+                <div className="nd-shape nd-shape-1"></div>
+                <div className="nd-shape nd-shape-2"></div>
+                <div className="nd-shape nd-shape-3"></div>
+            </div>
+
             <PublicHeader />
 
             {showSidebar && !isDesktop && sidebarOpen && (

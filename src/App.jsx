@@ -9,6 +9,7 @@ import { AuthProvider } from './context/AuthContext';
 import Header from './header/Header';
 import PublicHeader from './modules/public/components/PublicHeader';
 import Layout from './components/Layout';
+import ScrollToTop from './components/ScrollToTop';
 
 // Public Module
 import PublicLanding from './modules/public/PublicLanding';
@@ -20,6 +21,14 @@ import GroundwaterServices from './modules/public/pages/GroundwaterServices';
 import RigRegistrationInfo from './modules/public/pages/RigRegistrationInfo';
 import VendorRegistrationInfo from './modules/public/pages/VendorRegistrationInfo';
 import PublicGuidelines from './modules/public/pages/PublicGuidelines';
+
+// Help & Info Pages
+import ProcessFlow from './modules/public/help/ProcessFlow';
+import Timelines from './modules/public/help/Timelines';
+import Documents from './modules/public/help/Documents';
+import FAQs from './modules/public/help/FAQs';
+import Contact from './modules/public/help/Contact';
+import HowToApply from './modules/public/help/HowToApply';
 
 // Auth Module
 import ForgotPassword from './modules/auth/ForgotPassword';
@@ -98,6 +107,7 @@ function App() {
     <LanguageProvider>
       <AuthProvider>
         <Router>
+          <ScrollToTop />
           <Layout>
             <Routes>
               {/* Root redirect to Public Landing Page */}
@@ -110,6 +120,14 @@ function App() {
               <Route path="/public/services/rig" element={<RigRegistrationInfo />} />
               <Route path="/public/services/vendor" element={<VendorRegistrationInfo />} />
               <Route path="/public/guidelines" element={<PublicGuidelines />} />
+
+              {/* Help & Info Routes */}
+              <Route path="/help/process-flow" element={<ProcessFlow />} />
+              <Route path="/help/timelines" element={<Timelines />} />
+              <Route path="/help/documents" element={<Documents />} />
+              <Route path="/help/faqs" element={<FAQs />} />
+              <Route path="/help/contact" element={<Contact />} />
+              <Route path="/help/how-to-apply" element={<HowToApply />} />
 
               {/* Auth Routes */}
               <Route path="/forgot-password" element={<ForgotPassword />} />

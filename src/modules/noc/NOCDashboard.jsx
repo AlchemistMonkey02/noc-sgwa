@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import { useNavigate, Link } from 'react-router-dom';
+import { useToast } from '../../context/ToastContext';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { EXTERNAL_URLS } from '../../config/constants';
 import { nocApplicationService } from './services/nocApplicationService';
+import ConsultationCallButton from '../../components/ConsultationCallButton';
 import BackButton from '../../components/BackButton';
-
 import LayoutWithSidebar from './components/LayoutWithSidebar';
 import './styles/noc-portal.css';
 
 const NOCDashboard = () => {
     console.log("NOCDashboard mounting");
     const navigate = useNavigate();
+    const { t } = useTranslation();
+    const { error: toastError } = useToast();
     const { user, loading, isLoggingOut } = useAuth();
     console.log("NOCDashboard auth state:", { user, loading, isLoggingOut });
     const [dashboardData, setDashboardData] = useState(null);
@@ -136,12 +140,12 @@ const NOCDashboard = () => {
     // Map API data to dashboard stats
     const stats = dashboardData?.stats || {};
     const dashboardStats = [
-        { label: 'Total Applications', value: stats.totalApplications || '0', icon: '📝', color: 'blue' },
-        { label: 'In Draft', value: stats.inDraft || '0', icon: '📄', color: 'gray' },
-        { label: 'In Process', value: stats.inProcess || '0', icon: '⏳', color: 'orange' },
-        { label: 'Approved NOCs', value: stats.approved || '0', icon: '✅', color: 'green' },
-        { label: 'Queries Raised', value: stats.queriesRaised || '0', icon: '❓', color: 'purple' },
-        { label: 'Rejected', value: stats.rejected || '0', icon: '❌', color: 'red' }
+        { label: t('dashboard.totalApps'), value: stats.totalApplications || '0', icon: '📝', color: 'blue' },
+        { label: t('dashboard.inDraft'), value: stats.inDraft || '0', icon: '📄', color: 'gray' },
+        { label: t('dashboard.inProcess'), value: stats.inProcess || '0', icon: '⏳', color: 'orange' },
+        { label: t('dashboard.approvedNocs'), value: stats.approved || '0', icon: '✅', color: 'green' },
+        { label: t('dashboard.queriesRaised'), value: stats.queriesRaised || '0', icon: '❓', color: 'purple' },
+        { label: t('dashboard.rejected'), value: stats.rejected || '0', icon: '❌', color: 'red' }
     ];
 
     // Map API recent applications data
@@ -183,10 +187,13 @@ const NOCDashboard = () => {
         _id: app._id
     }));
 
-    const upcomingDeadlines = [
-        { task: 'Q4 2025 Compliance Report', dueDate: '15-Jan-2026', daysLeft: 7 },
-        { task: 'Meter Reading Submission', dueDate: '10-Jan-2026', daysLeft: 2 }
-    ];
+    const upcomingDeadlines = (dashboardData?.deadlines || []).map(d => ({
+        task: d.task,
+        dueDate: formatDate(d.dueDate),
+        daysLeft: d.daysLeft
+    }));
+
+    const announcements = dashboardData?.announcements || [];
 
     // Filter approved NOCs from dashboard data
     const approvedNOCs = (dashboardData?.recentApplications || [])
@@ -198,7 +205,7 @@ const NOCDashboard = () => {
             projectName: app.projectDetails?.projectName || 'N/A',
             issueDate: app.nocIssuedDate ? formatDate(app.nocIssuedDate) : formatDate(app.updatedAt),
             validUpto: app.nocValidityDate ? formatDate(app.nocValidityDate) : 'N/A',
-            status: 'Active'
+            status: t('dashboard.active')
         }));
 
     // Handle View Certificate
@@ -207,7 +214,7 @@ const NOCDashboard = () => {
             navigate(`/noc/certificate/${uuid}`);
         } catch (error) {
             console.error('Error viewing certificate:', error);
-            alert('Failed to view certificate. Please try again.');
+            toastError('Failed to view certificate. Please try again.');
         }
     };
 
@@ -227,7 +234,7 @@ const NOCDashboard = () => {
             }
         } catch (error) {
             console.error('Error downloading certificate:', error);
-            alert('Failed to download certificate. Please try again.');
+            toastError('Failed to download certificate. Please try again.');
         }
     };
 
@@ -237,15 +244,14 @@ const NOCDashboard = () => {
 
     return (
         <LayoutWithSidebar>
-            {/* Gradient Header Bar */}
-            <div className="page-gradient-header"></div>
+            {/* Gradient Header Bar Removed for clean SaaS look */}
 
             <div className="content-container">
                 {/* Breadcrumb */}
                 <div className="breadcrumb">
-                    <Link to="/">Home</Link>
+                    <Link to="/">{t('dashboard.home')}</Link>
                     <span className="separator">›</span>
-                    <span className="current">Dashboard</span>
+                    <span className="current">{t('dashboard.title')}</span>
                 </div>
 
                 {/* Back Button */}
@@ -253,8 +259,10 @@ const NOCDashboard = () => {
 
                 {/* Page Title */}
                 <div className="page-title-section">
-                    <h1 className="page-main-title">Dashboard</h1>
-                    <p className="page-subtitle">Welcome back, {user?.username || 'User'}! Here's your overview</p>
+                    <h1 className="page-main-title">{t('dashboard.title')}</h1>
+                    <p className="page-subtitle">
+                        {t('dashboard.welcome')}, <span className="notranslate">{typeof user?.username === 'object' ? (user?.username?.name || user?.name || 'User') : (user?.username || user?.name || 'User')}</span>! {t('dashboard.overview')}
+                    </p>
                 </div>
 
                 {/* Dashboard Stats */}
@@ -264,17 +272,17 @@ const NOCDashboard = () => {
                             key={index}
                             className={`dashboard-stat-card ${stat.color}`}
                             onClick={() => {
-                                if (stat.label === 'Total Applications') navigate('/noc/track-status');
-                                if (stat.label === 'Pending Payments') navigate('/noc/payment-details');
+                                if (stat.label === t('dashboard.totalApps')) navigate('/noc/track-status');
+                                if (stat.label === t('dashboard.paymentDetails')) navigate('/noc/payment-details');
                             }}
-                            style={{ cursor: stat.label === 'Total Applications' || stat.label === 'Pending Payments' ? 'pointer' : 'default' }}
+                            style={{ cursor: stat.label === t('dashboard.totalApps') || stat.label === t('dashboard.paymentDetails') ? 'pointer' : 'default' }}
                         >
                             <div className="stat-card-content">
                                 <div className="stat-icon-wrapper">
                                     <span className="stat-icon">{stat.icon}</span>
                                 </div>
                                 <div className="stat-info">
-                                    <div className="stat-number">{stat.value}</div>
+                                    <div className="stat-number notranslate">{stat.value}</div>
                                     <div className="stat-label-text">{stat.label}</div>
                                 </div>
                             </div>
@@ -285,41 +293,40 @@ const NOCDashboard = () => {
                 {/* Quick Actions */}
                 <div className="dashboard-card">
                     <div className="card-title-bar">
-                        <h2 className="card-main-title">⚡ Quick Actions</h2>
+                        <h2 className="card-main-title">{t('dashboard.quickActions')}</h2>
                     </div>
                     <div className="card-content-area">
                         <div className="quick-actions-grid">
                             <Link to="/noc/application" className="quick-action-item">
                                 <span className="action-icon-badge blue">📝</span>
-                                <span className="action-text">Apply For Fresh NOC</span>
+                                <span className="action-text">{t('dashboard.applyFresh')}</span>
                                 <span className="action-chevron">→</span>
                             </Link>
                             <Link to="/noc/check-eligibility" className="quick-action-item">
                                 <span className="action-icon-badge indigo">✨</span>
-                                <span className="action-text">Check Eligibility</span>
+                                <span className="action-text">{t('dashboard.checkEligibility')}</span>
                                 <span className="action-chevron">→</span>
                             </Link>
                             <Link to="/noc/application?type=renewal" className="quick-action-item">
                                 <span className="action-icon-badge orange">🔄</span>
-                                <span className="action-text">Renew Existing NOC</span>
+                                <span className="action-text">{t('dashboard.renewNoc')}</span>
                                 <span className="action-chevron">→</span>
                             </Link>
                             <Link to="/noc/track-status" className="quick-action-item">
                                 <span className="action-icon-badge red">🔍</span>
-                                <span className="action-text">Track Application</span>
+                                <span className="action-text">{t('dashboard.trackApp')}</span>
                                 <span className="action-chevron">→</span>
                             </Link>
                             <Link to="/noc/queries" className="quick-action-item">
                                 <span className="action-icon-badge purple">❓</span>
-                                <span className="action-text">View Queries</span>
+                                <span className="action-text">{t('dashboard.viewQueries')}</span>
                                 <span className="action-chevron">→</span>
                             </Link>
                             <Link to="/noc/payment-details" className="quick-action-item">
                                 <span className="action-icon-badge teal">💳</span>
-                                <span className="action-text">Payment Details</span>
+                                <span className="action-text">{t('dashboard.paymentDetails')}</span>
                                 <span className="action-chevron">→</span>
                             </Link>
-
                         </div>
                     </div>
                 </div>
@@ -328,52 +335,49 @@ const NOCDashboard = () => {
                 {approvedNOCs.length > 0 && (
                     <div className="dashboard-card">
                         <div className="card-title-bar">
-                            <h2 className="card-main-title">📜 Your NOC Certificates</h2>
-                            <span className="status-badge success">{approvedNOCs.length} Active</span>
+                            <h2 className="card-main-title">{t('dashboard.yourNocs')}</h2>
+                            <span className="status-badge success">{approvedNOCs.length} {t('dashboard.active')}</span>
                         </div>
                         <div className="card-content-area">
                             <div style={{ display: 'grid', gap: '1rem' }}>
                                 {approvedNOCs.map((noc, index) => (
                                     <div
                                         key={index}
+                                        className="card"
                                         style={{
-                                            background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-                                            border: '2px solid #0284c7',
-                                            borderRadius: '12px',
                                             padding: '1.5rem',
                                             display: 'flex',
                                             justifyContent: 'space-between',
-                                            alignItems: 'center'
+                                            alignItems: 'center',
+                                            marginBottom: '1rem'
                                         }}
                                     >
                                         <div>
-                                            <h3 style={{ margin: '0 0 0.5rem 0', color: '#0c4a6e', fontSize: '1.125rem' }}>
-                                                📋 {noc.projectName}
+                                            <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--gray-900)', fontSize: '1.125rem' }}>
+                                                📋 <span className="notranslate">{noc.projectName}</span>
                                             </h3>
-                                            <p style={{ margin: '0.25rem 0', fontSize: '0.875rem', color: '#075985' }}>
-                                                <strong>NOC Number:</strong> {noc.nocNumber}
+                                            <p style={{ margin: '0.25rem 0', fontSize: '0.875rem', color: 'var(--gray-600)' }}>
+                                                <strong>{t('dashboard.nocNumberLabel')}</strong> <span className="notranslate">{noc.nocNumber}</span>
                                             </p>
-                                            <p style={{ margin: '0.25rem 0', fontSize: '0.875rem', color: '#075985' }}>
-                                                <strong>Issue Date:</strong> {noc.issueDate} | <strong>Valid Until:</strong> 2 years from issue date
+                                            <p style={{ margin: '0.25rem 0', fontSize: '0.875rem', color: 'var(--gray-600)' }}>
+                                                <strong>{t('dashboard.issueDateLabel')}</strong> <span className="notranslate">{noc.issueDate}</span> | <strong>{t('dashboard.validUntilLabel')}</strong> <span className="notranslate">{noc.validUpto}</span>
                                             </p>
-                                            <span className="status-badge success" style={{ marginTop: '0.5rem', display: 'inline-block' }}>
+                                            <span className="badge badge-success notranslate" style={{ marginTop: '0.5rem', display: 'inline-block' }}>
                                                 ✅ {noc.status}
                                             </span>
                                         </div>
                                         <div style={{ display: 'flex', gap: '0.75rem' }}>
                                             <button
                                                 onClick={() => handleViewCertificate(noc.uuid, noc.nocNumber)}
-                                                className="bhuneer-submit-btn"
-                                                style={{ fontSize: '0.9375rem', padding: '0.75rem 1.25rem' }}
+                                                className="btn btn-secondary"
                                             >
-                                                👁️ View Certificate
+                                                {t('dashboard.viewCert')}
                                             </button>
                                             <button
-                                                className="bhuneer-secondary-btn"
-                                                style={{ fontSize: '0.9375rem', padding: '0.75rem 1.25rem' }}
+                                                className="btn btn-primary"
                                                 onClick={() => handleDownloadCertificate(noc.uuid)}
                                             >
-                                                📥 Download
+                                                {t('dashboard.download')}
                                             </button>
                                         </div>
                                     </div>
@@ -383,36 +387,78 @@ const NOCDashboard = () => {
                     </div>
                 )}
 
+                {/* Connect with Officers */}
+                {recentApplications.length > 0 && (
+                    <div className="dashboard-card">
+                        <div className="card-title-bar">
+                            <h2 className="card-main-title">🎥 Connect with your Case Officers</h2>
+                            <span className="status-badge info">Video / Voice</span>
+                        </div>
+                        <div className="card-content-area">
+                            <p style={{ fontSize: '0.875rem', color: 'var(--gray-600)', marginBottom: '1rem' }}>
+                                Start a live consultation with your assigned officer for your application{' '}
+                                <strong className="notranslate">{recentApplications[0]?.id}</strong>.
+                            </p>
+                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                <ConsultationCallButton
+                                    applicationNumber={recentApplications[0]?.id}
+                                    officerType="DGO"
+                                    label="📞 Call DGO"
+                                    variant="primary"
+                                />
+                                <ConsultationCallButton
+                                    applicationNumber={recentApplications[0]?.id}
+                                    officerType="SGWA"
+                                    label="📞 Call SGWA"
+                                    variant="primary"
+                                />
+                                <ConsultationCallButton
+                                    applicationNumber={recentApplications[0]?.id}
+                                    officerType="ENFORCEMENT"
+                                    label="📞 Call Enforcement"
+                                    variant="primary"
+                                />
+                            </div>
+                            {recentApplications.length > 1 && (
+                                <p style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: 'var(--gray-500)' }}>
+                                    💡 Showing buttons for your most recent application. Go to{' '}
+                                    <Link to="/noc/track-status">Application Status</Link> to call for a specific application.
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* Recent Applications */}
                 <div className="dashboard-card">
                     <div className="card-title-bar">
-                        <h2 className="card-main-title">📄 Recent Applications</h2>
-                        <Link to="/noc/track-status" className="card-view-all">View All →</Link>
+                        <h2 className="card-main-title">{t('dashboard.recentApps')}</h2>
+                        <Link to="/noc/track-status" className="card-view-all">{t('dashboard.viewAll')}</Link>
                     </div>
                     <div className="card-content-area no-padding">
                         <div className="professional-table-wrapper">
                             <table className="professional-table">
                                 <thead>
                                     <tr>
-                                        <th>Application ID</th>
-                                        <th>Type</th>
-                                        <th>Submitted Date</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
+                                        <th>{t('dashboard.appId')}</th>
+                                        <th>{t('dashboard.type')}</th>
+                                        <th>{t('dashboard.submittedDate')}</th>
+                                        <th>{t('dashboard.status')}</th>
+                                        <th>{t('dashboard.actions')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {recentApplications.map((app, index) => (
                                         <tr key={index}>
-                                            <td data-label="Application ID"><strong className="text-blue">{app.id}</strong></td>
-                                            <td data-label="Type">{app.type}</td>
-                                            <td data-label="Submitted Date">{app.submittedDate}</td>
-                                            <td data-label="Status">
-                                                <span className={`status-badge ${app.statusClass || (app.status === 'Exempt' ? 'success' : 'info')}`}>
+                                            <td data-label={t('dashboard.appId')} className="notranslate"><strong className="text-blue">{app.id}</strong></td>
+                                            <td data-label={t('dashboard.type')} className="notranslate">{app.type}</td>
+                                            <td data-label={t('dashboard.submittedDate')} className="notranslate">{app.submittedDate}</td>
+                                            <td data-label={t('dashboard.status')}>
+                                                <span className={`status-badge notranslate ${app.statusClass || (app.status === 'Exempt' ? 'success' : 'info')}`}>
                                                     {app.status}
                                                 </span>
                                             </td>
-                                            <td data-label="Actions">
+                                            <td data-label={t('dashboard.actions')}>
                                                 <button
                                                     className="table-action-btn"
                                                     onClick={() => {
@@ -421,7 +467,7 @@ const NOCDashboard = () => {
                                                         navigate(`/noc/application/${targetId}`);
                                                     }}
                                                 >
-                                                    View
+                                                    {t('dashboard.view')}
                                                 </button>
                                             </td>
                                         </tr>
@@ -437,21 +483,25 @@ const NOCDashboard = () => {
                     {/* Upcoming Deadlines */}
                     <div className="dashboard-card">
                         <div className="card-title-bar">
-                            <h2 className="card-main-title">⏰ Upcoming Deadlines</h2>
+                            <h2 className="card-main-title">{t('dashboard.deadlinesTitle')}</h2>
                         </div>
                         <div className="card-content-area">
                             <div className="deadline-list">
-                                {upcomingDeadlines.map((deadline, index) => (
-                                    <div key={index} className="deadline-item">
-                                        <div className="deadline-info">
-                                            <div className="deadline-task">{deadline.task}</div>
-                                            <div className="deadline-date">Due: {deadline.dueDate}</div>
+                                {upcomingDeadlines.length > 0 ? (
+                                    upcomingDeadlines.map((deadline, index) => (
+                                        <div key={index} className="deadline-item">
+                                            <div className="deadline-info">
+                                                <div className="deadline-task">{deadline.task}</div>
+                                                <div className="deadline-date">{t('dashboard.due')} {deadline.dueDate}</div>
+                                            </div>
+                                            <div className={`deadline-badge ${deadline.daysLeft <= 3 ? 'urgent' : 'normal'}`}>
+                                                {deadline.daysLeft} {t('dashboard.daysLeft')}
+                                            </div>
                                         </div>
-                                        <div className={`deadline-badge ${deadline.daysLeft <= 3 ? 'urgent' : 'normal'}`}>
-                                            {deadline.daysLeft} days left
-                                        </div>
-                                    </div>
-                                ))}
+                                    ))
+                                ) : (
+                                    <div className="no-data-text">{t('dashboard.noUpcomingDeadlines') || 'No upcoming deadlines'}</div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -459,24 +509,25 @@ const NOCDashboard = () => {
                     {/* Important Notices */}
                     <div className="dashboard-card">
                         <div className="card-title-bar">
-                            <h2 className="card-main-title">📢 Announcements</h2>
+                            <h2 className="card-main-title">{t('dashboard.announcements')}</h2>
                         </div>
                         <div className="card-content-area">
                             <div className="announcement-list">
-                                <div className="announcement-item">
-                                    <span className="announcement-badge new">NEW</span>
-                                    <div className="announcement-text">
-                                        <strong>Revised Water Extraction Charges</strong>
-                                        <p>New tariff rates effective from January 1, 2026</p>
-                                    </div>
-                                </div>
-                                <div className="announcement-item">
-                                    <span className="announcement-badge important">IMPORTANT</span>
-                                    <div className="announcement-text">
-                                        <strong>Mandatory Piezometer Installation</strong>
-                                        <p>Required for all industries in semi-critical blocks</p>
-                                    </div>
-                                </div>
+                                {announcements.length > 0 ? (
+                                    announcements.map((ann, index) => (
+                                        <div key={index} className="announcement-item">
+                                            <span className={`announcement-badge ${ann.type.toLowerCase()}`}>
+                                                {ann.type === 'NEW' ? t('dashboard.new') : t('dashboard.important')}
+                                            </span>
+                                            <div className="announcement-text">
+                                                <strong>{ann.title}</strong>
+                                                <p>{ann.description}</p>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="no-data-text">{t('dashboard.noAnnouncements') || 'No new announcements'}</div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -485,21 +536,21 @@ const NOCDashboard = () => {
                 {/* Utility Tools */}
                 <div className="dashboard-card">
                     <div className="card-title-bar">
-                        <h2 className="card-main-title">🛠️ Tools & Calculators</h2>
+                        <h2 className="card-main-title">{t('dashboard.toolsTitle')}</h2>
                     </div>
                     <div className="card-content-area">
                         <div className="utility-tools-grid">
                             <a href={EXTERNAL_URLS.CHARGES_CALCULATOR} target="_blank" rel="noopener noreferrer" className="utility-tool-card" style={{ textDecoration: 'none' }}>
                                 <div className="utility-icon">💰</div>
-                                <div className="utility-name">Abstraction Charges</div>
+                                <div className="utility-name">{t('dashboard.abstraction')}</div>
                             </a>
                             <Link to="/noc/check-eligibility" className="utility-tool-card">
                                 <div className="utility-icon">✅</div>
-                                <div className="utility-name">Eligibility Checker</div>
+                                <div className="utility-name">{t('dashboard.checkEligibility')}</div>
                             </Link>
                             <Link to="/tools/document-checklist" className="utility-tool-card">
                                 <div className="utility-icon">📋</div>
-                                <div className="utility-name">Document Checklist</div>
+                                <div className="utility-name">{t('dashboard.docChecklist')}</div>
                             </Link>
                         </div>
                     </div>

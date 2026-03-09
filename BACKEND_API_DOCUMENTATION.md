@@ -37,7 +37,7 @@
 {
   "username": "string",
   "password": "string",
-  "userType": "APPLICANT | DGO | RSGWA | ENFORCEMENT",
+  "userType": "APPLICANT | DGO | SGWA | ENFORCEMENT",
   "captcha": "string"
 }
 ```

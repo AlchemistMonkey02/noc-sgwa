@@ -1,8 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import './ResetPassword.css';
-
-import API_BASE_URL from '../../config/apiConfig';
+import apiClient from '../../services/apiClient';
 
 const ResetPassword = () => {
     const navigate = useNavigate();
@@ -24,7 +20,6 @@ const ResetPassword = () => {
     const [validating, setValidating] = useState(true);
 
     useEffect(() => {
-        // Validate token on component mount
         validateToken();
     }, [token]);
 
@@ -36,18 +31,11 @@ const ResetPassword = () => {
         }
 
         try {
-            // TODO: Replace with actual API call
-            const response = await fetch(`${API_BASE_URL}/auth/validate-reset-token?token=${token}`);
-
-            if (response.ok) {
-                setTokenValid(true);
-            } else {
-                setTokenValid(false);
-            }
+            await apiClient.get(`/auth/validate-reset-token?token=${token}`);
+            setTokenValid(true);
         } catch (error) {
             console.error('Token validation error:', error);
-            // For demo, assume token is valid
-            setTokenValid(true);
+            setTokenValid(false);
         } finally {
             setValidating(false);
         }
@@ -55,10 +43,7 @@ const ResetPassword = () => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        setFormData(prev => ({ ...prev, [name]: value }));
         setError('');
     };
 
@@ -69,28 +54,16 @@ const ResetPassword = () => {
         const hasNumber = /[0-9]/.test(password);
         const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
-        if (password.length < minLength) {
-            return 'Password must be at least 8 characters long';
-        }
-        if (!hasUpperCase) {
-            return 'Password must contain at least one uppercase letter';
-        }
-        if (!hasLowerCase) {
-            return 'Password must contain at least one lowercase letter';
-        }
-        if (!hasNumber) {
-            return 'Password must contain at least one number';
-        }
-        if (!hasSpecialChar) {
-            return 'Password must contain at least one special character';
-        }
+        if (password.length < minLength) return 'Password must be at least 8 characters long';
+        if (!hasUpperCase) return 'Password must contain at least one uppercase letter';
+        if (!hasLowerCase) return 'Password must contain at least one lowercase letter';
+        if (!hasNumber) return 'Password must contain at least one number';
+        if (!hasSpecialChar) return 'Password must contain at least one special character';
         return null;
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        // Validation
         if (!formData.newPassword || !formData.confirmPassword) {
             setError('Please fill all required fields');
             return;
@@ -111,35 +84,15 @@ const ResetPassword = () => {
         setError('');
 
         try {
-            // TODO: Replace with actual API call
-            const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    token: token,
-                    newPassword: formData.newPassword
-                })
+            await apiClient.post('/auth/reset-password', {
+                token: token,
+                newPassword: formData.newPassword
             });
-
-            if (response.ok) {
-                setSuccess(true);
-                // Redirect to login after 3 seconds
-                setTimeout(() => {
-                    navigate('/');
-                }, 3000);
-            } else {
-                const data = await response.json();
-                setError(data.message || 'Failed to reset password. Please try again.');
-            }
+            setSuccess(true);
+            setTimeout(() => navigate('/'), 3000);
         } catch (error) {
             console.error('Reset password error:', error);
-            // For demo purposes, show success
-            setSuccess(true);
-            setTimeout(() => {
-                navigate('/');
-            }, 3000);
+            setError(error.message || 'Failed to reset password');
         } finally {
             setLoading(false);
         }

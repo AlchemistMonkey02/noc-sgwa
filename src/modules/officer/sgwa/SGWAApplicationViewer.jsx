@@ -35,6 +35,8 @@ const SGWAApplicationViewer = () => {
                     projectDetails: appData.projectDetails || {},
                     locationDetails: appData.locationDetails || {},
                     waterRequirement: appData.waterRequirement || {},
+                    isExempted: appData.isExempted || false,
+                    exemptionDetails: appData.exemptionDetails || null,
                     documents: appData.documents || [],
                     timeline: appData.timeline || [],
                     dgoRecommendation: appData.dgoRecommendation || { status: 'PENDING' } // Handle missing recommendation
@@ -334,6 +336,44 @@ const SGWAApplicationViewer = () => {
                                             </div>
                                         </div>
                                     </div>
+
+                                    {/* Exemption Details (If Applicable) */}
+                                    {application.isExempted && application.exemptionDetails && (
+                                        <div className="detail-section">
+                                            <h3 style={{ color: '#059669' }}>🌾 Exemption Application Details</h3>
+                                            <div className="detail-grid">
+                                                <div className="detail-item">
+                                                    <label>Application SubType</label>
+                                                    <p>{application.exemptionDetails.applicationSubType}</p>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <label>Gram Panchayat / Village</label>
+                                                    <p>{application.exemptionDetails.agriculturalDetails?.gramPanchayatName}</p>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <label>Khasra No / Plot No</label>
+                                                    <p>{application.exemptionDetails.agriculturalDetails?.landDetailsKhasraNo}</p>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <label>Land Area (Hectare)</label>
+                                                    <p>{application.exemptionDetails.agriculturalDetails?.landHoldingAreaHectare}</p>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <label>Requested Water (KLD)</label>
+                                                    <p>{application.exemptionDetails.agriculturalDetails?.waterRequirementKLD} KLD</p>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <label>System Eligibility Check</label>
+                                                    <p style={{
+                                                        fontWeight: 'bold',
+                                                        color: application.exemptionDetails.exemptionEligible ? '#16a34a' : '#d97706'
+                                                    }}>
+                                                        {application.exemptionDetails.exemptionEligible ? 'ELIGIBLE' : 'PENDING REVIEW'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 

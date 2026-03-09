@@ -4,11 +4,15 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 // Context Providers
 import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
+import { NotificationProvider } from './context/NotificationContext';
 
 // Header Components
 import Header from './header/Header';
 import PublicHeader from './modules/public/components/PublicHeader';
 import Layout from './components/Layout';
+import ScrollToTop from './components/ScrollToTop';
+import NativeConsultation from './modules/noc/components/NativeConsultation';
 
 // Public Module
 import PublicLanding from './modules/public/PublicLanding';
@@ -20,6 +24,14 @@ import GroundwaterServices from './modules/public/pages/GroundwaterServices';
 import RigRegistrationInfo from './modules/public/pages/RigRegistrationInfo';
 import VendorRegistrationInfo from './modules/public/pages/VendorRegistrationInfo';
 import PublicGuidelines from './modules/public/pages/PublicGuidelines';
+
+// Help & Info Pages
+import ProcessFlow from './modules/public/help/ProcessFlow';
+import Timelines from './modules/public/help/Timelines';
+import Documents from './modules/public/help/Documents';
+import FAQs from './modules/public/help/FAQs';
+import Contact from './modules/public/help/Contact';
+import HowToApply from './modules/public/help/HowToApply';
 
 // Auth Module
 import ForgotPassword from './modules/auth/ForgotPassword';
@@ -95,265 +107,280 @@ import NOCHelp from './modules/noc/NOCHelp';
 
 function App() {
   return (
-    <LanguageProvider>
-      <AuthProvider>
-        <Router>
-          <Layout>
-            <Routes>
-              {/* Root redirect to Public Landing Page */}
-              <Route path="/" element={<PublicLanding />} />
-              <Route path="/public/know-your-ec" element={<KnowYourEC />} />
-              <Route path="/application-status" element={<ApplicationStatus />} />
+    <ToastProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <Router>
+            <ScrollToTop />
+            <NotificationProvider>
+              <NativeConsultation />
+              <Layout>
+                <Routes>
+                  {/* Root redirect to Public Landing Page */}
+                  <Route path="/" element={<PublicLanding />} />
+                  <Route path="/public/know-your-ec" element={<KnowYourEC />} />
+                  <Route path="/application-status" element={<ApplicationStatus />} />
 
-              {/* New Service Info Routes */}
-              <Route path="/public/services/noc" element={<GroundwaterServices />} />
-              <Route path="/public/services/rig" element={<RigRegistrationInfo />} />
-              <Route path="/public/services/vendor" element={<VendorRegistrationInfo />} />
-              <Route path="/public/guidelines" element={<PublicGuidelines />} />
+                  {/* New Service Info Routes */}
+                  <Route path="/public/services/noc" element={<GroundwaterServices />} />
+                  <Route path="/public/services/rig" element={<RigRegistrationInfo />} />
+                  <Route path="/public/services/vendor" element={<VendorRegistrationInfo />} />
+                  <Route path="/public/guidelines" element={<PublicGuidelines />} />
 
-              {/* Auth Routes */}
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
+                  {/* Help & Info Routes */}
+                  <Route path="/help/process-flow" element={<ProcessFlow />} />
+                  <Route path="/help/timelines" element={<Timelines />} />
+                  <Route path="/help/documents" element={<Documents />} />
+                  <Route path="/help/faqs" element={<FAQs />} />
+                  <Route path="/help/contact" element={<Contact />} />
+                  <Route path="/help/how-to-apply" element={<HowToApply />} />
 
-              {/* NOC Module Routes (Applicant Portal) */}
-              <Route path="/noc" element={<Navigate to="/" replace />} />
-              <Route path="/noc/login" element={<PublicLanding />} />
-              <Route path="/noc/register" element={<NOCRegister />} />
-              <Route path="/noc/dashboard" element={<NOCDashboard />} />
-              <Route path="/noc/company-profile" element={<CompanyProfile />} />
-              <Route path="/noc/company-documents" element={<CompanyDocuments />} />
-              <Route path="/noc/user-profile" element={<UserProfile />} />
-              <Route path="/noc/application" element={<NOCApplication />} />
-              <Route path="/noc/application/:id" element={<ApplicationDetail />} />
-              <Route path="/noc/application/summary" element={<ApplicationSummary />} />
-              <Route path="/noc/certificate/:nocNumber" element={<NOCCertificatePage />} />
-              <Route path="/noc/payment-details" element={<PaymentDetails />} />
-              <Route path="/noc/track-status" element={<ApplicationList />} />
-              <Route path="/noc/track-status/:id" element={<ApplicationStatusTracker />} />
-              <Route path="/noc/update-contact" element={<ContactUpdate />} />
-              <Route path="/noc/check-eligibility" element={<EligibilityChecker />} />
-              {/* <Route path="/noc/self-compliance" element={<SelfCompliance />} /> */}
-              <Route path="/noc/exempt-application" element={<ExemptedApplicationForm />} />
+                  {/* Auth Routes */}
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
 
-              {/* New Sidebar Screens */}
-              <Route path="/noc/account-settings" element={<AccountSettings />} />
-              <Route path="/noc/queries" element={<NOCQueries />} />
-              {/* <Route path="/noc/eac" element={<EACDashboard />} /> */}
-              <Route path="/noc/issue-reporting" element={<IssueReporting />} />
-              <Route path="/noc/payment-details" element={<PaymentDetails />} /> {/* Existing but ensuring clarity */}
-              <Route path="/noc/charge-revision" element={<ChargeRevision />} />
-              <Route path="/noc/reports" element={<NOCReports />} />
-              <Route path="/noc/utilities" element={<Utilities />} />
-              <Route path="/noc/help" element={<NOCHelp />} />
+                  {/* NOC Module Routes (Applicant Portal) */}
+                  <Route path="/noc" element={<Navigate to="/" replace />} />
+                  <Route path="/noc/login" element={<PublicLanding />} />
+                  <Route path="/noc/register" element={<NOCRegister />} />
+                  <Route path="/noc/dashboard" element={<NOCDashboard />} />
+                  <Route path="/noc/company-profile" element={<CompanyProfile />} />
+                  <Route path="/noc/company-documents" element={<CompanyDocuments />} />
+                  <Route path="/noc/user-profile" element={<UserProfile />} />
+                  <Route path="/noc/application" element={<NOCApplication />} />
+                  <Route path="/noc/application/:id" element={<ApplicationDetail />} />
+                  <Route path="/noc/application/summary" element={<ApplicationSummary />} />
+                  <Route path="/noc/certificate/:nocNumber" element={<NOCCertificatePage />} />
+                  <Route path="/noc/payment-details" element={<PaymentDetails />} />
+                  <Route path="/noc/track-status" element={<ApplicationList />} />
+                  <Route path="/noc/track-status/:id" element={<ApplicationStatusTracker />} />
+                  <Route path="/noc/update-contact" element={<ContactUpdate />} />
+                  <Route path="/noc/check-eligibility" element={<EligibilityChecker />} />
+                  {/* <Route path="/noc/self-compliance" element={<SelfCompliance />} /> */}
+                  <Route path="/noc/exempt-application" element={<ExemptedApplicationForm />} />
 
-              {/* Tools Routes */}
-              <Route path="/tools" element={<ToolsDashboard />} />
-              <Route path="/tools/document-checklist" element={<DocumentChecklist />} />
+                  {/* New Sidebar Screens */}
+                  <Route path="/noc/account-settings" element={<AccountSettings />} />
+                  <Route path="/noc/queries" element={<NOCQueries />} />
+                  {/* <Route path="/noc/eac" element={<EACDashboard />} /> */}
+                  <Route path="/noc/issue-reporting" element={<IssueReporting />} />
+                  <Route path="/noc/payment-details" element={<PaymentDetails />} /> {/* Existing but ensuring clarity */}
+                  <Route path="/noc/charge-revision" element={<ChargeRevision />} />
+                  <Route path="/noc/reports" element={<NOCReports />} />
+                  <Route path="/noc/utilities" element={<Utilities />} />
+                  <Route path="/noc/help" element={<NOCHelp />} />
 
-              {/* Officer Portal Routes */}
-              <Route path="/officer" element={<Navigate to="/officer/login" replace />} />
-              <Route path="/officer/login" element={<OfficerLogin />} />
+                  {/* Tools Routes */}
+                  <Route path="/tools" element={<ToolsDashboard />} />
+                  <Route path="/tools/document-checklist" element={<DocumentChecklist />} />
 
-              {/* DGO Routes - Protected */}
-              <Route
-                path="/officer/dgo/dashboard"
-                element={
-                  <ProtectedRoute requiredRole="DGO">
-                    <DGODashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/officer/dgo/applications"
-                element={
-                  <ProtectedRoute requiredRole="DGO">
-                    <ApplicationsList />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/officer/dgo/applications/:applicationId"
-                element={
-                  <ProtectedRoute requiredRole="DGO">
-                    <ApplicationViewer />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/officer/dgo/applications/:applicationId/inspection-report"
-                element={
-                  <ProtectedRoute requiredRole="DGO">
-                    <InspectionReport />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/officer/dgo/inspections"
-                element={
-                  <ProtectedRoute requiredRole="DGO">
-                    <DGOInspectionList />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/officer/dgo/queries"
-                element={
-                  <ProtectedRoute requiredRole="DGO">
-                    <QueriesList />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/officer/dgo/reports"
-                element={
-                  <ProtectedRoute requiredRole="DGO">
-                    <OfficerReports />
-                  </ProtectedRoute>
-                }
-              />
+                  {/* Officer Portal Routes */}
+                  <Route path="/officer" element={<Navigate to="/officer/login" replace />} />
+                  <Route path="/officer/login" element={<OfficerLogin />} />
 
-              {/* SGWA Routes - Protected */}
-              <Route
-                path="/officer/sgwa/dashboard"
-                element={
-                  <ProtectedRoute requiredRole="SGWA">
-                    <SGWADashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/officer/sgwa/applications"
-                element={
-                  <ProtectedRoute requiredRole="SGWA">
-                    <SGWAApplicationsList />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/officer/sgwa/applications/:applicationId"
-                element={
-                  <ProtectedRoute requiredRole="SGWA">
-                    <SGWAApplicationViewer />
-                  </ProtectedRoute>
-                }
-              />
+                  {/* DGO Routes - Protected */}
+                  <Route
+                    path="/officer/dgo/dashboard"
+                    element={
+                      <ProtectedRoute requiredRole="DGO">
+                        <DGODashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/officer/dgo/applications"
+                    element={
+                      <ProtectedRoute requiredRole="DGO">
+                        <ApplicationsList />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/officer/dgo/applications/:applicationId"
+                    element={
+                      <ProtectedRoute requiredRole="DGO">
+                        <ApplicationViewer />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/officer/dgo/applications/:applicationId/inspection-report"
+                    element={
+                      <ProtectedRoute requiredRole="DGO">
+                        <InspectionReport />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/officer/dgo/inspections"
+                    element={
+                      <ProtectedRoute requiredRole="DGO">
+                        <DGOInspectionList />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/officer/dgo/queries"
+                    element={
+                      <ProtectedRoute requiredRole="DGO">
+                        <QueriesList />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/officer/dgo/reports"
+                    element={
+                      <ProtectedRoute requiredRole="DGO">
+                        <OfficerReports />
+                      </ProtectedRoute>
+                    }
+                  />
 
-              <Route
-                path="/officer/sgwa/technical-review"
-                element={
-                  <ProtectedRoute requiredRole="SGWA">
-                    <SGWATechnicalReview />
-                  </ProtectedRoute>
-                }
-              />
+                  {/* SGWA Routes - Protected */}
+                  <Route
+                    path="/officer/sgwa/dashboard"
+                    element={
+                      <ProtectedRoute requiredRole="SGWA">
+                        <SGWADashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/officer/sgwa/applications"
+                    element={
+                      <ProtectedRoute requiredRole="SGWA">
+                        <SGWAApplicationsList />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/officer/sgwa/applications/:applicationId"
+                    element={
+                      <ProtectedRoute requiredRole="SGWA">
+                        <SGWAApplicationViewer />
+                      </ProtectedRoute>
+                    }
+                  />
 
-              {/* Enforcement Routes - Protected */}
-              <Route
-                path="/officer/enforcement/dashboard"
-                element={
-                  <ProtectedRoute requiredRole="ENFORCEMENT">
-                    <EnforcementDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/officer/enforcement/approval-queue"
-                element={
-                  <ProtectedRoute requiredRole="ENFORCEMENT">
-                    <EnforcementApprovalQueue />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/officer/enforcement/approved"
-                element={
-                  <ProtectedRoute requiredRole="ENFORCEMENT">
-                    <EnforcementApprovedList />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/officer/enforcement/rejected"
-                element={
-                  <ProtectedRoute requiredRole="ENFORCEMENT">
-                    <EnforcementRejectedList />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/officer/enforcement/compliance"
-                element={
-                  <ProtectedRoute requiredRole="ENFORCEMENT">
-                    <EnforcementCompliance />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/officer/enforcement/applications/:applicationId"
-                element={
-                  <ProtectedRoute requiredRole="ENFORCEMENT">
-                    <EnforcementApplicationViewer />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/officer/enforcement/applications/:id/approve"
-                element={
-                  <ProtectedRoute requiredRole="ENFORCEMENT">
-                    <ApprovalForm />
-                  </ProtectedRoute>
-                }
-              />
+                  <Route
+                    path="/officer/sgwa/technical-review"
+                    element={
+                      <ProtectedRoute requiredRole="SGWA">
+                        <SGWATechnicalReview />
+                      </ProtectedRoute>
+                    }
+                  />
 
-              {/* Inspection Routes - Protected */}
-              <Route
-                path="/officer/inspection/dashboard"
-                element={
-                  <ProtectedRoute requiredRole="INSPECTION">
-                    <InspectionDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/officer/inspection/assignments"
-                element={
-                  <ProtectedRoute requiredRole="INSPECTION">
-                    <InspectionList />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/officer/inspection/conduct/:inspectionId"
-                element={
-                  <ProtectedRoute requiredRole="INSPECTION">
-                    <ConductInspection />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/officer/inspection/history"
-                element={
-                  <ProtectedRoute requiredRole="INSPECTION">
-                    <InspectionHistory />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/officer/inspection/report/:inspectionId"
-                element={
-                  <ProtectedRoute requiredRole="INSPECTION">
-                    <ViewInspectionReport />
-                  </ProtectedRoute>
-                }
-              />
+                  {/* Enforcement Routes - Protected */}
+                  <Route
+                    path="/officer/enforcement/dashboard"
+                    element={
+                      <ProtectedRoute requiredRole="ENFORCEMENT">
+                        <EnforcementDashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/officer/enforcement/approval-queue"
+                    element={
+                      <ProtectedRoute requiredRole="ENFORCEMENT">
+                        <EnforcementApprovalQueue />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/officer/enforcement/approved"
+                    element={
+                      <ProtectedRoute requiredRole="ENFORCEMENT">
+                        <EnforcementApprovedList />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/officer/enforcement/rejected"
+                    element={
+                      <ProtectedRoute requiredRole="ENFORCEMENT">
+                        <EnforcementRejectedList />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/officer/enforcement/compliance"
+                    element={
+                      <ProtectedRoute requiredRole="ENFORCEMENT">
+                        <EnforcementCompliance />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/officer/enforcement/applications/:applicationId"
+                    element={
+                      <ProtectedRoute requiredRole="ENFORCEMENT">
+                        <EnforcementApplicationViewer />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/officer/enforcement/applications/:applicationId/approve"
+                    element={
+                      <ProtectedRoute requiredRole="ENFORCEMENT">
+                        <ApprovalForm />
+                      </ProtectedRoute>
+                    }
+                  />
 
-              {/* Default redirect */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Layout>
-        </Router >
-      </AuthProvider>
-    </LanguageProvider>
+                  {/* Inspection Routes - Protected */}
+                  <Route
+                    path="/officer/inspection/dashboard"
+                    element={
+                      <ProtectedRoute requiredRole="INSPECTION">
+                        <InspectionDashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/officer/inspection/assignments"
+                    element={
+                      <ProtectedRoute requiredRole="INSPECTION">
+                        <InspectionList />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/officer/inspection/conduct/:inspectionId"
+                    element={
+                      <ProtectedRoute requiredRole="INSPECTION">
+                        <ConductInspection />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/officer/inspection/history"
+                    element={
+                      <ProtectedRoute requiredRole="INSPECTION">
+                        <InspectionHistory />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/officer/inspection/report/:inspectionId"
+                    element={
+                      <ProtectedRoute requiredRole="INSPECTION">
+                        <ViewInspectionReport />
+                      </ProtectedRoute>
+                    }
+                  />
+
+
+                  {/* Default redirect */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Layout>
+            </NotificationProvider>
+          </Router >
+        </AuthProvider>
+      </LanguageProvider>
+    </ToastProvider>
   );
 }
 

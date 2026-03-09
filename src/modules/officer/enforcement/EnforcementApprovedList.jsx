@@ -1,51 +1,65 @@
 import React, { useState, useEffect } from 'react';
 import OfficerHeader from '../shared/components/OfficerHeader';
 import OfficerSidebar from '../shared/components/OfficerSidebar';
+import officerService from '../services/officerService';
 import '../shared/styles/officer-portal.css';
 
 const EnforcementApprovedList = () => {
     const [approvedNocs, setApprovedNocs] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [officerInfo, setOfficerInfo] = useState(null);
+
+    const getOfficerData = () => {
+        try {
+            const data = localStorage.getItem('officerData');
+            return data ? JSON.parse(data) : null;
+        } catch (e) {
+            return null;
+        }
+    };
 
     useEffect(() => {
-        // Mock data
-        setApprovedNocs([
-            {
-                nocNumber: 'RJ/CGWA/NOC/2025/001101',
-                applicantName: 'Maruti Textiles',
-                issuedDate: '2025-11-15',
-                validUpto: '2028-11-14',
-                district: 'Bhilwara',
-                maxDailyExtraction: 220.50,
-                status: 'ACTIVE'
-            },
-            {
-                nocNumber: 'RJ/CGWA/NOC/2025/001102',
-                applicantName: 'Rajasthan Minerals Corp',
-                issuedDate: '2025-12-01',
-                validUpto: '2027-11-30',
-                district: 'Udaipur',
-                maxDailyExtraction: 180.00,
-                status: 'ACTIVE'
-            },
-            {
-                nocNumber: 'RJ/CGWA/NOC/2025/001005',
-                applicantName: 'Sunrise Hospitality',
-                issuedDate: '2025-06-20',
-                validUpto: '2028-06-19',
-                district: 'Jaipur',
-                maxDailyExtraction: 50.00,
-                status: 'ACTIVE'
+        const userData = getOfficerData();
+        setOfficerInfo(userData);
+
+        const fetchApproved = async () => {
+            try {
+                // Fetch issued NOCs
+                const response = await officerService.getEnforcementApprovalQueue({ status: 'NOC_ISSUED' });
+                if (response.success) {
+                    const queueData = response.data?.queue || [];
+                    const mapped = queueData.map(app => ({
+                        _id: app.id || app._id,
+                        applicationNumber: app.applicationNumber,
+                        applicantName: app.applicantDetails?.name || app.projectDetails?.applicantName || 'N/A',
+                        projectName: app.projectDetails?.projectName || 'N/A',
+                        district: app.locationDetails?.district || app.location?.districtId || 'N/A',
+                        issuedDate: app.submittedAt || app.updatedAt, // Fallback
+                        validUpto: app.validUpto || new Date(new Date(app.submittedAt).setFullYear(new Date(app.submittedAt).getFullYear() + 3)),
+                        waterRequirement: app.waterRequirement?.total || app.waterRequirement?.dailyRequirement || 0,
+                        status: app.status
+                    }));
+                    setApprovedNocs(mapped);
+                }
+            } catch (error) {
+                console.error("Failed to fetch approved applications:", error);
+            } finally {
+                setLoading(false);
             }
-        ]);
+        };
+
+        fetchApproved();
     }, []);
+
+    if (loading) return <div className="p-4 text-center">Loading...</div>;
 
     return (
         <div className="officer-portal">
             <OfficerHeader
-                officerName="Suresh Patel"
+                officerName={officerInfo?.name || officerInfo?.username || 'Officer'}
                 officerRole="ENFORCEMENT"
-                officerDesignation="Chief Engineer"
-                district=""
+                officerDesignation={officerInfo?.designation || 'Chief Engineer'}
+                district={officerInfo?.district || ''}
             />
             <div className="officer-layout">
                 <OfficerSidebar role="ENFORCEMENT" />
@@ -70,21 +84,28 @@ const EnforcementApprovedList = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {approvedNocs.map((noc, index) => (
-                                        <tr key={index}>
-                                            <td style={{ fontWeight: '600' }}>{noc.nocNumber}</td>
-                                            <td>{noc.applicantName}</td>
-                                            <td>{noc.district}</td>
-                                            <td>{noc.issuedDate}</td>
-                                            <td>{noc.validUpto}</td>
-                                            <td>{noc.maxDailyExtraction} m³/day</td>
-                                            <td><span className="officer-badge success">{noc.status}</span></td>
-                                            <td>
-                                                <button className="officer-btn-sm" style={{ marginRight: '0.5rem' }}>⬇ Download</button>
-                                                <button className="officer-btn-sm danger">Revoke</button>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {approvedNocs.length === 0 ? (
+                                        <tr><td colSpan="8" style={{ textAlign: 'center', padding: '2rem' }}>No approved applications found.</td></tr>
+                                    ) : (
+                                        approvedNocs.map((noc, index) => (
+                                            <tr key={noc._id || index}>
+                                                <td style={{ fontWeight: '600' }}>{noc.applicationNumber}</td>
+                                                <td>
+                                                    <div style={{ fontWeight: '500' }}>{noc.applicantName}</div>
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--officer-text-secondary)' }}>{noc.projectName}</div>
+                                                </td>
+                                                <td>{noc.district}</td>
+                                                <td>{noc.issuedDate ? new Date(noc.issuedDate).toLocaleDateString() : 'N/A'}</td>
+                                                <td>{noc.validUpto ? new Date(noc.validUpto).toLocaleDateString() : 'N/A'}</td>
+                                                <td>{noc.waterRequirement} m³/day</td>
+                                                <td><span className="officer-badge success">{noc.status}</span></td>
+                                                <td>
+                                                    <button className="officer-btn-sm" style={{ marginRight: '0.5rem' }}>⬇ Download</button>
+                                                    <button className="officer-btn-sm danger">Revoke</button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
                                 </tbody>
                             </table>
                         </div>

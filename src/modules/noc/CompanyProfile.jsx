@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import API_BASE_URL from '../../config/apiConfig';
 
 import LayoutWithSidebar from './components/LayoutWithSidebar';
@@ -13,7 +14,9 @@ const CompanyProfile = () => {
     // const [sidebarOpen, setSidebarOpen] = useState(false); // Removed manual sidebar state
     const [sameAsCommunication, setSameAsCommunication] = useState(false);
     const [companyTypeOptions, setCompanyTypeOptions] = useState([]);
+    const [industryTypeOptions, setIndustryTypeOptions] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [companyId, setCompanyId] = useState(null);
 
     // Location State
     const [stateOptions, setStateOptions] = useState([]);
@@ -23,6 +26,7 @@ const CompanyProfile = () => {
     const [formData, setFormData] = useState({
         companyName: '',
         companyType: '',
+        industryType: '',
         incorporationId: '',
         incorporationDate: '',
         gstNumber: '',
@@ -99,6 +103,14 @@ const CompanyProfile = () => {
                     }
                 } catch (e) { console.error("Error fetching company types", e); }
 
+                // 1.5 Fetch Industry Types
+                try {
+                    const indRes = await nocApplicationService.getIndustryTypes();
+                    if (indRes.success && Array.isArray(indRes.data)) {
+                        setIndustryTypeOptions(indRes.data);
+                    }
+                } catch (e) { console.error("Error fetching industry types", e); }
+
                 // 2. Fetch States
                 try {
                     const statesRes = await fetch(`${API_BASE_URL}/master/states`);
@@ -129,12 +141,14 @@ const CompanyProfile = () => {
             if (profileRes.success && profileRes.data) {
                 const company = profileRes.data;
                 console.log("Loaded company profile:", company);
+                setCompanyId(company._id);
 
                 // Populate Form
                 setFormData(prev => ({
                     ...prev,
                     companyName: company.companyName || '',
                     companyType: company.companyType || '',
+                    industryType: company.industryType || '',
                     incorporationId: company.incorporationId || '',
                     incorporationDate: company.dateOfIncorporation ? company.dateOfIncorporation.split('T')[0] :
                         (company.incorporationDate ? company.incorporationDate.split('T')[0] : ''),
@@ -179,21 +193,21 @@ const CompanyProfile = () => {
                     }
                 }));
 
-                // Set sameAsCommunication if addresses match (simple check)
-                if (company.registeredAddress?.addressLine1 === company.communicationAddress?.addressLine1 &&
-                    company.registeredAddress?.pincode === company.communicationAddress?.pincode) {
-                    setSameAsCommunication(true);
-                }
-
-                // Update User Context if needed
+                // Sync to localStorage for other modules
                 const userStr = localStorage.getItem('nocUser');
                 if (userStr) {
-                    const localUser = JSON.parse(userStr);
-                    if (!localUser.companyId && company._id) {
-                        localUser.companyId = company._id;
-                        localStorage.setItem('nocUser', JSON.stringify(localUser));
+                    try {
+                        const user = JSON.parse(userStr);
+                        if (user.companyId !== company._id) {
+                            user.companyId = company._id;
+                            localStorage.setItem('nocUser', JSON.stringify(user));
+                            console.log("Synced companyId to localStorage");
+                        }
+                    } catch (e) {
+                        console.error("Failed to sync companyId to localStorage", e);
                     }
                 }
+
             }
         } catch (err) {
             console.log("No existing company profile found:", err);
@@ -268,8 +282,9 @@ const CompanyProfile = () => {
         }
     };
 
-    // Use Auth Context
+    // Use Auth & Toast Context
     const { refreshSession, logout } = useAuth();
+    const { success: toastSuccess, error: toastError, info: toastInfo } = useToast();
 
     // ... existing state ...
 
@@ -280,11 +295,11 @@ const CompanyProfile = () => {
             const companyData = {
                 companyName: formData.companyName,
                 companyType: formData.companyType,
-                industryType: formData.companyType, // Specific requirement from user curl example using companyType as industryType? Or just mapping. Keeping as per prompt if needed, or mapping "MANUFACTURING" if that was just example. 
+                industryType: formData.industryType || formData.companyType, // Use industryType if available, fallback to companyType
                 // Wait, user curl said "industryType": "MANUFACTURING".
                 // Actually, let's just stick to what the form captures but in the correct structure.
                 incorporationId: formData.incorporationId,
-                incorporationDate: formData.incorporationDate,
+                dateOfIncorporation: formData.incorporationDate,
                 gstNumber: formData.gstNumber,
                 panNumber: formData.panNumber,
                 email: formData.contact.email,
@@ -318,34 +333,38 @@ const CompanyProfile = () => {
             };
 
             // Send JSON directly
-            const result = await nocApplicationService.registerCompany(companyData);
+            let result;
+            if (companyId) {
+                result = await nocApplicationService.updateCompany(companyId, companyData);
+            } else {
+                result = await nocApplicationService.registerCompany(companyData);
+            }
 
             console.log('Company registered:', result);
 
             if (result.success) {
-                alert('Company Profile saved successfully!');
+                toastSuccess('Company Profile saved successfully!');
                 // Reload profile to show saved details (and documents if they exist)
                 await fetchAndPopulateProfile();
             } else {
-                alert(`Failed to save company profile: ${result.message || 'Unknown error'}`);
+                toastError(`Failed to save company profile: ${result.message || 'Unknown error'}`);
             }
 
         } catch (error) {
             console.error('Registration failed:', error);
             // Check if error is due to auth failure that couldn't be refreshed
             if (error.message && (error.message.includes('Session expired') || error.message.includes('401'))) {
-                alert('Session expired. Please login again.');
+                toastError('Session expired. Please login again.');
                 logout();
                 navigate('/noc/login');
             } else {
-                alert(`Failed to save company profile: ${error.message}`);
+                toastError(`Failed to save company profile: ${error.message}`);
             }
         }
     };
 
     return (
         <LayoutWithSidebar defaultCollapsed={true}>
-            <div className="page-gradient-header"></div>
 
             <div className="content-container">
                 {/* Breadcrumb */}
@@ -402,7 +421,7 @@ const CompanyProfile = () => {
                                     <label>Company Name <span className="required">*</span></label>
                                     <input
                                         type="text"
-                                        className="form-control"
+                                        className="form-input"
                                         value={formData.companyName}
                                         onChange={(e) => handleInputChange(null, 'companyName', e.target.value)}
                                         required
@@ -411,7 +430,7 @@ const CompanyProfile = () => {
                                 <div className="form-group">
                                     <label>Company Type <span className="required">*</span></label>
                                     <select
-                                        className="form-control"
+                                        className="form-input"
                                         value={formData.companyType}
                                         onChange={(e) => handleInputChange(null, 'companyType', e.target.value)}
                                         required
@@ -438,10 +457,41 @@ const CompanyProfile = () => {
                                     </select>
                                 </div>
                                 <div className="form-group">
+                                    <label>Industry Type <span className="required">*</span></label>
+                                    <select
+                                        className="form-input"
+                                        value={formData.industryType}
+                                        onChange={(e) => handleInputChange(null, 'industryType', e.target.value)}
+                                        required
+                                    >
+                                        <option value="">Select Industry Type</option>
+                                        {industryTypeOptions.length > 0 ? (
+                                            industryTypeOptions.map((type, index) => (
+                                                <option key={index} value={type.industryName || type}>
+                                                    {type.industryName || type}
+                                                </option>
+                                            ))
+                                        ) : (
+                                            <>
+                                                <option value="Agriculture">Agriculture</option>
+                                                <option value="Manufacturing">Manufacturing</option>
+                                                <option value="Mining">Mining</option>
+                                                <option value="Construction">Construction</option>
+                                                <option value="Hospitality">Hospitality</option>
+                                                <option value="Healthcare">Healthcare</option>
+                                                <option value="Education">Education</option>
+                                                <option value="Commercial">Commercial</option>
+                                                <option value="Domestic">Domestic</option>
+                                                <option value="Other">Other</option>
+                                            </>
+                                        )}
+                                    </select>
+                                </div>
+                                <div className="form-group">
                                     <label>Date of Incorporation</label>
                                     <input
                                         type="date"
-                                        className="form-control"
+                                        className="form-input"
                                         value={formData.incorporationDate}
                                         onChange={(e) => handleInputChange(null, 'incorporationDate', e.target.value)}
                                     />
@@ -450,7 +500,7 @@ const CompanyProfile = () => {
                                     <label>Incorporation ID <span className="required">*</span></label>
                                     <input
                                         type="text"
-                                        className="form-control"
+                                        className="form-input"
                                         value={formData.incorporationId}
                                         onChange={(e) => handleInputChange(null, 'incorporationId', e.target.value)}
                                         required
@@ -461,7 +511,7 @@ const CompanyProfile = () => {
                                     <label>GST Number</label>
                                     <input
                                         type="text"
-                                        className="form-control"
+                                        className="form-input"
                                         value={formData.gstNumber}
                                         onChange={(e) => handleInputChange(null, 'gstNumber', e.target.value)}
                                         placeholder="e.g. 22AAAAA0000A1Z5"
@@ -471,7 +521,7 @@ const CompanyProfile = () => {
                                     <label>PAN Number <span className="required">*</span></label>
                                     <input
                                         type="text"
-                                        className="form-control"
+                                        className="form-input"
                                         value={formData.panNumber}
                                         onChange={(e) => handleInputChange(null, 'panNumber', e.target.value)}
                                         required
@@ -491,7 +541,7 @@ const CompanyProfile = () => {
                                     <label>Address Line 1 <span className="required">*</span></label>
                                     <input
                                         type="text"
-                                        className="form-control"
+                                        className="form-input"
                                         value={formData.commAddress.line1}
                                         onChange={(e) => handleInputChange('commAddress', 'line1', e.target.value)}
                                         required
@@ -501,7 +551,7 @@ const CompanyProfile = () => {
                                     <label>Address Line 2</label>
                                     <input
                                         type="text"
-                                        className="form-control"
+                                        className="form-input"
                                         value={formData.commAddress.line2}
                                         onChange={(e) => handleInputChange('commAddress', 'line2', e.target.value)}
                                     />
@@ -511,7 +561,7 @@ const CompanyProfile = () => {
                                 <div className="form-group">
                                     <label>State <span className="required">*</span></label>
                                     <select
-                                        className="form-control"
+                                        className="form-input"
                                         value={formData.commAddress.state}
                                         onChange={(e) => {
                                             handleInputChange('commAddress', 'state', e.target.value);
@@ -530,7 +580,7 @@ const CompanyProfile = () => {
                                 <div className="form-group">
                                     <label>District <span className="required">*</span></label>
                                     <select
-                                        className="form-control"
+                                        className="form-input"
                                         value={formData.commAddress.district}
                                         onChange={(e) => handleInputChange('commAddress', 'district', e.target.value)}
                                         required
@@ -548,7 +598,7 @@ const CompanyProfile = () => {
                                     <label>Pin Code <span className="required">*</span></label>
                                     <input
                                         type="text"
-                                        className="form-control"
+                                        className="form-input"
                                         value={formData.commAddress.pincode}
                                         onChange={(e) => handleInputChange('commAddress', 'pincode', e.target.value)}
                                         required
@@ -582,7 +632,7 @@ const CompanyProfile = () => {
                                             <label>Address Line 1 <span className="required">*</span></label>
                                             <input
                                                 type="text"
-                                                className="form-control"
+                                                className="form-input"
                                                 value={formData.regAddress.line1}
                                                 onChange={(e) => handleInputChange('regAddress', 'line1', e.target.value)}
                                                 required
@@ -592,7 +642,7 @@ const CompanyProfile = () => {
                                             <label>Address Line 2</label>
                                             <input
                                                 type="text"
-                                                className="form-control"
+                                                className="form-input"
                                                 value={formData.regAddress.line2}
                                                 onChange={(e) => handleInputChange('regAddress', 'line2', e.target.value)}
                                             />
@@ -602,7 +652,7 @@ const CompanyProfile = () => {
                                         <div className="form-group">
                                             <label>State <span className="required">*</span></label>
                                             <select
-                                                className="form-control"
+                                                className="form-input"
                                                 value={formData.regAddress.state}
                                                 onChange={(e) => {
                                                     handleInputChange('regAddress', 'state', e.target.value);
@@ -621,7 +671,7 @@ const CompanyProfile = () => {
                                         <div className="form-group">
                                             <label>District <span className="required">*</span></label>
                                             <select
-                                                className="form-control"
+                                                className="form-input"
                                                 value={formData.regAddress.district}
                                                 onChange={(e) => handleInputChange('regAddress', 'district', e.target.value)}
                                                 required
@@ -639,7 +689,7 @@ const CompanyProfile = () => {
                                             <label>Pin Code <span className="required">*</span></label>
                                             <input
                                                 type="text"
-                                                className="form-control"
+                                                className="form-input"
                                                 value={formData.regAddress.pincode}
                                                 onChange={(e) => handleInputChange('regAddress', 'pincode', e.target.value)}
                                                 required
@@ -661,7 +711,7 @@ const CompanyProfile = () => {
                                     <label>Mobile Number <span className="required">*</span></label>
                                     <input
                                         type="tel"
-                                        className="form-control"
+                                        className="form-input"
                                         value={formData.contact.mobile}
                                         onChange={(e) => handleInputChange('contact', 'mobile', e.target.value)}
                                         required
@@ -672,7 +722,7 @@ const CompanyProfile = () => {
                                     <label>Email Address <span className="required">*</span></label>
                                     <input
                                         type="email"
-                                        className="form-control"
+                                        className="form-input"
                                         value={formData.contact.email}
                                         onChange={(e) => handleInputChange('contact', 'email', e.target.value)}
                                         required
@@ -682,7 +732,7 @@ const CompanyProfile = () => {
                                     <label>Landline No.</label>
                                     <input
                                         type="tel"
-                                        className="form-control"
+                                        className="form-input"
                                         value={formData.contact.landline}
                                         onChange={(e) => handleInputChange('contact', 'landline', e.target.value)}
                                     />
@@ -700,7 +750,7 @@ const CompanyProfile = () => {
                                     <label>Name <span className="required">*</span></label>
                                     <input
                                         type="text"
-                                        className="form-control"
+                                        className="form-input"
                                         value={formData.authPerson.name}
                                         onChange={(e) => handleInputChange('authPerson', 'name', e.target.value)}
                                         required
@@ -710,7 +760,7 @@ const CompanyProfile = () => {
                                     <label>Designation <span className="required">*</span></label>
                                     <input
                                         type="text"
-                                        className="form-control"
+                                        className="form-input"
                                         value={formData.authPerson.designation}
                                         onChange={(e) => handleInputChange('authPerson', 'designation', e.target.value)}
                                         required
@@ -720,7 +770,7 @@ const CompanyProfile = () => {
                                     <label>Mobile Number <span className="required">*</span></label>
                                     <input
                                         type="tel"
-                                        className="form-control"
+                                        className="form-input"
                                         value={formData.authPerson.mobile}
                                         onChange={(e) => handleInputChange('authPerson', 'mobile', e.target.value)}
                                         required
@@ -731,7 +781,7 @@ const CompanyProfile = () => {
                                     <label>Email ID <span className="required">*</span></label>
                                     <input
                                         type="email"
-                                        className="form-control"
+                                        className="form-input"
                                         value={formData.authPerson.email}
                                         onChange={(e) => handleInputChange('authPerson', 'email', e.target.value)}
                                         required

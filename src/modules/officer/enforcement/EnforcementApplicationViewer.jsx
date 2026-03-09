@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import officerService from '../services/officerService';
 import OfficerHeader from '../shared/components/OfficerHeader';
 import OfficerSidebar from '../shared/components/OfficerSidebar';
 import '../shared/styles/officer-portal.css';
@@ -8,73 +9,100 @@ import '../dgo/ApplicationViewer.css'; // Reusing existing viewer styles
 const EnforcementApplicationViewer = () => {
     const { applicationId } = useParams();
     const navigate = useNavigate();
+    const [application, setApplication] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('details');
+    const [officerData, setOfficerData] = useState(null);
 
-    // Mock data for the application
-    const applicationData = {
-        id: applicationId,
-        applicationNumber: 'RJ/CGWA/NOC/2026/001234',
-        applicantName: 'Rajesh Kumar Sharma',
-        companyName: 'ABC Textile Manufacturing Unit',
-        address: 'Plot No. 123, RIICO Industrial Area',
-        district: 'Jaipur',
-        block: 'Sanganer',
-        category: 'SEMI_CRITICAL',
-        projectType: 'Industrial',
-        waterRequirement: 150.25,
-        submittedDate: '2026-01-09',
-        status: 'PENDING_FINAL_APPROVAL',
-        dgoRecommendation: {
-            status: 'APPROVED',
-            remarks: 'Site inspection satisfactory. Water meter installed.',
-            date: '2026-01-10',
-            officer: 'Amit Verma (DGO Jaipur)'
-        },
-        sgwaRecommendation: {
-            status: 'APPROVED_WITH_CONDITIONS',
-            remarks: 'Technical review passed. Additional condition for rainwater harvesting added.',
-            date: '2026-01-11',
-            officer: 'Dr. Priya Sharma (Tech Officer)'
-        },
-        // Mock timeline data
-        timeline: [
-            { stage: 'SUBMITTED', date: '2026-01-09T08:00:00', actor: 'Applicant', remarks: 'Application submitted successfully' },
-            { stage: 'DGO_REVIEW', date: '2026-01-10T10:00:00', actor: 'Amit Verma (DGO)', remarks: 'Site inspection completed. Recommended for approval.' },
-            { stage: 'SGWA_REVIEW', date: '2026-01-11T14:30:00', actor: 'Dr. Priya Sharma (SGWA)', remarks: 'Technical feasibility verified. Forwarded for final NOC issuance.' },
-            { stage: 'PENDING_ENFORCEMENT', date: '2026-01-11T14:35:00', actor: 'System', remarks: 'Awaiting final approval from Enforcement Wing' }
-        ],
-        // Mock inspection report
-        inspectionReport: {
-            date: '2026-01-10',
-            officer: 'Amit Verma (DGO Jaipur)',
-            findings: 'The unit has installed a digital flow meter as required. Piezometer installation is in progress. The proposed site for rainwater harvesting is adequate. No illegal abstraction observed.',
-            coordinates: '26.9124° N, 75.7873° E',
-            photos: ['site_photo_1.jpg', 'meter_photo.jpg']
-        },
-        // Mock timeline data
+    useEffect(() => {
+        const storedOfficer = localStorage.getItem('officerData');
+        if (storedOfficer) {
+            setOfficerData(JSON.parse(storedOfficer));
+        }
+        fetchApplicationDetails();
+    }, [applicationId]);
 
+    const fetchApplicationDetails = async () => {
+        try {
+            setLoading(true);
+            const response = await officerService.getEnforcementApplicationDetails(applicationId);
+            if (response.success) {
+                setApplication(response.data);
+            }
+        } catch (error) {
+            console.error('Error fetching application:', error);
+            setApplication(null);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleApproveClick = () => {
-        // Navigate to the Approval Form logic (could be a modal or separate page)
-        // Since ApprovalForm.jsx exists, we can use it, but typically we might want to pass ID
-        navigate(`/officer/enforcement/approve/${applicationId}`); // Assuming route will be created or reusing exsiting
+        navigate(`/officer/enforcement/applications/${applicationId}/approve`);
     };
 
-    const handleRejectClick = () => {
+    const handleRejectClick = async () => {
         if (window.confirm('Are you sure you want to REJECT this application? This is a final decision.')) {
-            alert('Application Rejected');
-            navigate('/officer/enforcement/dashboard');
+            try {
+                const rejectionData = {
+                    remarks: 'Rejected by Enforcement wing',
+                    date: new Date().toISOString()
+                };
+                const response = await officerService.enforcementRejectApplication(applicationId, rejectionData);
+                if (response.success) {
+                    alert('Application Rejected');
+                    navigate('/officer/enforcement/dashboard');
+                }
+            } catch (error) {
+                console.error('Error rejecting application:', error);
+                alert('Failed to reject application');
+            }
         }
     };
+
+    const handleReturnClick = async () => {
+        const remarks = window.prompt('Enter remarks for returning to SGWA:');
+        if (remarks) {
+            try {
+                const response = await officerService.enforcementReturnToSGWA(applicationId, { remarks });
+                if (response.success) {
+                    alert('Application returned to SGWA');
+                    navigate('/officer/enforcement/dashboard');
+                }
+            } catch (error) {
+                console.error('Error returning application:', error);
+                alert('Failed to return application');
+            }
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>Loading application...</p>
+            </div>
+        );
+    }
+
+    if (!application) {
+        return (
+            <div className="error-container">
+                <h2>Application not found</h2>
+                <button onClick={() => navigate('/officer/enforcement/dashboard')}>
+                    Back to Dashboard
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="officer-portal">
             <OfficerHeader
-                officerName="Suresh Patel"
+                officerName={officerData?.name || "Officer"}
                 officerRole="ENFORCEMENT"
-                officerDesignation="Chief Engineer"
-                district=""
+                officerDesignation={officerData?.designation || "Chief Engineer"}
+                district={officerData?.district || ""}
             />
 
             <div className="officer-layout">
@@ -86,7 +114,9 @@ const EnforcementApplicationViewer = () => {
                         <div className="application-viewer-header">
                             <button className="back-button" onClick={() => navigate(-1)}>← Back</button>
                             <div className="header-actions">
-                                <span className="officer-badge warning">PENDING FINAL APPROVAL</span>
+                                <span className={`officer-badge status-${application.status?.toLowerCase().replace(/_/g, '-')}`}>
+                                    {application.status?.replace(/_/g, ' ')}
+                                </span>
                             </div>
                         </div>
 
@@ -95,22 +125,22 @@ const EnforcementApplicationViewer = () => {
                             <div className="summary-main">
                                 <div className="summary-icon">🏭</div>
                                 <div>
-                                    <h2>{applicationData.companyName}</h2>
-                                    <p className="application-number">{applicationData.applicationNumber}</p>
+                                    <h2>{application.projectDetails?.projectName || 'Industrial Project'}</h2>
+                                    <p className="application-number">{application.applicationNumber}</p>
                                 </div>
                             </div>
                             <div className="summary-stats">
                                 <div className="stat-item">
                                     <label>Water Req.</label>
-                                    <span>{applicationData.waterRequirement} m³/day</span>
+                                    <span>{application.waterRequirement?.dailyRequirement || 0} m³/day</span>
                                 </div>
                                 <div className="stat-item">
                                     <label>District</label>
-                                    <span>{applicationData.district}</span>
+                                    <span>{application.locationDetails?.district}</span>
                                 </div>
                                 <div className="stat-item">
                                     <label>Category</label>
-                                    <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>{applicationData.category}</span>
+                                    <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>{application.category || 'GENERAL'}</span>
                                 </div>
                             </div>
                         </div>
@@ -127,13 +157,13 @@ const EnforcementApplicationViewer = () => {
                             <div className="officer-card" style={{ borderLeft: '4px solid #22c55e' }}>
                                 <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem', color: '#64748b' }}>DGO Recommendation</h3>
                                 <div style={{ fontWeight: '600', color: '#22c55e', fontSize: '1.1rem' }}>
-                                    {applicationData.dgoRecommendation.status}
+                                    {application.dgoRecommendation?.status || 'PENDING'}
                                 </div>
                                 <p style={{ fontSize: '0.9rem', marginTop: '0.5rem', color: '#334155' }}>
-                                    "{applicationData.dgoRecommendation.remarks}"
+                                    "{application.dgoRecommendation?.remarks || 'No remarks yet'}"
                                 </p>
                                 <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '1rem' }}>
-                                    {applicationData.dgoRecommendation.officer} • {applicationData.dgoRecommendation.date}
+                                    {application.dgoRecommendation?.recommendedBy} • {application.dgoRecommendation?.date && new Date(application.dgoRecommendation.date).toLocaleDateString()}
                                 </div>
                             </div>
 
@@ -141,13 +171,13 @@ const EnforcementApplicationViewer = () => {
                             <div className="officer-card" style={{ borderLeft: '4px solid #3b82f6' }}>
                                 <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem', color: '#64748b' }}>SGWA Recommendation</h3>
                                 <div style={{ fontWeight: '600', color: '#3b82f6', fontSize: '1.1rem' }}>
-                                    {applicationData.sgwaRecommendation.status}
+                                    {application.sgwaRecommendation?.status || 'PENDING'}
                                 </div>
                                 <p style={{ fontSize: '0.9rem', marginTop: '0.5rem', color: '#334155' }}>
-                                    "{applicationData.sgwaRecommendation.remarks}"
+                                    "{application.sgwaRecommendation?.remarks || 'No remarks yet'}"
                                 </p>
                                 <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '1rem' }}>
-                                    {applicationData.sgwaRecommendation.officer} • {applicationData.sgwaRecommendation.date}
+                                    {application.sgwaRecommendation?.recommendedBy} • {application.sgwaRecommendation?.date && new Date(application.sgwaRecommendation.date).toLocaleDateString()}
                                 </div>
                             </div>
                         </div>
@@ -164,7 +194,7 @@ const EnforcementApplicationViewer = () => {
                                 className={`viewer-tab ${activeTab === 'documents' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('documents')}
                             >
-                                Documents
+                                Documents ({application.documents?.length || 0})
                             </button>
                             <button
                                 className={`viewer-tab ${activeTab === 'timeline' ? 'active' : ''}`}
@@ -188,61 +218,104 @@ const EnforcementApplicationViewer = () => {
                                         <h3>Project Details</h3>
                                         <div className="detail-row">
                                             <label>Applicant Name</label>
-                                            <span>{applicationData.applicantName}</span>
+                                            <span>{application.applicantDetails?.name || 'N/A'}</span>
                                         </div>
                                         <div className="detail-row">
                                             <label>Project Type</label>
-                                            <span>{applicationData.projectType}</span>
+                                            <span>{application.projectDetails?.projectType || 'N/A'}</span>
                                         </div>
                                         <div className="detail-row">
                                             <label>Address</label>
-                                            <span>{applicationData.address}</span>
+                                            <span>{application.locationDetails?.village}, {application.locationDetails?.block}, {application.locationDetails?.district}</span>
                                         </div>
                                     </div>
                                     <div className="detail-section">
-                                        <h3>Hydrogeology</h3>
+                                        <h3>Water Management</h3>
                                         <div className="detail-row">
-                                            <label>Aquifer Type</label>
-                                            <span>Alluvium</span>
+                                            <label>Daily Requirement</label>
+                                            <span>{application.waterRequirement?.dailyRequirement} m³/day</span>
                                         </div>
                                         <div className="detail-row">
-                                            <label>Basin</label>
-                                            <span>Ganga Basin</span>
+                                            <label>Source Type</label>
+                                            <span>{application.waterRequirement?.sourceType || 'Groundwater'}</span>
                                         </div>
                                     </div>
+
+                                    {/* Exemption Details (If Applicable) */}
+                                    {application.isExempted && application.exemptionDetails && (
+                                        <div className="detail-section">
+                                            <h3 style={{ color: '#059669' }}>🌾 Exemption Application Details</h3>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+                                                <div className="detail-row">
+                                                    <label>Application SubType</label>
+                                                    <span>{application.exemptionDetails.applicationSubType}</span>
+                                                </div>
+                                                <div className="detail-row">
+                                                    <label>Gram Panchayat / Village</label>
+                                                    <span>{application.exemptionDetails.agriculturalDetails?.gramPanchayatName}</span>
+                                                </div>
+                                                <div className="detail-row">
+                                                    <label>Khasra No / Plot No</label>
+                                                    <span>{application.exemptionDetails.agriculturalDetails?.landDetailsKhasraNo}</span>
+                                                </div>
+                                                <div className="detail-row">
+                                                    <label>Land Area (Hectare)</label>
+                                                    <span>{application.exemptionDetails.agriculturalDetails?.landHoldingAreaHectare}</span>
+                                                </div>
+                                                <div className="detail-row">
+                                                    <label>Requested Water (KLD)</label>
+                                                    <span>{application.exemptionDetails.agriculturalDetails?.waterRequirementKLD} KLD</span>
+                                                </div>
+                                                <div className="detail-row">
+                                                    <label>System Eligibility Check</label>
+                                                    <span style={{
+                                                        fontWeight: 'bold',
+                                                        color: application.exemptionDetails.exemptionEligible ? '#16a34a' : '#d97706'
+                                                    }}>
+                                                        {application.exemptionDetails.exemptionEligible ? 'ELIGIBLE' : 'PENDING REVIEW'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
                             {activeTab === 'documents' && (
                                 <div className="documents-grid">
-                                    <div className="document-card">
-                                        <div className="doc-icon">📄</div>
-                                        <div className="doc-info">
-                                            <h4>Land Ownership Proof</h4>
-                                            <span>Verified</span>
+                                    {application.documents?.map((doc, index) => (
+                                        <div key={index} className="document-card">
+                                            <div className="doc-icon">📄</div>
+                                            <div className="doc-info">
+                                                <h4>{doc.type?.replace(/_/g, ' ')}</h4>
+                                                <span>{doc.verified ? 'Verified ✓' : 'Pending'}</span>
+                                            </div>
+                                            <a
+                                                href={officerService.getDocumentUrl(doc.id || doc._id)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="btn-view"
+                                                style={{ textDecoration: 'none', textAlign: 'center' }}
+                                            >
+                                                View
+                                            </a>
                                         </div>
-                                        <button className="btn-view">View</button>
-                                    </div>
-                                    <div className="document-card">
-                                        <div className="doc-icon">🗺️</div>
-                                        <div className="doc-info">
-                                            <h4>Site Plan</h4>
-                                            <span>Verified</span>
-                                        </div>
-                                        <button className="btn-view">View</button>
-                                    </div>
+                                    ))}
+                                    {(!application.documents || application.documents.length === 0) && (
+                                        <p>No documents available</p>
+                                    )}
                                 </div>
                             )}
 
                             {activeTab === 'timeline' && (
                                 <div className="timeline-tab">
                                     <div className="timeline">
-                                        {applicationData.timeline.map((event, index) => (
+                                        {application.timeline?.map((event, index) => (
                                             <div key={index} className="timeline-item">
                                                 <div className="timeline-marker"></div>
                                                 <div className="timeline-content">
                                                     <div className="timeline-header">
-                                                        <h4>{event.stage.replace(/_/g, ' ')}</h4>
+                                                        <h4>{event.stage?.replace(/_/g, ' ')}</h4>
                                                         <span className="timeline-date">{new Date(event.date).toLocaleString()}</span>
                                                     </div>
                                                     <p className="timeline-actor">{event.actor}</p>
@@ -256,73 +329,33 @@ const EnforcementApplicationViewer = () => {
 
                             {activeTab === 'inspection' && (
                                 <div className="inspection-tab">
-                                    <div className="inspection-report">
-                                        <h3>DGO Inspection Findings</h3>
-                                        <div className="detail-grid">
-                                            <div className="detail-item">
-                                                <label>Inspection Date</label>
-                                                <p>{new Date(applicationData.inspectionReport.date).toLocaleDateString()}</p>
-                                            </div>
-                                            <div className="detail-item">
-                                                <label>Inspector</label>
-                                                <p>{applicationData.inspectionReport.officer}</p>
-                                            </div>
-                                            <div className="detail-item full-width">
-                                                <label>Findings</label>
-                                                <p>{applicationData.inspectionReport.findings}</p>
-                                            </div>
-                                            <div className="detail-item full-width">
-                                                <label>Coordinates</label>
-                                                <p>{applicationData.inspectionReport.coordinates}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeTab === 'timeline' && (
-                                <div className="timeline-tab">
-                                    <div className="timeline">
-                                        {applicationData.timeline.map((event, index) => (
-                                            <div key={index} className="timeline-item">
-                                                <div className="timeline-marker"></div>
-                                                <div className="timeline-content">
-                                                    <div className="timeline-header">
-                                                        <h4>{event.stage.replace(/_/g, ' ')}</h4>
-                                                        <span className="timeline-date">{new Date(event.date).toLocaleString()}</span>
-                                                    </div>
-                                                    <p className="timeline-actor">{event.actor}</p>
-                                                    <p className="timeline-remarks">{event.remarks}</p>
+                                    {application.workflow?.inspectionReport ? (
+                                        <div className="inspection-report">
+                                            <h3>Inspection Findings</h3>
+                                            <div className="detail-grid">
+                                                <div className="detail-item">
+                                                    <label>Inspection Date</label>
+                                                    <p>{new Date(application.workflow.inspectionReport.date).toLocaleDateString()}</p>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <label>Inspector</label>
+                                                    <p>{application.workflow.inspectionReport.officer}</p>
+                                                </div>
+                                                <div className="detail-item full-width">
+                                                    <label>Findings</label>
+                                                    <p>{application.workflow.inspectionReport.findings}</p>
+                                                </div>
+                                                <div className="detail-item full-width">
+                                                    <label>Coordinates</label>
+                                                    <p>{application.workflow.inspectionReport.coordinates || 'N/A'}</p>
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeTab === 'inspection' && (
-                                <div className="inspection-tab">
-                                    <div className="inspection-report">
-                                        <h3>DGO Inspection Findings</h3>
-                                        <div className="detail-grid">
-                                            <div className="detail-item">
-                                                <label>Inspection Date</label>
-                                                <p>{new Date(applicationData.inspectionReport.date).toLocaleDateString()}</p>
-                                            </div>
-                                            <div className="detail-item">
-                                                <label>Inspector</label>
-                                                <p>{applicationData.inspectionReport.officer}</p>
-                                            </div>
-                                            <div className="detail-item full-width">
-                                                <label>Findings</label>
-                                                <p>{applicationData.inspectionReport.findings}</p>
-                                            </div>
-                                            <div className="detail-item full-width">
-                                                <label>Coordinates</label>
-                                                <p>{applicationData.inspectionReport.coordinates}</p>
-                                            </div>
                                         </div>
-                                    </div>
+                                    ) : (
+                                        <div className="empty-state">
+                                            <p>No inspection report available</p>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -337,7 +370,7 @@ const EnforcementApplicationViewer = () => {
                             </button>
                             <button
                                 className="officer-btn officer-btn-secondary"
-                                onClick={() => alert('Returned to SGWA for clarification')}
+                                onClick={handleReturnClick}
                             >
                                 ↩ Return to SGWA
                             </button>
@@ -345,6 +378,7 @@ const EnforcementApplicationViewer = () => {
                             <button
                                 className="officer-btn officer-btn-success"
                                 onClick={handleApproveClick}
+                                disabled={application.status === 'APPROVED'}
                             >
                                 ✅ Approve & Issue NOC
                             </button>

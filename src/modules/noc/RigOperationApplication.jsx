@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import NOCHeader from './components/NOCHeader';
 import NOCFooter from './components/NOCFooter';
@@ -22,6 +23,7 @@ import { getDistricts } from './utils/blockClassification';
 
 const RigOperationApplication = () => {
     const navigate = useNavigate();
+    const { success: toastSuccess } = useToast();
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState(initialRigOperationData);
     const [errors, setErrors] = useState({});
@@ -101,7 +103,7 @@ const RigOperationApplication = () => {
             return;
         }
         // Redirect to Success or Dashboard
-        alert('Rig Operation Application Submitted Successfully!');
+        toastSuccess('Rig Operation Application Submitted Successfully!');
         navigate('/noc/dashboard');
     };
 

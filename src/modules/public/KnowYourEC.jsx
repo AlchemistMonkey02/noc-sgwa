@@ -1,9 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import API_BASE_URL from '../../config/apiConfig';
-import './styles/public-landing.css';
-
-import PublicHeader from './components/PublicHeader';
+import publicService from './services/publicService';
 
 const KnowYourEC = () => {
     const navigate = useNavigate();
@@ -33,25 +28,14 @@ const KnowYourEC = () => {
         const fetchMasterData = async () => {
             try {
                 const [appTypeRes, waterQualityRes, areaCatRes] = await Promise.all([
-                    fetch(`${API_BASE_URL}/master-data/application-types`),
-                    fetch(`${API_BASE_URL}/master-data/water-quality-types`),
-                    fetch(`${API_BASE_URL}/master-data/area-categories`)
+                    publicService.getApplicationTypes(),
+                    publicService.getWaterQualityTypes(),
+                    publicService.getAreaCategories()
                 ]);
 
-                const parseResponse = async (res) => {
-                    if (!res.ok) return [];
-                    const json = await res.json();
-                    return json.success && Array.isArray(json.data) ? json.data : (Array.isArray(json) ? json : []);
-                };
-
-                const appTypesData = await parseResponse(appTypeRes);
-                const qualityData = await parseResponse(waterQualityRes);
-                const areaData = await parseResponse(areaCatRes);
-
-                setApplicationTypes(appTypesData);
-                setWaterQualityTypes(qualityData);
-                setAreaCategories(areaData);
-
+                setApplicationTypes(Array.isArray(appTypeRes.data) ? appTypeRes.data : (Array.isArray(appTypeRes) ? appTypeRes : []));
+                setWaterQualityTypes(Array.isArray(waterQualityRes.data) ? waterQualityRes.data : (Array.isArray(waterQualityRes) ? waterQualityRes : []));
+                setAreaCategories(Array.isArray(areaCatRes.data) ? areaCatRes.data : (Array.isArray(areaCatRes) ? areaCatRes : []));
             } catch (err) {
                 console.error('Failed to fetch master data:', err);
             }
@@ -62,19 +46,12 @@ const KnowYourEC = () => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-
         setFormData(prev => {
-            const newData = {
-                ...prev,
-                [name]: value
-            };
-
-            // Auto-calculate Annual Extraction if Daily Extraction changes
+            const newData = { ...prev, [name]: value };
             if (name === 'dailyExtraction') {
                 const daily = parseFloat(value) || 0;
                 newData.annualExtraction = (daily * 365).toFixed(2);
             }
-
             return newData;
         });
         setError('');
@@ -83,8 +60,6 @@ const KnowYourEC = () => {
 
     const handleCalculate = async (e) => {
         e.preventDefault();
-
-        // Basic Validation
         if (!formData.applicationType || !formData.waterQualityType || !formData.areaCategory || !formData.dateFrom || !formData.dateTo || !formData.dailyExtraction || !formData.annualExtraction) {
             setError('Please fill in all required fields.');
             return;
@@ -95,51 +70,32 @@ const KnowYourEC = () => {
         setResult(null);
 
         try {
-            const queryParams = new URLSearchParams({
-                applicationType: formData.applicationType,
-                waterQualityType: formData.waterQualityType,
-                areaCategory: formData.areaCategory,
-                dateFrom: formData.dateFrom,
-                dateTo: formData.dateTo,
-                dailyExtraction: formData.dailyExtraction,
-                annualExtraction: formData.annualExtraction
-            }).toString();
-
-            const response = await fetch(`${API_BASE_URL}/public/know-your-ec?${queryParams}`);
-            const data = await response.json();
-
-            if (response.ok && data.success) {
+            const data = await publicService.calculateEC(formData);
+            if (data.success) {
                 setResult(data.data);
             } else {
-                setError(data.message || 'Failed to calculate EC charges. Please try again.');
-
-                // Fallback simulation matching new structure
-                if ((!data.success && !data.data) || !response.ok) {
-                    const days = (new Date(formData.dateTo) - new Date(formData.dateFrom)) / (1000 * 60 * 60 * 24) + 1;
-                    const amount = parseFloat(formData.dailyExtraction || 0) * (days > 0 ? days : 1) * 100;
-
-                    setResult({
-                        input: {
-                            ...formData,
-                            dateRange: { totalDays: days }
-                        },
-                        calculation: {
-                            appliedCategory: formData.areaCategory,
-                            isSalineOverride: false,
-                            ecRate: 100, // Dummy
-                            totalAmount: amount,
-                            formattedAmount: `₹${amount.toLocaleString('en-IN')}`
-                        },
-                        notes: [
-                            "This is a simulated result (API unavailable).",
-                            "Final charges will be assessed by the Authorized Officer."
-                        ]
-                    });
-                }
+                throw new Error(data.message || 'Calculation failed');
             }
         } catch (err) {
             console.error('EC Calculation error:', err);
-            setError('Unable to connect to calculation service.');
+            // Fallback simulation
+            const days = (new Date(formData.dateTo) - new Date(formData.dateFrom)) / (1000 * 60 * 60 * 24) + 1;
+            const amount = parseFloat(formData.dailyExtraction || 0) * (days > 0 ? days : 1) * 100;
+
+            setResult({
+                input: { ...formData, dateRange: { totalDays: days } },
+                calculation: {
+                    appliedCategory: formData.areaCategory,
+                    isSalineOverride: false,
+                    ecRate: 100,
+                    totalAmount: amount,
+                    formattedAmount: `₹${amount.toLocaleString('en-IN')}`
+                },
+                notes: [
+                    "This is a simulated result (API unavailable).",
+                    "Final charges will be assessed by the Authorized Officer."
+                ]
+            });
         } finally {
             setLoading(false);
         }

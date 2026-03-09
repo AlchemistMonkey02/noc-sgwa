@@ -12,8 +12,6 @@ const ToolsDashboard = () => {
             id: 'charges',
             title: 'Abstraction Charges',
             icon: '💰',
-            title: 'Abstraction Charges',
-            icon: '💰',
             link: EXTERNAL_URLS.CHARGES_CALCULATOR, // External
             isExternal: true,
             description: 'Calculate groundwater abstraction charges'

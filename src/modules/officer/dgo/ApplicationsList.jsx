@@ -9,6 +9,7 @@ const ApplicationsList = () => {
     const navigate = useNavigate();
     const [applications, setApplications] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [officerInfo, setOfficerInfo] = useState(null);
     const [filters, setFilters] = useState({
         status: '',
         district: '',
@@ -16,7 +17,11 @@ const ApplicationsList = () => {
     });
 
     useEffect(() => {
-        // Debounce search to avoid too many API calls
+        const userData = getOfficerData();
+        setOfficerInfo(userData);
+    }, []);
+
+    useEffect(() => {
         const timer = setTimeout(() => {
             fetchApplications();
         }, 300);
@@ -28,58 +33,56 @@ const ApplicationsList = () => {
             setLoading(true);
             const response = await officerService.getApplications(filters);
             if (response.success) {
-                // Ensure we handle both array directly or nested in applications property
                 const appData = Array.isArray(response.data) ? response.data :
                     (response.data.applications || []);
                 setApplications(appData);
             }
         } catch (error) {
             console.error('Error fetching applications:', error);
-            // Fallback for demo/dev if API fails
             setApplications([]);
         } finally {
             setLoading(false);
         }
     };
 
-    const getStatusBadge = (status) => {
-        const statusMap = {
-            'SUBMITTED': { label: 'Submitted', class: 'pending' },
-            'PENDING_DGO_REVIEW': { label: 'Pending Review', class: 'pending' },
-            'UNDER_REVIEW_DGO': { label: 'Under Review', class: 'under-review' },
-            'QUERY_RAISED_DGO': { label: 'Query Raised', class: 'query-raised' },
-            'INSPECTION_SCHEDULED': { label: 'Inspection Scheduled', class: 'under-review' },
-            'APPROVED': { label: 'Approved', class: 'approved' },
-            'REJECTED': { label: 'Rejected', class: 'rejected' }
-        };
-        const statusData = statusMap[status] || { label: status?.replace(/_/g, ' '), class: 'pending' };
-        return (
-            <span className={`officer-badge ${statusData.class}`}>
-                {statusData.label}
-            </span>
-        );
-    };
-
-    // Helper to calculate days since submission
-    const getDaysInQueue = (dateString) => {
-        if (!dateString) return 0;
-        const submitted = new Date(dateString);
-        const now = new Date();
-        const diffTime = Math.abs(now - submitted);
-        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    };
-
-    const handleViewApplication = (applicationId) => {
-        navigate(`/officer/dgo/applications/${applicationId}`);
+    const getOfficerData = () => {
+        try {
+            const data = localStorage.getItem('officerData');
+            return data ? JSON.parse(data) : null;
+        } catch (e) {
+            return null;
+        }
     };
 
     const clearFilters = () => {
         setFilters({ status: '', district: '', search: '' });
     };
 
-    // Helper to get nested value safely
     const getNestedValue = (obj, path) => {
+        if (!obj || !path) return undefined;
         return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+    };
+
+    const getStatusBadge = (status) => {
+        if (!status) return <span className="officer-badge">UNKNOWN</span>;
+        const normalized = status.toLowerCase().replace(/_/g, '-');
+        return (
+            <span className={`officer-badge status-${normalized}`}>
+                {status.replace(/_/g, ' ')}
+            </span>
+        );
+    };
+
+    const getDaysInQueue = (dateString) => {
+        if (!dateString) return 0;
+        const diff = new Date() - new Date(dateString);
+        return Math.floor(diff / (1000 * 60 * 60 * 24));
+    };
+
+    const handleViewApplication = (id) => {
+        if (id) {
+            navigate(`/officer/dgo/applications/${id}`);
+        }
     };
 
     if (loading) {
@@ -94,10 +97,10 @@ const ApplicationsList = () => {
     return (
         <div className="officer-portal">
             <OfficerHeader
-                officerName="Ramesh Kumar"
+                officerName={officerInfo?.name || officerInfo?.username || 'Officer'}
                 officerRole="DGO"
-                officerDesignation="District Groundwater Officer"
-                district="Jaipur"
+                officerDesignation={officerInfo?.designation || 'District Officer'}
+                district={officerInfo?.district || filters.district || 'Jaipur'}
             />
 
             <div className="officer-layout">
@@ -142,6 +145,7 @@ const ApplicationsList = () => {
                                     <option value="PENDING_DGO_REVIEW">Pending Review</option>
                                     <option value="UNDER_REVIEW_DGO">Under Review</option>
                                     <option value="QUERY_RAISED_DGO">Query Raised</option>
+                                    <option value="INSPECTED">Inspected</option>
                                     <option value="INSPECTION_SCHEDULED">Inspection Scheduled</option>
                                     <option value="APPROVED">Approved</option>
                                     <option value="REJECTED">Rejected</option>
@@ -149,16 +153,16 @@ const ApplicationsList = () => {
                             </div>
                             <div className="officer-form-group" style={{ marginBottom: 0 }}>
                                 <label className="officer-label">District</label>
-                                <select
-                                    className="officer-select"
+                                <input
+                                    type="text"
+                                    className="officer-input"
+                                    placeholder="Enter district name..."
                                     value={filters.district}
                                     onChange={(e) => setFilters({ ...filters, district: e.target.value })}
-                                >
-                                    <option value="">All Districts</option>
-                                    <option value="Jaipur">Jaipur</option>
-                                    <option value="Jodhpur">Jodhpur</option>
-                                    <option value="Udaipur">Udaipur</option>
-                                </select>
+                                />
+                                <small style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.25rem', display: 'block' }}>
+                                    Your district: {officerInfo?.communicationAddress?.district || 'None'}
+                                </small>
                             </div>
                             <div className="officer-form-group" style={{ marginBottom: 0, display: 'flex', alignItems: 'flex-end' }}>
                                 <button

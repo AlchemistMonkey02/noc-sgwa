@@ -1,46 +1,25 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const LanguageContext = createContext();
 
-// Translation dictionary
-const translations = {
-    en: {
-        department_name: 'GROUND WATER DEPARTMENT',
-        govt_rajasthan: 'Government of Rajasthan',
-        technical_helpline: 'Technical Helpline Number',
-        helpline_hours: '10.00 AM - 6.00 PM (On all working days)',
-        search_placeholder: 'Search here',
-        about_department: 'ABOUT DEPARTMENT',
-        services: 'SERVICES',
-        guidelines: 'GUIDELINES',
-        downloads: 'DOWNLOADS',
-        contact_us: 'CONTACT US'
-    },
-    hi: {
-        department_name: 'भूजल विभाग',
-        govt_rajasthan: 'राजस्थान सरकार',
-        technical_helpline: 'तकनीकी हेल्पलाइन नंबर',
-        helpline_hours: '10.00 AM - 6.00 PM (सभी कार्य दिवसों पर)',
-        search_placeholder: 'यहाँ खोजें',
-        about_department: 'विभाग के बारे में',
-        services: 'सेवाएं',
-        guidelines: 'दिशानिर्देश',
-        downloads: 'डाउनलोड',
-        contact_us: 'संपर्क करें'
-    }
-};
-
 export const LanguageProvider = ({ children }) => {
-    const [language, setLanguage] = useState('en');
+    const { t, i18n } = useTranslation();
+    const [language, setLanguage] = useState(i18n.language || 'en');
 
-    const t = (key) => {
-        return translations[language][key] || key;
-    };
+    // Keep internal state in sync with i18next
+    useEffect(() => {
+        const handleLanguageChange = (lng) => {
+            setLanguage(lng);
+        };
+        i18n.on('languageChanged', handleLanguageChange);
+        return () => {
+            i18n.off('languageChanged', handleLanguageChange);
+        };
+    }, [i18n]);
 
     const changeLanguage = (lang) => {
-        if (translations[lang]) {
-            setLanguage(lang);
-        }
+        i18n.changeLanguage(lang);
     };
 
     return (

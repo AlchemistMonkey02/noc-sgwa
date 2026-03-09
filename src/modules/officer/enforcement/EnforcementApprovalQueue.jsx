@@ -10,57 +10,43 @@ const EnforcementApprovalQueue = () => {
     const [applications, setApplications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [officerInfo, setOfficerInfo] = useState(null);
+
+    const getOfficerData = () => {
+        try {
+            const data = localStorage.getItem('officerData');
+            return data ? JSON.parse(data) : null;
+        } catch (e) {
+            return null;
+        }
+    };
 
     useEffect(() => {
+        const userData = getOfficerData();
+        setOfficerInfo(userData);
         fetchApprovalQueue();
     }, []);
 
     const fetchApprovalQueue = async () => {
         try {
             setLoading(true);
-            // Simulate fetching
-            const mockData = [
-                {
-                    id: 'NOC2026001234',
-                    applicationNumber: 'RJ/CGWA/NOC/2026/001234',
-                    applicantName: 'Rajesh Kumar Sharma',
-                    projectName: 'ABC Textile Manufacturing Unit',
-                    district: 'Jaipur',
-                    waterRequirement: 150.25,
-                    submittedDate: '2026-01-09',
-                    status: 'PENDING_FINAL_APPROVAL',
-                    dgoRecommendation: 'APPROVED',
-                    sgwaRecommendation: 'APPROVED_WITH_CONDITIONS',
-                    daysInQueue: 1
-                },
-                {
-                    id: 'NOC2026001235',
-                    applicationNumber: 'RJ/CGWA/NOC/2026/001235',
-                    applicantName: 'Modern Foods Pvt Ltd',
-                    projectName: 'Food Processing Plant',
-                    district: 'Alwar',
-                    waterRequirement: 300.50,
-                    submittedDate: '2026-01-08',
-                    status: 'PENDING_FINAL_APPROVAL',
-                    dgoRecommendation: 'APPROVED',
-                    sgwaRecommendation: 'APPROVED',
-                    daysInQueue: 2
-                },
-                {
-                    id: 'NOC2026001236',
-                    applicationNumber: 'RJ/CGWA/NOC/2026/001236',
-                    applicantName: 'City Infrastructure Ltd',
-                    projectName: 'Commercial Complex',
-                    district: 'Udaipur',
-                    waterRequirement: 75.00,
-                    submittedDate: '2026-01-07',
-                    status: 'PENDING_FINAL_APPROVAL',
-                    dgoRecommendation: 'CONDITIONAL',
-                    sgwaRecommendation: 'APPROVED_WITH_CONDITIONS',
-                    daysInQueue: 3
-                }
-            ];
-            setApplications(mockData);
+            const response = await officerService.getEnforcementApprovalQueue();
+            if (response.success && response.data.queue) {
+                const mapped = response.data.queue.map(app => ({
+                    id: app.id || app._id,
+                    applicationNumber: app.applicationNumber || 'N/A',
+                    applicantName: app.applicantDetails?.name || 'N/A',
+                    projectName: app.projectDetails?.projectName || 'N/A',
+                    district: app.locationDetails?.district || 'N/A',
+                    waterRequirement: app.waterRequirement?.total || 0,
+                    submittedDate: app.submittedAt || app.createdAt,
+                    status: app.status,
+                    dgoRecommendation: app.reviewHistory?.find(r => r.role === 'DGO')?.action || 'PENDING',
+                    sgwaRecommendation: app.reviewHistory?.find(r => r.role === 'SGWA')?.action || 'PENDING',
+                    daysInQueue: app.daysInQueue || 0
+                }));
+                setApplications(mapped);
+            }
         } catch (error) {
             console.error('Error fetching queue:', error);
         } finally {
@@ -69,8 +55,9 @@ const EnforcementApprovalQueue = () => {
     };
 
     const filteredApplications = applications.filter(app =>
-        app.applicationNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.applicantName.toLowerCase().includes(searchTerm.toLowerCase())
+        (app.applicationNumber || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (app.applicantName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (app.projectName || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const handleReview = (id) => {
@@ -80,10 +67,10 @@ const EnforcementApprovalQueue = () => {
     return (
         <div className="officer-portal">
             <OfficerHeader
-                officerName="Suresh Patel"
+                officerName={officerInfo?.name || officerInfo?.username || 'Officer'}
                 officerRole="ENFORCEMENT"
-                officerDesignation="Chief Engineer"
-                district=""
+                officerDesignation={officerInfo?.designation || 'Chief Engineer'}
+                district={officerInfo?.district || ''}
             />
 
             <div className="officer-layout">

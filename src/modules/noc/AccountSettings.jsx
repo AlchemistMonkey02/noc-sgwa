@@ -120,7 +120,7 @@ const AccountSettings = () => {
                                     <input
                                         type="password"
                                         name="currentPassword"
-                                        className="form-control"
+                                        className="form-input"
                                         placeholder="Enter current password"
                                         value={passwordData.currentPassword}
                                         onChange={handlePasswordChange}
@@ -133,7 +133,7 @@ const AccountSettings = () => {
                                     <input
                                         type="password"
                                         name="newPassword"
-                                        className="form-control"
+                                        className="form-input"
                                         placeholder="Enter new password"
                                         value={passwordData.newPassword}
                                         onChange={handlePasswordChange}
@@ -146,7 +146,7 @@ const AccountSettings = () => {
                                     <input
                                         type="password"
                                         name="confirmPassword"
-                                        className="form-control"
+                                        className="form-input"
                                         placeholder="Confirm new password"
                                         value={passwordData.confirmPassword}
                                         onChange={handlePasswordChange}
@@ -165,11 +165,11 @@ const AccountSettings = () => {
                 )}
 
                 {currentTab === 'security' && (
-                    <div className="dashboard-card" style={{ maxWidth: '800px', margin: '0 auto' }}>
-                        <div className="card-title-bar">
-                            <h2 className="card-main-title">Security Preferences</h2>
+                    <div className="card" style={{ maxWidth: '800px', margin: '0 auto' }}>
+                        <div className="card-header">
+                            <h2 className="card-title">Security Preferences</h2>
                         </div>
-                        <div className="card-content-area">
+                        <div className="card-body">
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1rem', borderBottom: '1px solid #eee' }}>
                                     <div>
@@ -198,14 +198,14 @@ const AccountSettings = () => {
                                         <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b' }}>Session Timeout</h4>
                                         <p style={{ margin: 0, fontSize: '0.9rem', color: '#64748b' }}>Auto-logout after inactivity.</p>
                                     </div>
-                                    <select className="bhuneer-input" style={{ width: '150px' }} defaultValue="30">
+                                    <select className="form-input" style={{ width: '150px' }} defaultValue="30">
                                         <option value="15">15 Minutes</option>
                                         <option value="30">30 Minutes</option>
                                         <option value="60">1 Hour</option>
                                     </select>
                                 </div>
                                 <div style={{ marginTop: '1rem', textAlign: 'right' }}>
-                                    <button type="button" className="bhuneer-submit-btn">Save Changes</button>
+                                    <button type="button" className="btn-primary">Save Changes</button>
                                 </div>
                             </div>
                         </div>

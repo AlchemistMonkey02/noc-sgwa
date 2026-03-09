@@ -2,36 +2,110 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import OfficerHeader from '../shared/components/OfficerHeader';
 import OfficerSidebar from '../shared/components/OfficerSidebar';
+import officerService from '../services/officerService';
 import '../shared/styles/officer-portal.css';
 
 const ApprovalForm = () => {
     const { applicationId } = useParams();
     const navigate = useNavigate();
 
+    const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
+    const [application, setApplication] = useState(null);
+    const [officerData, setOfficerData] = useState(null);
+
     const [formData, setFormData] = useState({
         approvalType: 'CONDITIONAL_APPROVAL',
-        nocNumber: 'RJ/CGWA/NOC/2026/001234',
+        nocNumber: '',
         validityYears: 3,
-        validFrom: '2026-01-22',
-        validUpto: '2029-01-21',
-        maxDailyExtraction: 150.25,
-        maxAnnualExtraction: 54841.25,
+        validFrom: new Date().toISOString().split('T')[0],
+        validUpto: '',
+        maxDailyExtraction: 0,
+        maxAnnualExtraction: 0,
         conditions: [
-            'Install digital flow meter with telemetry within 30 days of NOC issuance',
-            'Install piezometer at GPS coordinates within 60 days',
-            'Submit quarterly groundwater monitoring reports',
-            'Implement rainwater harvesting structures within 90 days',
-            'No groundwater withdrawal during monsoon season (July-September)'
+            'Install tamper proof digital water flow meter with telemetry on all the abstraction structure(s) within 30 days.',
+            'Installation of Piezometers with Digital Water Level Recorders (DWLR) and Telemetry is mandatory.',
+            'Submit quarterly groundwater monitoring reports.',
+            'No groundwater withdrawal during monsoon season.'
         ],
-        cessAmount: 3235633.75,
+        cessAmount: 0,
         approvalRemarks: ''
     });
 
-    const handleSubmit = (e) => {
+    // Auto-calculate Valid Upto based on Valid From and Validity Years
+    React.useEffect(() => {
+        if (formData.validFrom && formData.validityYears) {
+            const fromDate = new Date(formData.validFrom);
+            const uptoDate = new Date(fromDate);
+            uptoDate.setFullYear(fromDate.getFullYear() + parseInt(formData.validityYears));
+
+            // Format back to YYYY-MM-DD
+            setFormData(prev => ({
+                ...prev,
+                validUpto: uptoDate.toISOString().split('T')[0]
+            }));
+        }
+    }, [formData.validFrom, formData.validityYears]);
+
+    React.useEffect(() => {
+        const storedOfficer = localStorage.getItem('officerData');
+        if (storedOfficer) {
+            setOfficerData(JSON.parse(storedOfficer));
+        }
+        fetchDetails();
+    }, [applicationId]);
+
+    const fetchDetails = async () => {
+        try {
+            setLoading(true);
+            const response = await officerService.getEnforcementApplicationDetails(applicationId);
+            if (response.success) {
+                const app = response.data;
+                setApplication(app);
+
+                // Pre-fill from application
+                const dailyReq = app.waterRequirement?.dailyRequirement ||
+                    app.projectDetails?.waterRequirement?.totalRequirement || 0;
+
+                // Determine cess amount based on daily requirement or standard rate
+                // Assuming 100/m3 for industrial as a placeholder if not in data
+                const cessRate = 50;
+                const annualCess = (dailyReq * 365 * cessRate).toFixed(2);
+
+                setFormData(prev => ({
+                    ...prev,
+                    nocNumber: `NOC/${new Date().getFullYear()}/${app.applicationNumber?.split('-').pop() || '001'}`,
+                    maxDailyExtraction: dailyReq,
+                    maxAnnualExtraction: (dailyReq * 365).toFixed(2),
+                    cessAmount: app.cessAmount || annualCess,
+                    approvalRemarks: `Recommended for approval based on SGWA review. ${app.sgwaRecommendation?.remarks || ''}`
+                }));
+            }
+        } catch (error) {
+            console.error('Error fetching application:', error);
+            alert('Failed to load application details');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // API call to approve application
-        alert('NOC Approved Successfully!');
-        navigate('/officer/enforcement/dashboard');
+        try {
+            setSubmitting(true);
+            const response = await officerService.enforcementApproveApplication(applicationId, formData);
+            if (response.success) {
+                alert('NOC Issued Successfully!');
+                navigate('/officer/enforcement/dashboard');
+            } else {
+                alert(response.message || 'Failed to issue NOC');
+            }
+        } catch (error) {
+            console.error('Error issuing NOC:', error);
+            alert(error.response?.data?.message || 'Error occurred while issuing NOC');
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const addCondition = () => {
@@ -54,13 +128,22 @@ const ApprovalForm = () => {
         });
     };
 
+    if (loading) {
+        return (
+            <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>Loading application details...</p>
+            </div>
+        );
+    }
+
     return (
         <div className="officer-portal">
             <OfficerHeader
-                officerName="Suresh Patel"
+                officerName={officerData?.name || "Officer"}
                 officerRole="ENFORCEMENT"
-                officerDesignation="Chief Engineer"
-                district=""
+                officerDesignation={officerData?.designation || "Chief Engineer"}
+                district={officerData?.district || ""}
             />
 
             <div className="officer-layout">
@@ -71,7 +154,7 @@ const ApprovalForm = () => {
                         <div className="officer-page-header">
                             <h1 className="officer-page-title">✅ Approve NOC Application</h1>
                             <p className="officer-page-subtitle">
-                                Application No: {formData.nocNumber}
+                                Application No: {application?.applicationNumber}
                             </p>
                         </div>
 
@@ -217,8 +300,9 @@ const ApprovalForm = () => {
                                     type="submit"
                                     className="officer-btn officer-btn-success"
                                     style={{ marginLeft: 'auto' }}
+                                    disabled={submitting}
                                 >
-                                    ✅ Approve & Issue NOC
+                                    {submitting ? '⏳ Issuing NOC...' : '✅ Approve & Issue NOC'}
                                 </button>
                             </div>
                         </form>

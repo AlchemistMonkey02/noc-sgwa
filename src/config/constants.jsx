@@ -19,9 +19,8 @@ export const EXTERNAL_URLS = {
     DOWNLOADS_URL: 'https://rgwcma.geoplanetsolution.in/downloads',
     CONTACT_URL: 'https://rgwcma.geoplanetsolution.in/contact',
 
-    // Add more external URLs here as needed
-    // DASHBOARD_URL: 'https://rgwcma.geoplanetsolution.in/dashboard',
-    // API_BASE_URL: 'https://api.example.com',
+    // Consultation Services
+    CONSULTATION_APP_URL: 'http://localhost:3000',
 };
 
 // You can also export individual URLs if preferred

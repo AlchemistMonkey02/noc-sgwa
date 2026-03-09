@@ -1,60 +1,60 @@
 import React, { useState, useEffect } from 'react';
 import OfficerHeader from '../shared/components/OfficerHeader';
 import OfficerSidebar from '../shared/components/OfficerSidebar';
+import officerService from '../services/officerService';
 import '../shared/styles/officer-portal.css';
 
 const EnforcementCompliance = () => {
     const [complianceData, setComplianceData] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [officerInfo, setOfficerInfo] = useState(null);
+
+    const getOfficerData = () => {
+        try {
+            const data = localStorage.getItem('officerData');
+            return data ? JSON.parse(data) : null;
+        } catch (e) {
+            return null;
+        }
+    };
 
     useEffect(() => {
-        // Mock data
-        setComplianceData([
-            {
-                nocNumber: 'RJ/CGWA/NOC/2025/001101',
-                company: 'Maruti Textiles',
-                district: 'Bhilwara',
-                telemetryStatus: 'Installed',
-                lastReportDate: '2025-12-31',
-                paymentStatus: 'Paid',
-                complianceStatus: 'COMPLIANT'
-            },
-            {
-                nocNumber: 'RJ/CGWA/NOC/2025/001102',
-                company: 'Rajasthan Minerals Corp',
-                district: 'Udaipur',
-                telemetryStatus: 'Not Installed',
-                lastReportDate: '2025-10-01',
-                paymentStatus: 'Pending',
-                complianceStatus: 'NON_COMPLIANT'
-            },
-            {
-                nocNumber: 'RJ/CGWA/NOC/2025/001005',
-                company: 'Sunrise Hospitality',
-                district: 'Jaipur',
-                telemetryStatus: 'Installed',
-                lastReportDate: '2025-12-15',
-                paymentStatus: 'Paid',
-                complianceStatus: 'Note Issued'
-            }
-        ]);
+        const userData = getOfficerData();
+        setOfficerInfo(userData);
+        fetchCompliance();
     }, []);
 
+    const fetchCompliance = async () => {
+        try {
+            setLoading(true);
+            const response = await officerService.getEnforcementDashboard(); // Or a targeted compliance endpoint if exists
+            if (response.success && response.data.compliance) {
+                setComplianceData(response.data.compliance);
+            }
+        } catch (error) {
+            console.error('Error fetching compliance:', error);
+            setComplianceData([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const getStatusStyle = (status) => {
-        switch (status) {
-            case 'COMPLIANT': return 'success';
-            case 'NON_COMPLIANT': return 'danger';
-            case 'Note Issued': return 'warning';
-            default: return '';
+        if (!status) return 'status-pending';
+        switch (status.toUpperCase()) {
+            case 'COMPLIANT': return 'status-approved';
+            case 'NON_COMPLIANT': return 'status-rejected';
+            default: return 'status-pending';
         }
     };
 
     return (
         <div className="officer-portal">
             <OfficerHeader
-                officerName="Suresh Patel"
+                officerName={officerInfo?.name || officerInfo?.username || 'Officer'}
                 officerRole="ENFORCEMENT"
-                officerDesignation="Chief Engineer"
-                district=""
+                officerDesignation={officerInfo?.designation || 'Chief Engineer'}
+                district={officerInfo?.district || ''}
             />
             <div className="officer-layout">
                 <OfficerSidebar role="ENFORCEMENT" />

@@ -1,7 +1,9 @@
 ﻿import React, { useState, useEffect } from 'react';
+import { useToast } from '../../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import PublicHeader from '../public/components/PublicHeader';
 import NOCFooter from './components/NOCFooter';
+import LayoutWithSidebar from './components/LayoutWithSidebar';
 import ProgressSteps from './components/ProgressSteps';
 import FormNavigation from './components/FormNavigation';
 import PaymentModule from './components/PaymentModule';
@@ -55,6 +57,8 @@ const NOCApplication = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [pendingUploads, setPendingUploads] = useState({});
     const [verificationFeedback, setVerificationFeedback] = useState({});
+
+    const { success: toastSuccess, error: toastError, info: toastInfo, warning: toastWarning } = useToast();
 
     // Dynamic Document Requirements
     const [dynamicDocuments, setDynamicDocuments] = useState([]);
@@ -234,20 +238,10 @@ const NOCApplication = () => {
                 loadData(nocApplicationService.getUtilizationPurposes, setUtilizationPurposeOptions),
 
                 // Fetch Exemption Config for dropdowns (Dynamic Overrides)
-                (async () => {
-                    try {
-                        const response = await nocApplicationService.getExemptionConfig();
-                        if (response.success && response.data) {
-                            if (response.data.utilizationTypes) {
-                                setAppTypeOptions(response.data.utilizationTypes);
-                                setUtilizationPurposeOptions(response.data.utilizationTypes);
-                            }
-                            if (response.data.utilizationPurposes) {
-                                setProjectTypeOptions(response.data.utilizationPurposes);
-                            }
-                        }
-                    } catch (e) { console.warn("Exemption config fetch failed", e); }
-                })(),
+                // REMOVED: This was overriding appTypeOptions with string-coded { code: "IND", name: "Industry"} 
+                // from the exemption rules, which broke getApplicationSubTypes() fetching numeric ID based sub-types.
+                // It was also incorrectly overriding setProjectTypeOptions and setUtilizationPurposeOptions.
+                Promise.resolve(),
 
 
                 loadData(nocApplicationService.getOrganizationTypes, setOrganizationTypeOptions),
@@ -405,12 +399,22 @@ const NOCApplication = () => {
                             exemptionCode: result.exemptionCode,
                             isExemptMSME: result.exemptionCode === 'MSME_SM'
                         }));
-                        console.log('✅ API: User is EXEMPT:', result.exemptionType);
+                        console.log('? API: User is EXEMPT:', result.exemptionType);
 
-                        console.log('✅ API: User is EXEMPT:', result.exemptionType);
+                        toastWarning("Activity is exempt from NOC. Redirecting to Exemption Form...");
 
-                        // Show Custom Exemption Modal
-                        setShowExemptionModal(true);
+                        // Construct basic formData to pass along
+                        const redirectFormData = {
+                            ...formData,
+                            applicationType: result.exemptionType || appTypeName,
+                            groundWaterUtilizationFor: result.exemptionType || utilName,
+                            waterQualityType: formData.waterQualityType || "Fresh Water"
+                        };
+
+                        // Delay slightly to let the toast show
+                        setTimeout(() => {
+                            navigate('/noc/exempt-application', { state: { formData: redirectFormData } });
+                        }, 1500);
 
                     } else {
                         setExemptionStatus(null);
@@ -554,7 +558,14 @@ const NOCApplication = () => {
         if (!value) return 'Not provided';
         const option = options.find(opt => {
             if (typeof opt === 'object') {
-                return opt.code === value || opt.label === value || opt.value === value || opt.name === value;
+                const possibleIds = [
+                    opt.id, opt._id, opt.code, opt.value,
+                    opt.appTypeCode, opt.appSubTypeCode,
+                    opt.categoryCode, opt.projectTypeCode
+                ];
+                return possibleIds.some(id => id !== undefined && String(id) === String(value)) ||
+                    opt.label === value ||
+                    opt.name === value;
             }
             return opt === value;
         });
@@ -649,6 +660,35 @@ const NOCApplication = () => {
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
+
+        if (name === 'applicationType') {
+            // Check if the selected Application Type is an exempt category
+            const selectedOpt = appTypeOptions.find(opt => {
+                const optVal = typeof opt === 'object' ? (opt.id || opt.appTypeId || opt.appTypeCode || opt.typeCode || opt.code || opt._id || opt.name) : opt;
+                return String(optVal) === String(value);
+            });
+            const optName = typeof selectedOpt === 'object' ? (selectedOpt.name || selectedOpt.label) : selectedOpt;
+
+            if (optName === 'Agriculture Activities' || optName === 'Agriculture' || optName === 'Individual Domestic Consumer' ||
+                String(value) === 'Agriculture Activities' || String(value) === 'Agriculture' || String(value) === 'Individual Domestic Consumer') {
+
+                // Construct basic formData to pass along
+                const redirectFormData = {
+                    ...formData,
+                    applicationType: optName || value,
+                    groundWaterUtilizationFor: optName || value,
+                    waterQualityType: "Fresh Water"
+                };
+
+                navigate('/noc/exempt-application', {
+                    state: {
+                        formData: redirectFormData
+                    }
+                });
+                return; // Stop further processing here
+            }
+        }
+
         setFormData(prev => ({
             ...prev,
             [name]: type === 'checkbox' ? checked : value
@@ -682,7 +722,7 @@ const NOCApplication = () => {
         // Optimistic UI update (optional, or just show loading)
         // For now, consistent with user flow: Upload immediately
         if (!applicationId) {
-            alert("Please complete Basic Details first to generate an Application ID before uploading documents.");
+            toastWarning("Please complete Basic Details first to generate an Application ID before uploading documents.");
             return;
         }
 
@@ -1016,7 +1056,7 @@ const NOCApplication = () => {
                 }
 
                 if (!companyId) {
-                    alert("Error: Company profile not found. Please complete your Company Profile first.");
+                    toastError("Error: Company profile not found. Please complete your Company Profile first.");
                     setIsSaving(false);
                     return;
                 }
@@ -1098,19 +1138,23 @@ const NOCApplication = () => {
                                 if (res.success) {
                                     setFormData(prev => ({
                                         ...prev,
+                                        uploadedDocumentsDetails: {
+                                            ...(prev.uploadedDocumentsDetails || {}),
+                                            [key]: res.document?.documentId || res.data?.documentId || res.documentId || res.data?.id
+                                        },
                                         uploadedDocuments: {
                                             ...prev.uploadedDocuments,
                                             [key]: file
                                         }
                                     }));
                                 } else {
-                                    alert(`Failed to upload ${key}. Server response: ${res.message || 'Unknown error'}`);
+                                    toastError(`Failed to upload ${key}. Server response: ${res.message || 'Unknown error'}`);
                                 }
                                 return res;
                             })
                             .catch(err => {
                                 console.error(`Failed to upload pending doc ${key}`, err);
-                                alert(`Error uploading ${key}: ${err.message}`);
+                                toastError(`Error uploading ${key}: ${err.message}`);
                             });
                     });
 
@@ -1203,8 +1247,16 @@ const NOCApplication = () => {
                         purpose: formData.groundWaterUtilizationFor,
                         dailyRequirement: totalDailyReq,
                         annualRequirement: totalAnnualReq,
+                        totalRequirement: totalDailyReq,
                         freshWaterRequirement: freshReq,
-                        recycledWater: recycledReq
+                        recycledWaterUsage: recycledReq, // Mapped to correct schema key
+                        breakup: {
+                            domestic: parseFloat(formData.waterReqDomestic || 0),
+                            industrial: parseFloat(formData.waterReqIndustrial || 0),
+                            greenBelt: parseFloat(formData.waterReqGreenBelt || 0),
+                            other: parseFloat(formData.waterReqOther || 0),
+                            otherDescription: formData.waterReqOtherDescription || ''
+                        }
                     }
                 };
                 response = await nocApplicationService.saveStep4(applicationId, step4Payload);
@@ -1213,32 +1265,42 @@ const NOCApplication = () => {
                 // Step 4: Groundwater Structures (Maps to Backend Step 5)
                 if (!applicationId) throw new Error("Application ID missing for Step 4");
 
+                // Calculate totalDailyReq for fallback
+                const freshReq = parseFloat(formData.waterReqFreshRequirement || 0);
+                const recycledReq = parseFloat(formData.waterReqRecycled || 0);
+                const totalDailyReq = freshReq + recycledReq;
+
                 const structures = existingStructures.map(s => ({
                     structureType: s.type ? s.type.toUpperCase().replace(/\s/g, '_') : 'BOREWELL',
-                    category: 'EXISTING',
+                    category: s.category || 'EXISTING', // Add category if tracking proposed vs existing
                     depth: parseFloat(s.depth || 0),
                     diameter: parseFloat(s.diameter || 0),
-                    dischargeCapacity: parseFloat(s.discharge || 0),
+                    discharge: parseFloat(s.discharge || 0), // Schema uses 'discharge' not 'dischargeCapacity'
                     depthToWaterLevel: parseFloat(s.depthToWaterLevel || 0),
-                    fittedWithMeter: s.hasMeter === 'Yes',
+                    waterMeterFitted: s.hasMeter === 'Yes', // Schema uses 'waterMeterFitted'
                     yearOfConstruction: parseInt(s.yearOfConstruction || 0),
                     pumpDetails: {
-                        pumpType: s.pumpType,
-                        capacity: parseFloat(s.pumpCapacity || 0)
+                        pumpType: s.pumpType || 'SUBMERSIBLE',
+                        capacityHP: parseFloat(s.pumpCapacity || 0) // Schema uses 'capacityHP'
                     }
                 }));
 
                 const step5Payload = {
                     groundWaterStructures: structures,
-                    proposedStructures: {
-                        borewells: parseInt(formData.proposedBorewells || 0),
-                        tubewells: parseInt(formData.proposedTubewells || 0),
-                        dugwells: parseInt(formData.proposedDugwells || 0),
-                        pumps: parseInt(formData.proposedPumps || 0)
+                    waterRequirement: {
+                        // Merge proposed extraction into waterRequirement
+                        proposedExtraction: {
+                            numberOfBorewells: parseInt(formData.proposedBorewells || 0),
+                            numberOfTubewells: parseInt(formData.proposedTubewells || 0),
+                            numberOfDugwells: parseInt(formData.proposedDugwells || 0),
+                            totalDailyExtraction: parseFloat(formData.proposedExtraction || 0) || totalDailyReq,
+                            borewellDetails: [] // Optional details
+                        },
                     },
                     hydrogeology: {
-                        aquiferType: "UNCONFINED",
-                        waterQualityType: formData.waterQualityType === 'Potable' ? 'POTABLE' : 'SALINE'
+                        aquiferType: formData.geology || formData.aquiferType || "UNCONFINED",
+                        waterQualityType: formData.waterQualityType === 'Potable' ? 'FRESH' : 'SALINE',
+                        depthToWaterLevel: parseFloat(formData.depthToWaterLevel || 0)
                     }
                 };
 
@@ -1276,7 +1338,7 @@ const NOCApplication = () => {
 
                 const documentsList = Object.entries(formData.uploadedDocuments).map(([key, file]) => ({
                     documentType: key.toUpperCase(),
-                    documentId: 'doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                    documentId: formData.uploadedDocumentsDetails?.[key] || ('doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5)),
                     fileName: file.name
                 }));
 
@@ -1295,7 +1357,7 @@ const NOCApplication = () => {
                     // If meter installed: Step 7 is Upload Documents
                     const documentsList = Object.entries(formData.uploadedDocuments).map(([key, file]) => ({
                         documentType: key.toUpperCase(),
-                        documentId: 'doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                        documentId: formData.uploadedDocumentsDetails?.[key] || ('doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5)),
                         fileName: file.name
                     }));
 
@@ -1398,7 +1460,7 @@ const NOCApplication = () => {
 
         } catch (error) {
             console.error("Failed to save step:", error);
-            alert("Failed to save progress. Please try again. " + error.message);
+            // toastError("Failed to save progress. Please try again. " + error.message);
         } finally {
             setIsSaving(false);
         }
@@ -1427,7 +1489,7 @@ const NOCApplication = () => {
         // Final declaration check
         const declarationCheckbox = document.getElementById('finalDeclaration');
         if (declarationCheckbox && !declarationCheckbox.checked) {
-            alert('Please check the final declaration box to proceed.');
+            toastWarning('Please check the final declaration box to proceed.');
             return;
         }
 
@@ -1508,16 +1570,12 @@ const NOCApplication = () => {
                         }
                     },
 
-                    // Inject Mock Documents to bypass strict validation as requested
-                    documents: [
-                        { documentType: "AADHAR", documentId: "doc_aadhar_" + Date.now(), fileName: "mock_aadhar.pdf" },
-                        { documentType: "PAN", documentId: "doc_pan_" + Date.now(), fileName: "mock_pan.pdf" },
-                        { documentType: "LAND_OWNERSHIP", documentId: "doc_land_" + Date.now(), fileName: "mock_land.pdf" },
-                        { documentType: "SITE_PLAN", documentId: "doc_site_" + Date.now(), fileName: "mock_site.pdf" },
-                        { documentType: "UNDERTAKING", documentId: "doc_undertaking_" + Date.now(), fileName: "mock_undertaking.pdf" },
-                        { documentType: "WATER_QUALITY_REPORT", documentId: "doc_water_" + Date.now(), fileName: "mock_water.pdf" },
-                        { documentType: "GST_CERTIFICATE", documentId: "doc_gst_" + Date.now(), fileName: "mock_gst.pdf" }
-                    ]
+                    // Send actual uploaded documents instead of generated mock placeholders
+                    documents: Object.entries(formData.uploadedDocuments || {}).map(([key, file]) => ({
+                        documentType: key.toUpperCase(),
+                        documentId: formData.uploadedDocumentsDetails?.[key] || 'doc_' + Date.now(),
+                        fileName: file.name
+                    }))
                 }; // End of paymentPayload object
 
                 // Explicitly Save Documents (Step 7 logic) FIRST to satisfy backend validation
@@ -1545,12 +1603,12 @@ const NOCApplication = () => {
                 setSuccessData({ ...appData, totalAmount: feeDisplay });
                 window.scrollTo(0, 0);
 
-                // alert(`Application Submitted Successfully!\n\nApplication Number: ${appData.applicationNumber || 'Pending'}\nStatus: ${appData.status}\nTotal Fee: ₹${feeDisplay}\n\nRedirecting to Dashboard...`);
+                // alert(`Application Submitted Successfully!\n\nApplication Number: ${appData.applicationNumber || 'Pending'}\nStatus: ${appData.status}\nTotal Fee: ?${feeDisplay}\n\nRedirecting to Dashboard...`);
                 // navigate('/noc/dashboard');
 
             } catch (error) {
                 console.error("Submission failed:", error);
-                alert("Submission failed. " + error.message);
+                toastError("Submission failed. " + error.message);
             } finally {
                 setIsSaving(false);
             }
@@ -1584,14 +1642,13 @@ const NOCApplication = () => {
     };
 
     return (
-        <div className="noc-portal">
-            <PublicHeader />
+        <LayoutWithSidebar defaultCollapsed={true} showSidebar={true}>
             {/* Custom Exemption Modal */}
             {showExemptionModal && exemptionStatus && (
                 <div className="noc-modal-overlay">
                     <div className="noc-modal-content">
                         <div className="noc-modal-header">
-                            <h3 style={{ margin: 0 }}>🎉 Applicable for Exempted NOC</h3>
+                            <h3 style={{ margin: 0 }}>?? Applicable for Exempted NOC</h3>
                         </div>
                         <div className="noc-modal-body">
                             <p><strong>Exemption Category:</strong> {exemptionStatus.exemptionType}</p>
@@ -1607,13 +1664,13 @@ const NOCApplication = () => {
                         </div>
                         <div className="noc-modal-footer">
                             <button
-                                className="bhuneer-button-secondary"
+                                className="btn-secondary"
                                 onClick={() => setShowExemptionModal(false)}
                             >
                                 Cancel
                             </button>
                             <button
-                                className="bhuneer-button-primary"
+                                className="btn-primary"
                                 onClick={() => {
                                     // Direct Lookup for Names (Simplest approach as requested)
                                     const getAppName = () => {
@@ -1673,11 +1730,11 @@ const NOCApplication = () => {
                 </div>
             )}
 
-            <div className="noc-application-page">
-                <div className="bhuneer-form-container">
+            <div className="">
+                <div className="content-container">
                     {/* Form Header */}
                     <div style={{ textAlign: 'center', marginBottom: 'var(--space-8)' }}>
-                        <h1 className="bhuneer-form-title">NOC Application Form</h1>
+                        <h1 className="card-title">NOC Application Form</h1>
                         <p className="bhuneer-form-subtitle">Application for Groundwater Abstraction - Central Ground Water Authority</p>
                     </div>
 
@@ -1736,7 +1793,7 @@ const NOCApplication = () => {
                                     const result = await nocApplicationService.submitExemption(payload);
 
                                     if (result.success) {
-                                        alert('✅ Exemption record submitted successfully to SGWA!');
+                                        toastSuccess('Exemption record submitted successfully to SGWA!');
                                         setSuccessData({
                                             applicationNumber: result.data.applicationNumber || certData.certificateNumber,
                                             status: 'Exempt',
@@ -1744,17 +1801,17 @@ const NOCApplication = () => {
                                             exemptionType: certData.exemptionType
                                         });
                                     } else {
-                                        alert('❌ Submission failed: ' + (result.message || 'Unknown error'));
+                                        toastError('Submission failed: ' + (result.message || 'Unknown error'));
                                     }
                                 } catch (error) {
                                     console.error('Exemption submission error:', error);
-                                    alert('Error submitting exemption record. You can proceed with the downloaded certificate.');
+                                    toastWarning('Sync failed. You can still proceed with the downloaded certificate.');
                                 }
                             }}
                         />
                     ) : (
                         /* Normal Form Content for Non-Exempted Users */
-                        <div className="bhuneer-form-content">
+                        <div className="card card-body">
                             {/* Step 1: Application Type Details */}
                             {currentStep === 1 && (
                                 <div>
@@ -1762,10 +1819,10 @@ const NOCApplication = () => {
 
                                     <div className="noc-form-row two-col">
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label required">Application Type</label>
+                                            <label className="form-label required">Application Type</label>
                                             <select
                                                 name="applicationType"
-                                                className={`bhuneer-input ${errors.applicationType ? 'error' : ''}`}
+                                                className={`form-input ${errors.applicationType ? 'error' : ''}`}
                                                 value={formData.applicationType}
                                                 onChange={handleChange}
                                             >
@@ -1777,19 +1834,19 @@ const NOCApplication = () => {
                                                     return <option key={value} value={value}>{label}</option>;
                                                 })}
                                             </select>
-                                            {errors.applicationType && <span className="bhuneer-error">{errors.applicationType}</span>}
+                                            {errors.applicationType && <span className="text-error">{errors.applicationType}</span>}
                                             {formData.applicationType === 'NOC Renewal' && (
                                                 <div className="noc-alert noc-alert-warning" style={{ marginTop: '10px' }}>
-                                                    ⚠️ <strong>Renewal Notice:</strong> Applications must be submitted at least 90 days before expiry. Late applications may attract Environmental Compensation Charges.
+                                                    ?? <strong>Renewal Notice:</strong> Applications must be submitted at least 90 days before expiry. Late applications may attract Environmental Compensation Charges.
                                                 </div>
                                             )}
                                         </div>
 
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label required">Application Sub Type</label>
+                                            <label className="form-label required">Application Sub Type</label>
                                             <select
                                                 name="applicationSubType"
-                                                className={`bhuneer-input ${errors.applicationSubType ? 'error' : ''}`}
+                                                className={`form-input ${errors.applicationSubType ? 'error' : ''}`}
                                                 value={formData.applicationSubType}
                                                 onChange={handleChange}
                                             >
@@ -1801,34 +1858,34 @@ const NOCApplication = () => {
                                                     return <option key={value} value={value}>{label}</option>;
                                                 })}
                                             </select>
-                                            {errors.applicationSubType && <span className="bhuneer-error">{errors.applicationSubType}</span>}
+                                            {errors.applicationSubType && <span className="text-error">{errors.applicationSubType}</span>}
                                         </div>
                                     </div>
 
                                     <div className="noc-form-row two-col">
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label required">Project Type</label>
+                                            <label className="form-label required">Project Type</label>
                                             <select
                                                 name="projectType"
-                                                className={`bhuneer-input ${errors.projectType ? 'error' : ''}`}
+                                                className={`form-input ${errors.projectType ? 'error' : ''}`}
                                                 value={formData.projectType}
                                                 onChange={handleChange}
                                             >
                                                 <option value="">Select Project Type</option>
                                                 {projectTypeOptions.map(type => {
                                                     const label = typeof type === 'object' ? (type.label || type.name) : type;
-                                                    const value = typeof type === 'object' ? (type.projectTypeCode || type.typeCode || type.id || type.code || type._id || type.name) : type;
+                                                    const value = typeof type === 'object' ? (type.categoryCode || type.projectTypeCode || type.typeCode || type.id || type.code || type._id || type.name) : type;
                                                     return <option key={value} value={value}>{label}</option>;
                                                 })}
                                             </select>
-                                            {errors.projectType && <span className="bhuneer-error">{errors.projectType}</span>}
+                                            {errors.projectType && <span className="text-error">{errors.projectType}</span>}
                                         </div>
 
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label required">Water Quality Type</label>
+                                            <label className="form-label required">Water Quality Type</label>
                                             <select
                                                 name="waterQualityType"
-                                                className={`bhuneer-input ${errors.waterQualityType ? 'error' : ''}`}
+                                                className={`form-input ${errors.waterQualityType ? 'error' : ''}`}
                                                 value={formData.waterQualityType}
                                                 onChange={handleChange}
                                             >
@@ -1839,16 +1896,16 @@ const NOCApplication = () => {
                                                     return <option key={value} value={value}>{label}</option>;
                                                 })}
                                             </select>
-                                            {errors.waterQualityType && <span className="bhuneer-error">{errors.waterQualityType}</span>}
+                                            {errors.waterQualityType && <span className="text-error">{errors.waterQualityType}</span>}
                                         </div>
                                     </div>
 
                                     <div className="noc-form-row two-col">
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label required">Ground Water Utilization For</label>
+                                            <label className="form-label required">Ground Water Utilization For</label>
                                             <select
                                                 name="groundWaterUtilizationFor"
-                                                className={`bhuneer-input ${errors.groundWaterUtilizationFor ? 'error' : ''}`}
+                                                className={`form-input ${errors.groundWaterUtilizationFor ? 'error' : ''}`}
                                                 value={formData.groundWaterUtilizationFor}
                                                 onChange={handleChange}
                                             >
@@ -1859,20 +1916,20 @@ const NOCApplication = () => {
                                                     return <option key={value} value={value}>{label}</option>;
                                                 })}
                                             </select>
-                                            {errors.groundWaterUtilizationFor && <span className="bhuneer-error">{errors.groundWaterUtilizationFor}</span>}
+                                            {errors.groundWaterUtilizationFor && <span className="text-error">{errors.groundWaterUtilizationFor}</span>}
                                         </div>
 
                                         {formData.existingNOCStatus === 'Yes' && (
                                             <div className="noc-form-group">
-                                                <label className="bhuneer-label required">Date of Commencement</label>
+                                                <label className="form-label required">Date of Commencement</label>
                                                 <input
                                                     type="date"
                                                     name="dateOfCommencement"
-                                                    className={`bhuneer-input ${errors.dateOfCommencement ? 'error' : ''}`}
+                                                    className={`form-input ${errors.dateOfCommencement ? 'error' : ''}`}
                                                     value={formData.dateOfCommencement}
                                                     onChange={handleChange}
                                                 />
-                                                {errors.dateOfCommencement && <span className="bhuneer-error">{errors.dateOfCommencement}</span>}
+                                                {errors.dateOfCommencement && <span className="text-error">{errors.dateOfCommencement}</span>}
                                             </div>
                                         )}
                                     </div>
@@ -1880,10 +1937,10 @@ const NOCApplication = () => {
                                     {/* Dynamic Industry/Mining/Other Dropdown */}
                                     {formData.groundWaterUtilizationFor === 'Industry' && (
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label required">Industry Type</label>
+                                            <label className="form-label required">Industry Type</label>
                                             <select
                                                 name="industryType"
-                                                className={`bhuneer-input ${errors.industryType ? 'error' : ''}`}
+                                                className={`form-input ${errors.industryType ? 'error' : ''}`}
                                                 value={formData.industryType || ''}
                                                 onChange={handleChange}
                                             >
@@ -1904,7 +1961,7 @@ const NOCApplication = () => {
                                                     ));
                                                 })()}
                                             </select>
-                                            {errors.industryType && <span className="bhuneer-error">{errors.industryType}</span>}
+                                            {errors.industryType && <span className="text-error">{errors.industryType}</span>}
                                             {formData.industryType && isPollutingIndustry(formData.industryType) && (
                                                 <div className="noc-alert noc-alert-warning" style={{ marginTop: '10px' }}>
                                                     âš ï¸ <strong>Polluting Industry:</strong> Additional compliance requirements apply including well-head protection and water quality monitoring.
@@ -1920,10 +1977,10 @@ const NOCApplication = () => {
 
                                     {formData.groundWaterUtilizationFor === 'Mining' && (
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label required">Mining Type</label>
+                                            <label className="form-label required">Mining Type</label>
                                             <select
                                                 name="miningType"
-                                                className={`bhuneer-input ${errors.miningType ? 'error' : ''}`}
+                                                className={`form-input ${errors.miningType ? 'error' : ''}`}
                                                 value={formData.miningType || ''}
                                                 onChange={handleChange}
                                             >
@@ -1934,7 +1991,7 @@ const NOCApplication = () => {
                                                     </option>
                                                 ))}
                                             </select>
-                                            {errors.miningType && <span className="bhuneer-error">{errors.miningType}</span>}
+                                            {errors.miningType && <span className="text-error">{errors.miningType}</span>}
                                             <div className="noc-alert noc-alert-info" style={{ marginTop: '10px' }}>
                                                 â„¹ï¸ <strong>Mining Projects:</strong> Piezometer installation in core and buffer zones is mandatory. Dewatering treatment plan required.
                                             </div>
@@ -1945,7 +2002,7 @@ const NOCApplication = () => {
 
                                     <div className="noc-form-row two-col">
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label required">Existing NOC Status</label>
+                                            <label className="form-label required">Existing NOC Status</label>
                                             <div className="noc-radio-group" style={{ flexDirection: 'row', gap: '20px' }}>
                                                 <div className="noc-radio-item">
                                                     <input
@@ -1974,24 +2031,24 @@ const NOCApplication = () => {
 
                                         {formData.existingNOCStatus === 'Yes' && (
                                             <div className="noc-form-group">
-                                                <label className="bhuneer-label required">Old NOC Number</label>
+                                                <label className="form-label required">Old NOC Number</label>
                                                 <input
                                                     type="text"
                                                     name="oldNOCNo"
-                                                    className={`bhuneer-input ${errors.oldNOCNo ? 'error' : ''}`}
+                                                    className={`form-input ${errors.oldNOCNo ? 'error' : ''}`}
                                                     value={formData.oldNOCNo}
                                                     onChange={handleChange}
                                                     placeholder="Enter old NOC number"
                                                 />
-                                                {errors.oldNOCNo && <span className="bhuneer-error">{errors.oldNOCNo}</span>}
+                                                {errors.oldNOCNo && <span className="text-error">{errors.oldNOCNo}</span>}
 
                                                 <div style={{ marginTop: '10px' }}>
-                                                    <label className="bhuneer-label required">Upload Previous NOC Copy</label>
+                                                    <label className="form-label required">Upload Previous NOC Copy</label>
                                                     <input
                                                         type="file"
                                                         accept=".pdf,.jpg,.jpeg,.png"
                                                         onChange={(e) => handlePendingFileChange(e, 'previous_noc')}
-                                                        className="bhuneer-file-input"
+                                                        className="form-input"
                                                     />
                                                     {pendingUploads.previous_noc && <div style={{ fontSize: '0.8rem', marginTop: '5px', color: '#28a745' }}>Selected: {pendingUploads.previous_noc.name}</div>}
                                                 </div>
@@ -2001,7 +2058,7 @@ const NOCApplication = () => {
 
                                     <div className="noc-form-row two-col">
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label required">Whether Industry is MSME</label>
+                                            <label className="form-label required">Whether Industry is MSME</label>
                                             <div className="noc-radio-group" style={{ flexDirection: 'row', gap: '20px' }}>
                                                 <div className="noc-radio-item">
                                                     <input
@@ -2030,10 +2087,10 @@ const NOCApplication = () => {
 
                                         {formData.isMSME === 'Yes' && (
                                             <div className="noc-form-group">
-                                                <label className="bhuneer-label required">MSME Type</label>
+                                                <label className="form-label required">MSME Type</label>
                                                 <select
                                                     name="msmeType"
-                                                    className={`bhuneer-input ${errors.msmeType ? 'error' : ''}`}
+                                                    className={`form-input ${errors.msmeType ? 'error' : ''}`}
                                                     value={formData.msmeType}
                                                     onChange={handleChange}
                                                 >
@@ -2044,31 +2101,31 @@ const NOCApplication = () => {
                                                         return <option key={value} value={value}>{label}</option>;
                                                     })}
                                                 </select>
-                                                {errors.msmeType && <span className="bhuneer-error">{errors.msmeType}</span>}
+                                                {errors.msmeType && <span className="text-error">{errors.msmeType}</span>}
                                             </div>
                                         )}
                                     </div>
 
                                     {formData.isMSME === 'Yes' && (
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label required">MSME Registration Number</label>
+                                            <label className="form-label required">MSME Registration Number</label>
                                             <input
                                                 type="text"
                                                 name="msmeRegistrationNumber"
-                                                className={`bhuneer-input ${errors.msmeRegistrationNumber ? 'error' : ''}`}
+                                                className={`form-input ${errors.msmeRegistrationNumber ? 'error' : ''}`}
                                                 value={formData.msmeRegistrationNumber}
                                                 onChange={handleChange}
                                                 placeholder="Enter MSME/Udyam registration number"
                                             />
-                                            {errors.msmeRegistrationNumber && <span className="bhuneer-error">{errors.msmeRegistrationNumber}</span>}
+                                            {errors.msmeRegistrationNumber && <span className="text-error">{errors.msmeRegistrationNumber}</span>}
                                             <span className="noc-form-help">Enter your valid MSME/Udyam registration number</span>
                                             <div style={{ marginTop: '15px' }}>
-                                                <label className="bhuneer-label required">Upload MSME Certificate</label>
+                                                <label className="form-label required">Upload MSME Certificate</label>
                                                 <input
                                                     type="file"
                                                     accept=".pdf,.jpg,.jpeg,.png"
                                                     onChange={(e) => handlePendingFileChange(e, 'msme_certificate')}
-                                                    className="bhuneer-file-input"
+                                                    className="form-input"
                                                 />
                                                 {pendingUploads.msme_certificate && <div style={{ fontSize: '0.8rem', marginTop: '5px', color: '#28a745' }}>Selected: {pendingUploads.msme_certificate.name}</div>}
                                             </div>
@@ -2105,97 +2162,97 @@ const NOCApplication = () => {
                                     <h3 className="form-section-header" style={{ marginTop: '30px', borderTop: '1px solid #dee2e6', paddingTop: '20px' }}>Applicant Details</h3>
 
                                     <div className="noc-form-group">
-                                        <label className="bhuneer-label required">Applicant Name</label>
+                                        <label className="form-label required">Applicant Name</label>
                                         <input
                                             type="text"
                                             name="applicantName"
-                                            className={`bhuneer-input ${errors.applicantName ? 'error' : ''}`}
+                                            className={`form-input ${errors.applicantName ? 'error' : ''}`}
                                             value={formData.applicantName}
                                             onChange={handleChange}
                                             placeholder="Enter full name"
                                         />
-                                        {errors.applicantName && <span className="bhuneer-error">{errors.applicantName}</span>}
+                                        {errors.applicantName && <span className="text-error">{errors.applicantName}</span>}
                                     </div>
 
                                     <div className="noc-form-row two-col">
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label required">Email ID</label>
+                                            <label className="form-label required">Email ID</label>
                                             <input
                                                 type="email"
                                                 name="applicantEmail"
-                                                className={`bhuneer-input ${errors.applicantEmail ? 'error' : ''}`}
+                                                className={`form-input ${errors.applicantEmail ? 'error' : ''}`}
                                                 value={formData.applicantEmail}
                                                 onChange={handleChange}
                                                 placeholder="your.email@example.com"
                                             />
-                                            {errors.applicantEmail && <span className="bhuneer-error">{errors.applicantEmail}</span>}
+                                            {errors.applicantEmail && <span className="text-error">{errors.applicantEmail}</span>}
                                         </div>
 
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label required">Mobile Number</label>
+                                            <label className="form-label required">Mobile Number</label>
                                             <input
                                                 type="tel"
                                                 name="applicantMobile"
-                                                className={`bhuneer-input ${errors.applicantMobile ? 'error' : ''}`}
+                                                className={`form-input ${errors.applicantMobile ? 'error' : ''}`}
                                                 value={formData.applicantMobile}
                                                 onChange={handleChange}
                                                 placeholder="10-digit mobile number"
                                                 maxLength="10"
                                             />
-                                            {errors.applicantMobile && <span className="bhuneer-error">{errors.applicantMobile}</span>}
+                                            {errors.applicantMobile && <span className="text-error">{errors.applicantMobile}</span>}
                                         </div>
                                     </div>
 
                                     <div className="noc-form-row two-col">
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label">Aadhaar Number</label>
+                                            <label className="form-label">Aadhaar Number</label>
                                             <input
                                                 type="text"
                                                 name="applicantAadhaar"
-                                                className={`bhuneer-input ${errors.applicantAadhaar ? 'error' : ''}`}
+                                                className={`form-input ${errors.applicantAadhaar ? 'error' : ''}`}
                                                 value={formData.applicantAadhaar}
                                                 onChange={handleChange}
                                                 placeholder="12-digit Aadhaar number"
                                                 maxLength="12"
                                             />
-                                            {errors.applicantAadhaar && <span className="bhuneer-error">{errors.applicantAadhaar}</span>}
+                                            {errors.applicantAadhaar && <span className="text-error">{errors.applicantAadhaar}</span>}
                                         </div>
 
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label">PAN Number</label>
+                                            <label className="form-label">PAN Number</label>
                                             <input
                                                 type="text"
                                                 name="applicantPAN"
-                                                className={`bhuneer-input ${errors.applicantPAN ? 'error' : ''}`}
+                                                className={`form-input ${errors.applicantPAN ? 'error' : ''}`}
                                                 value={formData.applicantPAN}
                                                 onChange={handleChange}
                                                 placeholder="PAN number"
                                                 maxLength="10"
                                                 style={{ textTransform: 'uppercase' }}
                                             />
-                                            {errors.applicantPAN && <span className="bhuneer-error">{errors.applicantPAN}</span>}
+                                            {errors.applicantPAN && <span className="text-error">{errors.applicantPAN}</span>}
                                         </div>
                                     </div>
 
                                     <div className="noc-form-row two-col">
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label required">Organization Name</label>
+                                            <label className="form-label required">Organization Name</label>
                                             <input
                                                 type="text"
                                                 name="organizationName"
-                                                className={`bhuneer-input ${errors.organizationName ? 'error' : ''}`}
+                                                className={`form-input ${errors.organizationName ? 'error' : ''}`}
                                                 value={formData.organizationName}
                                                 onChange={handleChange}
                                                 placeholder="Enter organization name"
                                             />
-                                            {errors.organizationName && <span className="bhuneer-error">{errors.organizationName}</span>}
+                                            {errors.organizationName && <span className="text-error">{errors.organizationName}</span>}
                                         </div>
 
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label required">Organization Type</label>
+                                            <label className="form-label required">Organization Type</label>
                                             <select
                                                 name="organizationType"
-                                                className={`bhuneer-input ${errors.organizationType ? 'error' : ''}`}
+                                                className={`form-input ${errors.organizationType ? 'error' : ''}`}
                                                 value={formData.organizationType}
                                                 onChange={handleChange}
                                             >
@@ -2218,16 +2275,16 @@ const NOCApplication = () => {
                                                     </>
                                                 )}
                                             </select>
-                                            {errors.organizationType && <span className="bhuneer-error">{errors.organizationType}</span>}
+                                            {errors.organizationType && <span className="text-error">{errors.organizationType}</span>}
                                         </div>
                                     </div>
 
                                     <div className="noc-form-group">
-                                        <label className="bhuneer-label">Designation</label>
+                                        <label className="form-label">Designation</label>
                                         <input
                                             type="text"
                                             name="designation"
-                                            className="bhuneer-input"
+                                            className="form-input"
                                             value={formData.designation}
                                             onChange={handleChange}
                                             placeholder="Your designation"
@@ -2242,24 +2299,24 @@ const NOCApplication = () => {
                                     <h3 className="form-section-header">Project & Location Details</h3>
 
                                     <div className="noc-form-group">
-                                        <label className="bhuneer-label required">Project Name</label>
+                                        <label className="form-label required">Project Name</label>
                                         <input
                                             type="text"
                                             name="projectName"
-                                            className={`bhuneer-input ${errors.projectName ? 'error' : ''}`}
+                                            className={`form-input ${errors.projectName ? 'error' : ''}`}
                                             value={formData.projectName}
                                             onChange={handleChange}
                                             placeholder="Enter project name"
                                         />
-                                        {errors.projectName && <span className="bhuneer-error">{errors.projectName}</span>}
+                                        {errors.projectName && <span className="text-error">{errors.projectName}</span>}
                                     </div>
 
                                     <div className="noc-form-row two-col">
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label required">State</label>
+                                            <label className="form-label required">State</label>
                                             <select
                                                 name="state"
-                                                className={`bhuneer-input ${errors.state ? 'error' : ''}`}
+                                                className={`form-input ${errors.state ? 'error' : ''}`}
                                                 value={formData.state}
                                                 onChange={handleChange}
                                                 disabled={true}
@@ -2273,14 +2330,14 @@ const NOCApplication = () => {
                                                     return <option key={index} value={val}>{label}</option>;
                                                 })}
                                             </select>
-                                            {errors.state && <span className="bhuneer-error">{errors.state}</span>}
+                                            {errors.state && <span className="text-error">{errors.state}</span>}
                                         </div>
 
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label required">District</label>
+                                            <label className="form-label required">District</label>
                                             <select
                                                 name="district"
-                                                className={`bhuneer-input ${errors.district ? 'error' : ''}`}
+                                                className={`form-input ${errors.district ? 'error' : ''}`}
                                                 value={formData.district || ''}
                                                 onChange={handleChange}
                                             >
@@ -2293,16 +2350,16 @@ const NOCApplication = () => {
                                                     return <option key={index} value={val}>{val}</option>;
                                                 })}
                                             </select>
-                                            {errors.district && <span className="bhuneer-error">{errors.district}</span>}
+                                            {errors.district && <span className="text-error">{errors.district}</span>}
                                         </div>
                                     </div>
 
                                     <div className="noc-form-row two-col">
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label required">Block</label>
+                                            <label className="form-label required">Block</label>
                                             <select
                                                 name="block"
-                                                className={`bhuneer-input ${errors.block ? 'error' : ''}`}
+                                                className={`form-input ${errors.block ? 'error' : ''}`}
                                                 value={formData.block || ''}
                                                 onChange={handleChange}
                                                 disabled={!formData.district}
@@ -2313,7 +2370,7 @@ const NOCApplication = () => {
                                                     return <option key={index} value={val}>{val}</option>;
                                                 })}
                                             </select>
-                                            {errors.block && <span className="bhuneer-error">{errors.block}</span>}
+                                            {errors.block && <span className="text-error">{errors.block}</span>}
                                             {!formData.district && (
                                                 <span className="noc-form-help">Please select a district first</span>
                                             )}
@@ -2358,10 +2415,10 @@ const NOCApplication = () => {
 
                                     <div className="noc-form-row two-col">
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label required">Assessment Unit</label>
+                                            <label className="form-label required">Assessment Unit</label>
                                             <select
                                                 name="assessmentUnit"
-                                                className={`bhuneer-input ${errors.assessmentUnit ? 'error' : ''}`}
+                                                className={`form-input ${errors.assessmentUnit ? 'error' : ''}`}
                                                 value={formData.assessmentUnit}
                                                 onChange={handleChange}
                                             >
@@ -2380,7 +2437,7 @@ const NOCApplication = () => {
                                                     <option value="" disabled>No units found for this district</option>
                                                 )}
                                             </select>
-                                            {errors.assessmentUnit && <span className="bhuneer-error">{errors.assessmentUnit}</span>}
+                                            {errors.assessmentUnit && <span className="text-error">{errors.assessmentUnit}</span>}
 
                                             {/* Display Selected Assessment Unit Category */}
                                             {(() => {
@@ -2417,129 +2474,151 @@ const NOCApplication = () => {
                                         </div>
 
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label">Village / Town</label>
+                                            <label className="form-label">Village / Town</label>
                                             <input
                                                 type="text"
                                                 name="village"
-                                                className={`bhuneer-input ${errors.village ? 'error' : ''}`}
+                                                className={`form-input ${errors.village ? 'error' : ''}`}
                                                 value={formData.village || ''}
                                                 onChange={handleChange}
                                                 placeholder="Enter Village or Town name"
                                             />
-                                            {errors.village && <span className="bhuneer-error">{errors.village}</span>}
+                                            {errors.village && <span className="text-error">{errors.village}</span>}
                                         </div>
                                     </div>
 
 
 
                                     <div className="noc-form-group">
-                                        <label className="bhuneer-label required">Project Address</label>
+                                        <label className="form-label required">Project Address</label>
                                         <textarea
                                             name="projectAddress"
-                                            className={`bhuneer-input ${errors.projectAddress ? 'error' : ''}`}
+                                            className={`form-input ${errors.projectAddress ? 'error' : ''}`}
                                             value={formData.projectAddress}
                                             onChange={handleChange}
                                             placeholder="Enter complete project address"
                                             rows="3"
                                         />
-                                        {errors.projectAddress && <span className="bhuneer-error">{errors.projectAddress}</span>}
+                                        {errors.projectAddress && <span className="text-error">{errors.projectAddress}</span>}
                                     </div>
 
                                     <div className="noc-form-row three-col">
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label required">PIN Code</label>
+                                            <label className="form-label required">PIN Code</label>
                                             <input
                                                 type="text"
                                                 name="pincode"
-                                                className={`bhuneer-input ${errors.pincode ? 'error' : ''}`}
+                                                className={`form-input ${errors.pincode ? 'error' : ''}`}
                                                 value={formData.pincode}
                                                 onChange={handleChange}
                                                 placeholder="6-digit pincode"
                                                 maxLength="6"
                                             />
-                                            {errors.pincode && <span className="bhuneer-error">{errors.pincode}</span>}
+                                            {errors.pincode && <span className="text-error">{errors.pincode}</span>}
                                         </div>
 
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label">Latitude</label>
+                                            <label className="form-label">Latitude</label>
                                             <input
                                                 type="text"
                                                 name="latitude"
-                                                className={`bhuneer-input ${errors.latitude ? 'error' : ''}`}
+                                                className={`form-input ${errors.latitude ? 'error' : ''}`}
                                                 value={formData.latitude}
                                                 onChange={handleChange}
                                                 placeholder="e.g., 28.7041"
                                             />
-                                            {errors.latitude && <span className="bhuneer-error">{errors.latitude}</span>}
+                                            {errors.latitude && <span className="text-error">{errors.latitude}</span>}
                                         </div>
 
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label">Longitude</label>
+                                            <label className="form-label">Longitude</label>
                                             <input
                                                 type="text"
                                                 name="longitude"
-                                                className={`bhuneer-input ${errors.longitude ? 'error' : ''}`}
+                                                className={`form-input ${errors.longitude ? 'error' : ''}`}
                                                 value={formData.longitude}
                                                 onChange={handleChange}
                                                 placeholder="e.g., 77.1025"
                                             />
-                                            {errors.longitude && <span className="bhuneer-error">{errors.longitude}</span>}
+                                            {errors.longitude && <span className="text-error">{errors.longitude}</span>}
                                         </div>
                                     </div>
 
-                                    <div className="noc-form-group">
-                                        <label className="bhuneer-label required">Aquifer Type</label>
-                                        <select
-                                            name="geology"
-                                            className={`bhuneer-input ${errors.geology ? 'error' : ''}`}
-                                            value={formData.geology}
-                                            onChange={handleChange}
-                                        >
-                                            <option value="">Select Geology</option>
-                                            {geologyTypes.map(type => (
-                                                <option key={type} value={type}>{type}</option>
-                                            ))}
-                                        </select>
-                                        {errors.geology && <span className="bhuneer-error">{errors.geology}</span>}
+                                    <div className="noc-form-row two-col">
+                                        <div className="noc-form-group">
+                                            <label className="form-label required">Aquifer Type</label>
+                                            <select
+                                                name="geology"
+                                                className={`form-input ${errors.geology ? 'error' : ''}`}
+                                                value={formData.geology}
+                                                onChange={handleChange}
+                                            >
+                                                <option value="">Select Geology</option>
+                                                {geologyTypes.map(type => {
+                                                    const label = typeof type === 'object' ? (type.label || type.name || type.code) : type;
+                                                    const value = typeof type === 'object' ? (type.code || type.name || type.label) : type;
+                                                    return <option key={value} value={value}>{label}</option>;
+                                                })}
+                                            </select>
+                                            {errors.geology && <span className="text-error">{errors.geology}</span>}
+                                        </div>
 
-                                        {formData.geology === 'Other' && (
-                                            <div style={{ marginTop: '10px' }}>
-                                                <input
-                                                    type="text"
-                                                    name="otherGeology"
-                                                    className={`bhuneer-input ${errors.otherGeology ? 'error' : ''}`}
-                                                    value={formData.otherGeology}
-                                                    onChange={handleChange}
-                                                    placeholder="Please specify geology type"
-                                                />
-                                                {errors.otherGeology && <span className="bhuneer-error">{errors.otherGeology}</span>}
-                                            </div>
-                                        )}
+                                        <div className="noc-form-group">
+                                            <label className="form-label required">Water Quality</label>
+                                            <select
+                                                name="waterQualityType"
+                                                className={`form-input ${errors.waterQualityType ? 'error' : ''}`}
+                                                value={formData.waterQualityType}
+                                                onChange={handleChange}
+                                            >
+                                                <option value="">Select Water Quality</option>
+                                                {waterQualityOptions.map(option => {
+                                                    const label = typeof option === 'object' ? (option.label || option.name || option.code) : option;
+                                                    const value = typeof option === 'object' ? (option.code || option.name || option.label) : option;
+                                                    return <option key={value} value={value}>{label}</option>;
+                                                })}
+                                            </select>
+                                            {errors.waterQualityType && <span className="text-error">{errors.waterQualityType}</span>}
+                                        </div>
                                     </div>
+
+                                    {formData.geology === 'Other' && (
+                                        <div className="noc-form-group" style={{ marginTop: '10px' }}>
+                                            <input
+                                                type="text"
+                                                name="otherGeology"
+                                                className={`form-input ${errors.otherGeology ? 'error' : ''}`}
+                                                value={formData.otherGeology}
+                                                onChange={handleChange}
+                                                placeholder="Please specify geology type"
+                                            />
+                                            {errors.otherGeology && <span className="text-error">{errors.otherGeology}</span>}
+                                        </div>
+                                    )}
 
                                     {/* Land Use Details Section - Added functionality */}
                                     <div style={{ marginTop: '20px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
                                         <h4 style={{ marginBottom: '15px', color: 'var(--primary-color)' }}>Land Use Details (sq.m)</h4>
                                         <div className="noc-form-row three-col">
                                             <div className="noc-form-group">
-                                                <label className="bhuneer-label">Total Land Area</label>
+                                                <label className="form-label">Total Land Area</label>
                                                 <input
                                                     type="number"
                                                     name="landUseTotalArea"
-                                                    className="bhuneer-input"
+                                                    className="form-input"
                                                     value={formData.landUseTotalArea}
                                                     onChange={handleChange}
                                                     placeholder="Total Area"
                                                     min="0"
                                                 />
-                                                {errors.landUseTotalArea && <span className="bhuneer-error">{errors.landUseTotalArea}</span>}
+                                                {errors.landUseTotalArea && <span className="text-error">{errors.landUseTotalArea}</span>}
                                             </div>
                                             <div className="noc-form-group">
-                                                <label className="bhuneer-label">Rooftop Area</label>
+                                                <label className="form-label">Rooftop Area</label>
                                                 <input
                                                     type="number"
                                                     name="landUseRooftopArea"
-                                                    className="bhuneer-input"
+                                                    className="form-input"
                                                     value={formData.landUseRooftopArea}
                                                     onChange={handleChange}
                                                     placeholder="Rooftop Area"
@@ -2547,11 +2626,11 @@ const NOCApplication = () => {
                                                 />
                                             </div>
                                             <div className="noc-form-group">
-                                                <label className="bhuneer-label">Paved Area</label>
+                                                <label className="form-label">Paved Area</label>
                                                 <input
                                                     type="number"
                                                     name="landUsePavedArea"
-                                                    className="bhuneer-input"
+                                                    className="form-input"
                                                     value={formData.landUsePavedArea}
                                                     onChange={handleChange}
                                                     placeholder="Paved Area"
@@ -2561,11 +2640,11 @@ const NOCApplication = () => {
                                         </div>
                                         <div className="noc-form-row two-col">
                                             <div className="noc-form-group">
-                                                <label className="bhuneer-label">Green Belt Area</label>
+                                                <label className="form-label">Green Belt Area</label>
                                                 <input
                                                     type="number"
                                                     name="landUseGreenBeltArea"
-                                                    className="bhuneer-input"
+                                                    className="form-input"
                                                     value={formData.landUseGreenBeltArea}
                                                     onChange={handleChange}
                                                     placeholder="Green Belt Area"
@@ -2573,11 +2652,11 @@ const NOCApplication = () => {
                                                 />
                                             </div>
                                             <div className="noc-form-group">
-                                                <label className="bhuneer-label">Open Area</label>
+                                                <label className="form-label">Open Area</label>
                                                 <input
                                                     type="number"
                                                     name="landUseOpenArea"
-                                                    className="bhuneer-input"
+                                                    className="form-input"
                                                     value={formData.landUseOpenArea}
                                                     onChange={handleChange}
                                                     placeholder="Open Area"
@@ -2601,11 +2680,11 @@ const NOCApplication = () => {
                                     <h4 style={{ color: 'var(--primary-color)', margin: '15px 0' }}>Total Requirement</h4>
                                     <div className="noc-form-row three-col">
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label required">Fresh Water Requirement</label>
+                                            <label className="form-label required">Fresh Water Requirement</label>
                                             <input
                                                 type="number"
                                                 name="waterReqFreshRequirement"
-                                                className="bhuneer-input"
+                                                className="form-input"
                                                 value={formData.waterReqFreshRequirement}
                                                 onChange={handleChange}
                                                 placeholder="Fresh Water"
@@ -2613,11 +2692,11 @@ const NOCApplication = () => {
                                             />
                                         </div>
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label">Recycled Water Used</label>
+                                            <label className="form-label">Recycled Water Used</label>
                                             <input
                                                 type="number"
                                                 name="waterReqRecycled"
-                                                className="bhuneer-input"
+                                                className="form-input"
                                                 value={formData.waterReqRecycled}
                                                 onChange={handleChange}
                                                 placeholder="Recycled Water"
@@ -2625,11 +2704,11 @@ const NOCApplication = () => {
                                             />
                                         </div>
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label">Total Requirement</label>
+                                            <label className="form-label">Total Requirement</label>
                                             <input
                                                 type="number"
                                                 name="waterReqTotal"
-                                                className="bhuneer-input"
+                                                className="form-input"
                                                 value={formData.waterReqTotal}
                                                 onChange={handleChange}
                                                 placeholder="Total Requirement"
@@ -2637,18 +2716,18 @@ const NOCApplication = () => {
                                             // style={{ backgroundColor: '#f0f0f0' }} // Removed grey background
                                             />
                                             <span className="noc-form-help">Auto-calculated (Fresh + Recycled)</span>
-                                            {errors.waterReqTotal && <span className="bhuneer-error">{errors.waterReqTotal}</span>}
+                                            {errors.waterReqTotal && <span className="text-error">{errors.waterReqTotal}</span>}
                                         </div>
                                     </div>
 
                                     <h4 style={{ color: 'var(--primary-color)', margin: '20px 0 15px 0' }}>Requirement Breakdown (Usage)</h4>
                                     <div className="noc-form-row two-col">
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label">Domestic Use</label>
+                                            <label className="form-label">Domestic Use</label>
                                             <input
                                                 type="number"
                                                 name="waterReqDomestic"
-                                                className="bhuneer-input"
+                                                className="form-input"
                                                 value={formData.waterReqDomestic}
                                                 onChange={handleChange}
                                                 placeholder="Domestic"
@@ -2656,11 +2735,11 @@ const NOCApplication = () => {
                                             />
                                         </div>
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label">Industrial Use</label>
+                                            <label className="form-label">Industrial Use</label>
                                             <input
                                                 type="number"
                                                 name="waterReqIndustrial"
-                                                className="bhuneer-input"
+                                                className="form-input"
                                                 value={formData.waterReqIndustrial}
                                                 onChange={handleChange}
                                                 placeholder="Industrial"
@@ -2670,11 +2749,11 @@ const NOCApplication = () => {
                                     </div>
                                     <div className="noc-form-row two-col">
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label">Green Belt / Horticulture</label>
+                                            <label className="form-label">Green Belt / Horticulture</label>
                                             <input
                                                 type="number"
                                                 name="waterReqGreenBelt"
-                                                className="bhuneer-input"
+                                                className="form-input"
                                                 value={formData.waterReqGreenBelt}
                                                 onChange={handleChange}
                                                 placeholder="Green Belt"
@@ -2682,11 +2761,11 @@ const NOCApplication = () => {
                                             />
                                         </div>
                                         <div className="noc-form-group">
-                                            <label className="bhuneer-label">Other Uses</label>
+                                            <label className="form-label">Other Uses</label>
                                             <input
                                                 type="number"
                                                 name="waterReqOther"
-                                                className="bhuneer-input"
+                                                className="form-input"
                                                 value={formData.waterReqOther}
                                                 onChange={handleChange}
                                                 placeholder="Others"
@@ -2741,24 +2820,26 @@ const NOCApplication = () => {
 
                                                         <div className="noc-form-row three-col">
                                                             <div className="noc-form-group">
-                                                                <label className="bhuneer-label required">Type of Structure</label>
+                                                                <label className="form-label required">Type of Structure</label>
                                                                 <select
-                                                                    className="bhuneer-input"
+                                                                    className="form-input"
                                                                     value={structure.type}
                                                                     onChange={(e) => updateExistingStructure(structure.id, 'type', e.target.value)}
                                                                 >
                                                                     <option value="">Select Type</option>
-                                                                    {structureTypes.map(type => (
-                                                                        <option key={type} value={type}>{type}</option>
-                                                                    ))}
+                                                                    {structureTypes.map(type => {
+                                                                        const label = typeof type === 'object' ? (type.label || type.name || type.code) : type;
+                                                                        const value = typeof type === 'object' ? (type.code || type.name || type.label) : type;
+                                                                        return <option key={value} value={value}>{label}</option>;
+                                                                    })}
                                                                 </select>
                                                             </div>
 
                                                             <div className="noc-form-group">
-                                                                <label className="bhuneer-label">Year of Construction</label>
+                                                                <label className="form-label">Year of Construction</label>
                                                                 <input
                                                                     type="number"
-                                                                    className="bhuneer-input"
+                                                                    className="form-input"
                                                                     value={structure.yearOfConstruction}
                                                                     onChange={(e) => updateExistingStructure(structure.id, 'yearOfConstruction', e.target.value)}
                                                                     placeholder="YYYY"
@@ -2768,10 +2849,10 @@ const NOCApplication = () => {
                                                             </div>
 
                                                             <div className="noc-form-group">
-                                                                <label className="bhuneer-label">Depth (meters)</label>
+                                                                <label className="form-label">Depth (meters)</label>
                                                                 <input
                                                                     type="number"
-                                                                    className="bhuneer-input"
+                                                                    className="form-input"
                                                                     value={structure.depth}
                                                                     onChange={(e) => updateExistingStructure(structure.id, 'depth', e.target.value)}
                                                                     placeholder="Depth"
@@ -2784,9 +2865,9 @@ const NOCApplication = () => {
                                                         {/* Pump Details */}
                                                         <div className="noc-form-row three-col">
                                                             <div className="noc-form-group">
-                                                                <label className="bhuneer-label">Pump Type</label>
+                                                                <label className="form-label">Pump Type</label>
                                                                 <select
-                                                                    className="bhuneer-input"
+                                                                    className="form-input"
                                                                     value={structure.pumpType || ''}
                                                                     onChange={(e) => updateExistingStructure(structure.id, 'pumpType', e.target.value)}
                                                                 >
@@ -2798,10 +2879,10 @@ const NOCApplication = () => {
                                                                 </select>
                                                             </div>
                                                             <div className="noc-form-group">
-                                                                <label className="bhuneer-label">Pump Capacity (HP)</label>
+                                                                <label className="form-label">Pump Capacity (HP)</label>
                                                                 <input
                                                                     type="number"
-                                                                    className="bhuneer-input"
+                                                                    className="form-input"
                                                                     value={structure.pumpCapacity}
                                                                     onChange={(e) => updateExistingStructure(structure.id, 'pumpCapacity', e.target.value)}
                                                                     placeholder="HP"
@@ -2810,10 +2891,10 @@ const NOCApplication = () => {
                                                                 />
                                                             </div>
                                                             <div className="noc-form-group">
-                                                                <label className="bhuneer-label">Operating Hours</label>
+                                                                <label className="form-label">Operating Hours</label>
                                                                 <input
                                                                     type="number"
-                                                                    className="bhuneer-input"
+                                                                    className="form-input"
                                                                     value={structure.operatingHours}
                                                                     onChange={(e) => updateExistingStructure(structure.id, 'operatingHours', e.target.value)}
                                                                     placeholder="Hours/Day"
@@ -2826,10 +2907,10 @@ const NOCApplication = () => {
 
                                                         <div className="noc-form-row three-col">
                                                             <div className="noc-form-group">
-                                                                <label className="bhuneer-label">Discharge Rate (m³/hr)</label>
+                                                                <label className="form-label">Discharge Rate (m³/hr)</label>
                                                                 <input
                                                                     type="number"
-                                                                    className="bhuneer-input"
+                                                                    className="form-input"
                                                                     value={structure.discharge}
                                                                     onChange={(e) => updateExistingStructure(structure.id, 'discharge', e.target.value)}
                                                                     placeholder="Auto-calculated"
@@ -2841,7 +2922,7 @@ const NOCApplication = () => {
                                                         </div>
 
                                                         <div className="noc-form-group">
-                                                            <label className="bhuneer-label">Water Meter Fitted?</label>
+                                                            <label className="form-label">Water Meter Fitted?</label>
                                                             <div className="noc-radio-group" style={{ flexDirection: 'row', gap: '20px' }}>
                                                                 <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
                                                                     <input
@@ -2883,11 +2964,11 @@ const NOCApplication = () => {
 
                                             <div className="noc-form-row three-col">
                                                 <div className="noc-form-group">
-                                                    <label className="bhuneer-label">Number of Borewells</label>
+                                                    <label className="form-label">Number of Borewells</label>
                                                     <input
                                                         type="number"
                                                         name="proposedBorewells"
-                                                        className="bhuneer-input"
+                                                        className="form-input"
                                                         value={formData.proposedBorewells}
                                                         onChange={handleChange}
                                                         min="0"
@@ -2895,22 +2976,22 @@ const NOCApplication = () => {
                                                 </div>
 
                                                 <div className="noc-form-group">
-                                                    <label className="bhuneer-label">Number of Tubewells</label>
+                                                    <label className="form-label">Number of Tubewells</label>
                                                     <input
                                                         type="number"
                                                         name="proposedTubewells"
-                                                        className="bhuneer-input"
+                                                        className="form-input"
                                                         value={formData.proposedTubewells}
                                                         onChange={handleChange}
                                                         min="0"
                                                     />
                                                 </div>
                                                 <div className="noc-form-group">
-                                                    <label className="bhuneer-label">Number of Pumps</label>
+                                                    <label className="form-label">Number of Pumps</label>
                                                     <input
                                                         type="number"
                                                         name="proposedPumps"
-                                                        className="bhuneer-input"
+                                                        className="form-input"
                                                         value={formData.proposedPumps}
                                                         onChange={handleChange}
                                                         min="0"
@@ -2927,7 +3008,7 @@ const NOCApplication = () => {
                             {/* Step 5: Conditional - Meter Details OR Documents Checklist */}
                             {currentStep === 5 && hasMeterInstalled && (
                                 <div>
-                                    <h3 className="form-section-header">💧 Water Meter Details</h3>
+                                    <h3 className="form-section-header">?? Water Meter Details</h3>
 
                                     <div className="bhuneer-info-box" style={{ marginBottom: '30px' }}>
                                         <p><strong>Note:</strong> Since you have indicated that meters are installed on your groundwater structures, please provide the meter specifications below.</p>
@@ -2948,10 +3029,10 @@ const NOCApplication = () => {
 
                             {currentStep === 5 && !hasMeterInstalled && (
                                 <div>
-                                    <h3 className="form-section-header">📋 Documents Required for Your Application</h3>
+                                    <h3 className="form-section-header">?? Documents Required for Your Application</h3>
 
                                     <div className="bhuneer-info-box" style={{ marginBottom: '30px' }}>
-                                        <h4 style={{ fontSize: '18px', marginBottom: '15px' }}>✅ Document Checklist</h4>
+                                        <h4 style={{ fontSize: '18px', marginBottom: '15px' }}>? Document Checklist</h4>
                                         <p>Please ensure you have the following documents ready before proceeding to the upload step. All documents should be in PDF, JPG, or PNG format (max 5MB per file).</p>
                                     </div>
 
@@ -2964,7 +3045,7 @@ const NOCApplication = () => {
                                             borderRadius: '8px',
                                             marginBottom: '20px'
                                         }}>
-                                            🔴 Mandatory Documents (Required for ALL Applications)
+                                            ?? Mandatory Documents (Required for ALL Applications)
                                         </h4>
 
                                         <div style={{ display: 'grid', gap: '15px' }}>
@@ -3013,7 +3094,7 @@ const NOCApplication = () => {
                                                                     display: 'inline-block',
                                                                     marginTop: '4px'
                                                                 }}>
-                                                                    ℹ Applicable if: {doc.condition}
+                                                                    ? Applicable if: {doc.condition}
                                                                 </div>
                                                             )}
                                                         </div>
@@ -3025,10 +3106,10 @@ const NOCApplication = () => {
 
 
                                     <div className="bhuneer-info-box" style={{ marginTop: '30px', background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)', borderLeftColor: '#2196f3' }}>
-                                        <h4>💡 Important Notes:</h4>
+                                        <h4>?? Important Notes:</h4>
                                         <ul style={{ marginBottom: 0, paddingLeft: '20px' }}>
                                             <li>All documents must be clear and legible</li>
-                                            <li>Notarized affidavits must be on ₹100 stamp paper</li>
+                                            <li>Notarized affidavits must be on ?100 stamp paper</li>
                                             <li>Water quality reports must be from NABL-accredited labs</li>
                                             <li>Scan documents at 200 DPI minimum for best quality</li>
                                             <li>File names should be descriptive (e.g., "Land_Ownership_Certificate.pdf")</li>
@@ -3040,16 +3121,16 @@ const NOCApplication = () => {
                             {/* Step 6/6: Conditional - Documents Checklist OR Upload Documents */}
                             {currentStep === 6 && hasMeterInstalled && (
                                 <div>
-                                    <h3 className="form-section-header">📋 Documents Required for Your Application</h3>
+                                    <h3 className="form-section-header">?? Documents Required for Your Application</h3>
 
                                     <div className="bhuneer-info-box" style={{ marginBottom: '30px' }}>
-                                        <h4 style={{ fontSize: '18px', marginBottom: '15px' }}>✅ Document Checklist</h4>
+                                        <h4 style={{ fontSize: '18px', marginBottom: '15px' }}>? Document Checklist</h4>
                                         <p>Please ensure you have the following documents ready before proceeding to the upload step. All documents should be in PDF, JPG, or PNG format (max 5MB per file).</p>
                                     </div>
 
                                     {/* Copy documents checklist content from current Step 5 */}
                                     <div style={{ marginBottom: '30px' }}>
-                                        <h4 style={{ color: 'var(--primary-color)', marginBottom: '15px' }}>📄 Mandatory Documents</h4>
+                                        <h4 style={{ color: 'var(--primary-color)', marginBottom: '15px' }}>?? Mandatory Documents</h4>
                                         <div style={{ display: 'grid', gap: '15px' }}>
                                             <div style={{ display: 'grid', gap: '15px' }}>
                                                 {requiredDocs.map(doc => (
@@ -3060,7 +3141,7 @@ const NOCApplication = () => {
                                                         background: '#fafafa'
                                                     }}>
                                                         <div style={{ display: 'flex', alignItems: 'start', gap: '10px' }}>
-                                                            <span style={{ fontSize: '24px' }}>✅</span>
+                                                            <span style={{ fontSize: '24px' }}>?</span>
                                                             <div>
                                                                 <h5 style={{ margin: '0 0 5px 0', color: 'var(--primary-color)' }}>
                                                                     {doc.name}
@@ -3108,11 +3189,11 @@ const NOCApplication = () => {
                                                         }}
                                                     />
                                                     <label htmlFor={`file_${doc.id}`} style={{ cursor: 'pointer' }}>
-                                                        <div className="noc-file-upload-icon">📎</div>
+                                                        <div className="noc-file-upload-icon">??</div>
                                                         <div className="noc-file-upload-text">
                                                             {formData.uploadedDocuments[doc.id] ? (
                                                                 <span style={{ color: 'var(--cgwa-success)', fontWeight: '600' }}>
-                                                                    ✓ {formData.uploadedDocuments[doc.id].name}
+                                                                    ? {formData.uploadedDocuments[doc.id].name}
                                                                 </span>
                                                             ) : (
                                                                 <span>Click to upload or drag and drop</span>
@@ -3121,14 +3202,14 @@ const NOCApplication = () => {
                                                     </label>
                                                 </div>
 
-                                                {errors[doc.id] && <span className="bhuneer-error">{errors[doc.id]}</span>}
+                                                {errors[doc.id] && <span className="text-error">{errors[doc.id]}</span>}
 
                                                 {/* AI Verification Feedback */}
                                                 {verificationFeedback[doc.id] && (
                                                     <div className={`noc-alert ${verificationFeedback[doc.id].status === 'approved' ? 'noc-alert-success' : verificationFeedback[doc.id].status === 'verifying' ? 'noc-alert-info' : 'noc-alert-danger'}`} style={{ marginTop: '10px', padding: '10px', borderLeft: verificationFeedback[doc.id].status === 'verifying' ? '4px solid #3b82f6' : undefined }}>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                             <span style={{ fontSize: '1.2rem' }}>
-                                                                {verificationFeedback[doc.id].status === 'approved' ? '✅' : verificationFeedback[doc.id].status === 'verifying' ? '🔄' : '❌'}
+                                                                {verificationFeedback[doc.id].status === 'approved' ? '?' : verificationFeedback[doc.id].status === 'verifying' ? '??' : '?'}
                                                             </span>
                                                             <div>
                                                                 <strong>
@@ -3180,11 +3261,11 @@ const NOCApplication = () => {
                                                         }}
                                                     />
                                                     <label htmlFor={`file_${doc.id}`} style={{ cursor: 'pointer' }}>
-                                                        <div className="noc-file-upload-icon">📎</div>
+                                                        <div className="noc-file-upload-icon">??</div>
                                                         <div className="noc-file-upload-text">
                                                             {formData.uploadedDocuments[doc.id] ? (
                                                                 <span style={{ color: 'var(--cgwa-success)', fontWeight: '600' }}>
-                                                                    ✓ {formData.uploadedDocuments[doc.id].name}
+                                                                    ? {formData.uploadedDocuments[doc.id].name}
                                                                 </span>
                                                             ) : (
                                                                 <span>Click to upload or drag and drop</span>
@@ -3193,14 +3274,14 @@ const NOCApplication = () => {
                                                     </label>
                                                 </div>
 
-                                                {errors[doc.id] && <span className="bhuneer-error">{errors[doc.id]}</span>}
+                                                {errors[doc.id] && <span className="text-error">{errors[doc.id]}</span>}
 
                                                 {/* AI Verification Feedback */}
                                                 {verificationFeedback[doc.id] && (
                                                     <div className={`noc-alert ${verificationFeedback[doc.id].status === 'approved' ? 'noc-alert-success' : verificationFeedback[doc.id].status === 'verifying' ? 'noc-alert-info' : 'noc-alert-danger'}`} style={{ marginTop: '10px', padding: '10px', borderLeft: verificationFeedback[doc.id].status === 'verifying' ? '4px solid #3b82f6' : undefined }}>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                             <span style={{ fontSize: '1.2rem' }}>
-                                                                {verificationFeedback[doc.id].status === 'approved' ? '✅' : verificationFeedback[doc.id].status === 'verifying' ? '🔄' : '❌'}
+                                                                {verificationFeedback[doc.id].status === 'approved' ? '?' : verificationFeedback[doc.id].status === 'verifying' ? '??' : '?'}
                                                             </span>
                                                             <div>
                                                                 <strong>
@@ -3253,13 +3334,13 @@ const NOCApplication = () => {
                                                 <div className="noc-card-body">
                                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
                                                         <div style={{ gridColumn: '1 / -1' }}>
-                                                            <strong>Application Base Fee:</strong> ₹{formData.feeStructure?.baseAmount?.toLocaleString('en-IN') || 0}
+                                                            <strong>Application Base Fee:</strong> ?{formData.feeStructure?.baseAmount?.toLocaleString('en-IN') || 0}
                                                         </div>
                                                         {/* Other charges hidden as per user request */}
                                                         <div style={{ gridColumn: '1 / -1', borderTop: '2px solid #dee2e6', paddingTop: '15px', marginTop: '10px' }}>
                                                             <strong style={{ fontSize: '1.2rem' }}>Total Payable Amount:</strong>{' '}
                                                             <span style={{ fontSize: '1.3rem', color: 'var(--cgwa-success)', fontWeight: 'bold' }}>
-                                                                ₹{formData.feeStructure?.baseAmount?.toLocaleString('en-IN') || 0}
+                                                                ?{formData.feeStructure?.baseAmount?.toLocaleString('en-IN') || 0}
                                                             </span>
                                                             <p style={{ margin: '5px 0 0 0', fontSize: '0.85rem', color: '#666' }}>
                                                                 (Only Base Fee is applicable)
@@ -3340,7 +3421,7 @@ const NOCApplication = () => {
                                             </div>
 
                                             <div className="noc-form-group">
-                                                <label className="bhuneer-label required">Payment Receipt (PDF/JPG/PNG)</label>
+                                                <label className="form-label required">Payment Receipt (PDF/JPG/PNG)</label>
                                                 <input
                                                     type="file"
                                                     accept=".pdf,.jpg,.jpeg,.png"
@@ -3351,15 +3432,15 @@ const NOCApplication = () => {
                                                                 handleFileUpload('paymentReceipt', file);
                                                                 setErrors(prev => ({ ...prev, paymentReceipt: '' }));
                                                             } else {
-                                                                alert('File size must be less than 5MB');
+                                                                toastWarning('File size must be less than 5MB');
                                                             }
                                                         }
                                                     }}
-                                                    className="bhuneer-input"
+                                                    className="form-input"
                                                     style={{ padding: '10px' }}
                                                 />
                                                 <span className="noc-form-help">Accepted formats: PDF, JPG, PNG (Max 5MB)</span>
-                                                {errors.paymentReceipt && <span className="bhuneer-error">{errors.paymentReceipt}</span>}
+                                                {errors.paymentReceipt && <span className="text-error">{errors.paymentReceipt}</span>}
 
                                                 {formData.uploadedDocuments.paymentReceipt && (
                                                     <div style={{
@@ -3436,7 +3517,10 @@ const NOCApplication = () => {
                                                     <strong>State:</strong> {formData.state}
                                                 </div>
                                                 <div>
-                                                    <strong>Daily Water Requirement:</strong> {formData.dailyWaterRequirement} m³/day
+                                                    <strong>Daily Water Requirement:</strong> {formData.dailyWaterRequirement ? `${formData.dailyWaterRequirement} m³/day` : `${parseFloat(formData.waterReqFreshRequirement || 0) + parseFloat(formData.waterReqRecycled || 0)} m³/day`}
+                                                </div>
+                                                <div>
+                                                    <strong>Annual Water Requirement:</strong> {formData.annualWaterRequirement ? `${formData.annualWaterRequirement} m³/year` : `${(parseFloat(formData.waterReqFreshRequirement || 0) + parseFloat(formData.waterReqRecycled || 0)) * 365} m³/year`}
                                                 </div>
                                                 <div>
                                                     <strong>Applicant Name:</strong> {formData.applicantName}
@@ -3447,7 +3531,7 @@ const NOCApplication = () => {
                                                 {formData.paymentTransactionId && (
                                                     <>
                                                         <div>
-                                                            <strong>Payment Status:</strong> <span style={{ color: 'var(--cgwa-success)', fontWeight: 'bold' }}>✓ PAID</span>
+                                                            <strong>Payment Status:</strong> <span style={{ color: 'var(--cgwa-success)', fontWeight: 'bold' }}>? PAID</span>
                                                         </div>
                                                         <div>
                                                             <strong>Transaction ID:</strong> {formData.paymentTransactionId}
@@ -3456,7 +3540,7 @@ const NOCApplication = () => {
                                                             <strong>Receipt Number:</strong> {formData.paymentReceiptNumber}
                                                         </div>
                                                         <div>
-                                                            <strong>Amount Paid:</strong> ₹{formData.totalAmount?.toLocaleString('en-IN')}
+                                                            <strong>Amount Paid:</strong> ?{formData.totalAmount?.toLocaleString('en-IN')}
                                                         </div>
                                                     </>
                                                 )}
@@ -3471,11 +3555,11 @@ const NOCApplication = () => {
                                         </div>
                                         <div className="noc-card-body">
                                             <div className="noc-alert noc-alert-info" style={{ marginBottom: '20px' }}>
-                                                <strong>📤 Upload Required:</strong> Please upload the payment receipt you downloaded in the previous step. You cannot submit your application without uploading the payment proof.
+                                                <strong>?? Upload Required:</strong> Please upload the payment receipt you downloaded in the previous step. You cannot submit your application without uploading the payment proof.
                                             </div>
 
                                             <div className="noc-form-group">
-                                                <label className="bhuneer-label required">Payment Receipt (PDF/JPG/PNG)</label>
+                                                <label className="form-label required">Payment Receipt (PDF/JPG/PNG)</label>
                                                 <input
                                                     type="file"
                                                     accept=".pdf,.jpg,.jpeg,.png"
@@ -3486,15 +3570,15 @@ const NOCApplication = () => {
                                                                 handleFileUpload('paymentReceipt', file);
                                                                 setErrors(prev => ({ ...prev, paymentReceipt: '' }));
                                                             } else {
-                                                                alert('File size must be less than 5MB');
+                                                                toastWarning('File size must be less than 5MB');
                                                             }
                                                         }
                                                     }}
-                                                    className="bhuneer-input"
+                                                    className="form-input"
                                                     style={{ padding: '10px' }}
                                                 />
                                                 <span className="noc-form-help">Accepted formats: PDF, JPG, PNG (Max 5MB)</span>
-                                                {errors.paymentReceipt && <span className="bhuneer-error">{errors.paymentReceipt}</span>}
+                                                {errors.paymentReceipt && <span className="text-error">{errors.paymentReceipt}</span>}
 
                                                 {formData.uploadedDocuments.paymentReceipt && (
                                                     <div style={{
@@ -3506,7 +3590,7 @@ const NOCApplication = () => {
                                                         color: '#155724'
                                                     }}>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                            <span style={{ fontSize: '1.5rem' }}>✓</span>
+                                                            <span style={{ fontSize: '1.5rem' }}>?</span>
                                                             <div>
                                                                 <strong>Receipt Uploaded Successfully!</strong>
                                                                 <p style={{ margin: '5px 0 0 0' }}>File: {formData.uploadedDocuments.paymentReceipt.name}</p>
@@ -3538,7 +3622,7 @@ const NOCApplication = () => {
                                     {/* Submit Status Alert */}
                                     {!formData.uploadedDocuments.paymentReceipt && (
                                         <div className="noc-alert noc-alert-danger">
-                                            <strong>❌ Cannot Submit Application</strong>
+                                            <strong>? Cannot Submit Application</strong>
                                             <p style={{ margin: '10px 0 0 0' }}>Please upload the payment receipt to enable the submit button.</p>
                                         </div>
                                     )}
@@ -3547,7 +3631,7 @@ const NOCApplication = () => {
 
                             {currentStep === 9 && !hasMeterInstalled && (
                                 <div>
-                                    <h3 className="form-section-header">📋 Application Summary</h3>
+                                    <h3 className="form-section-header">?? Application Summary</h3>
                                     <p style={{ textAlign: 'center', color: 'var(--text-light)', marginBottom: '30px' }}>
                                         Review all your details before final submission
                                     </p>
@@ -3580,6 +3664,9 @@ const NOCApplication = () => {
                                                 <div>
                                                     <strong>MSME Status:</strong> {formatDisplayValue(formData.isMSME)}
                                                     {formData.isMSME === 'Yes' && formData.msmeType && ` (${getDisplayLabel(formData.msmeType, msmeTypeOptions)})`}
+                                                </div>
+                                                <div>
+                                                    <strong>Aquifer Type:</strong> {formatDisplayValue(formData.geology)}
                                                 </div>
                                                 {formData.dateOfCommencement && (
                                                     <div>
@@ -3645,10 +3732,10 @@ const NOCApplication = () => {
                                         <div className="noc-card-body">
                                             <div className="noc-form-row two-col">
                                                 <div>
-                                                    <strong>Daily Requirement:</strong> {formatDisplayValue(formData.dailyWaterRequirement)} {formData.dailyWaterRequirement ? 'm³/day' : ''}
+                                                    <strong>Daily Requirement:</strong> {formatDisplayValue((parseFloat(formData.waterReqFreshRequirement || 0) + parseFloat(formData.waterReqRecycled || 0)) || formData.dailyWaterRequirement)} {((parseFloat(formData.waterReqFreshRequirement || 0) + parseFloat(formData.waterReqRecycled || 0)) || formData.dailyWaterRequirement) ? 'm³/day' : ''}
                                                 </div>
                                                 <div>
-                                                    <strong>Annual Requirement:</strong> {formatDisplayValue(formData.annualWaterRequirement)} {formData.annualWaterRequirement ? 'm³/year' : ''}
+                                                    <strong>Annual Requirement:</strong> {formatDisplayValue(((parseFloat(formData.waterReqFreshRequirement || 0) + parseFloat(formData.waterReqRecycled || 0)) * 365) || formData.annualWaterRequirement)} {(((parseFloat(formData.waterReqFreshRequirement || 0) + parseFloat(formData.waterReqRecycled || 0)) * 365) || formData.annualWaterRequirement) ? 'm³/year' : ''}
                                                 </div>
                                                 {formData.numberOfWorkers && (
                                                     <div>
@@ -3780,21 +3867,21 @@ const NOCApplication = () => {
                                         <div className="noc-card-body">
                                             <div className="noc-form-row two-col">
                                                 <div>
-                                                    <strong>Application Fee:</strong> ₹{formData.applicationFee?.toLocaleString('en-IN') || '0'}
+                                                    <strong>Application Fee:</strong> ?{formData.applicationFee?.toLocaleString('en-IN') || '0'}
                                                 </div>
                                                 <div>
-                                                    <strong>GST (18%):</strong> ₹{formData.gstAmount?.toLocaleString('en-IN') || '0'}
+                                                    <strong>GST (18%):</strong> ?{formData.gstAmount?.toLocaleString('en-IN') || '0'}
                                                 </div>
                                                 <div>
                                                     <strong>Total Amount:</strong>{' '}
                                                     <span style={{ fontSize: '1.2rem', color: 'var(--cgwa-success)', fontWeight: 'bold' }}>
-                                                        ₹{formData.totalAmount?.toLocaleString('en-IN') || '0'}
+                                                        ?{formData.totalAmount?.toLocaleString('en-IN') || '0'}
                                                     </span>
                                                 </div>
                                                 <div>
                                                     <strong>Payment Status:</strong>{' '}
                                                     <span style={{ color: formData.paymentStatus === 'paid' ? 'var(--cgwa-success)' : 'var(--cgwa-warning)', fontWeight: 'bold' }}>
-                                                        {formData.paymentStatus === 'paid' ? '✅ PAID' : '⏳ PENDING'}
+                                                        {formData.paymentStatus === 'paid' ? '? PAID' : '? PENDING'}
                                                     </span>
                                                 </div>
                                                 {formData.paymentTransactionId && (
@@ -3814,7 +3901,7 @@ const NOCApplication = () => {
                                     {/* Exemption Status (if applicable) */}
                                     {exemptionStatus?.isExempt && (
                                         <div className="noc-exemption-banner" style={{ marginBottom: '20px' }}>
-                                            <h4 style={{ margin: '0 0 10px 0' }}>✅ Exemption Status</h4>
+                                            <h4 style={{ margin: '0 0 10px 0' }}>? Exemption Status</h4>
                                             <p><strong>Type:</strong> {exemptionStatus.exemptionType}</p>
                                             <p><strong>Message:</strong> {exemptionStatus.message}</p>
                                         </div>
@@ -3823,7 +3910,7 @@ const NOCApplication = () => {
                                     {/* Final Declaration */}
                                     <div className="noc-card" style={{ marginBottom: '20px', background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)', border: '2px solid var(--cgwa-primary)' }}>
                                         <div className="noc-card-header" style={{ background: 'var(--cgwa-primary)', color: 'white' }}>
-                                            📜 Final Declaration
+                                            ?? Final Declaration
                                         </div>
                                         <div className="noc-card-body">
                                             <p style={{ marginBottom: '15px', lineHeight: '1.6' }}>
@@ -3848,7 +3935,7 @@ const NOCApplication = () => {
 
                                     {/* Submit Alert */}
                                     <div className="noc-alert noc-alert-info">
-                                        <strong>ℹ️ Ready to Submit:</strong> Please review all the above information carefully.
+                                        <strong>?? Ready to Submit:</strong> Please review all the above information carefully.
                                         Once submitted, you will not be able to make changes to your application.
                                     </div>
                                 </div>
@@ -3857,7 +3944,7 @@ const NOCApplication = () => {
                             {/* Step 10: Summary (only when meter is installed) */}
                             {currentStep === 10 && hasMeterInstalled && (
                                 <div>
-                                    <h3 className="form-section-header">📋 Application Summary</h3>
+                                    <h3 className="form-section-header">?? Application Summary</h3>
                                     <p style={{ textAlign: 'center', color: 'var(--text-light)', marginBottom: '30px' }}>
                                         Review all your details before final submission
                                     </p>
@@ -3890,6 +3977,9 @@ const NOCApplication = () => {
                                                 <div>
                                                     <strong>MSME Status:</strong> {formatDisplayValue(formData.isMSME)}
                                                     {formData.isMSME === 'Yes' && formData.msmeType && ` (${getDisplayLabel(formData.msmeType, msmeTypeOptions)})`}
+                                                </div>
+                                                <div>
+                                                    <strong>Aquifer Type:</strong> {formatDisplayValue(formData.geology)}
                                                 </div>
                                                 {formData.dateOfCommencement && (
                                                     <div>
@@ -3955,10 +4045,10 @@ const NOCApplication = () => {
                                         <div className="noc-card-body">
                                             <div className="noc-form-row two-col">
                                                 <div>
-                                                    <strong>Daily Requirement:</strong> {formatDisplayValue(formData.dailyWaterRequirement)} {formData.dailyWaterRequirement ? 'm³/day' : ''}
+                                                    <strong>Daily Requirement:</strong> {formatDisplayValue((parseFloat(formData.waterReqFreshRequirement || 0) + parseFloat(formData.waterReqRecycled || 0)) || formData.dailyWaterRequirement)} {((parseFloat(formData.waterReqFreshRequirement || 0) + parseFloat(formData.waterReqRecycled || 0)) || formData.dailyWaterRequirement) ? 'm³/day' : ''}
                                                 </div>
                                                 <div>
-                                                    <strong>Annual Requirement:</strong> {formatDisplayValue(formData.annualWaterRequirement)} {formData.annualWaterRequirement ? 'm³/year' : ''}
+                                                    <strong>Annual Requirement:</strong> {formatDisplayValue(((parseFloat(formData.waterReqFreshRequirement || 0) + parseFloat(formData.waterReqRecycled || 0)) * 365) || formData.annualWaterRequirement)} {(((parseFloat(formData.waterReqFreshRequirement || 0) + parseFloat(formData.waterReqRecycled || 0)) * 365) || formData.annualWaterRequirement) ? 'm³/year' : ''}
                                                 </div>
                                                 {formData.numberOfWorkers && (
                                                     <div>
@@ -4123,21 +4213,21 @@ const NOCApplication = () => {
                                         <div className="noc-card-body">
                                             <div className="noc-form-row two-col">
                                                 <div>
-                                                    <strong>Application Fee:</strong> ₹{formData.applicationFee?.toLocaleString('en-IN') || '0'}
+                                                    <strong>Application Fee:</strong> ?{formData.applicationFee?.toLocaleString('en-IN') || '0'}
                                                 </div>
                                                 <div>
-                                                    <strong>GST (18%):</strong> ₹{formData.gstAmount?.toLocaleString('en-IN') || '0'}
+                                                    <strong>GST (18%):</strong> ?{formData.gstAmount?.toLocaleString('en-IN') || '0'}
                                                 </div>
                                                 <div>
                                                     <strong>Total Amount:</strong>{' '}
                                                     <span style={{ fontSize: '1.2rem', color: 'var(--cgwa-success)', fontWeight: 'bold' }}>
-                                                        ₹{formData.totalAmount?.toLocaleString('en-IN') || '0'}
+                                                        ?{formData.totalAmount?.toLocaleString('en-IN') || '0'}
                                                     </span>
                                                 </div>
                                                 <div>
                                                     <strong>Payment Status:</strong>{' '}
                                                     <span style={{ color: formData.paymentStatus === 'paid' ? 'var(--cgwa-success)' : 'var(--cgwa-warning)', fontWeight: 'bold' }}>
-                                                        {formData.paymentStatus === 'paid' ? '✅ PAID' : '⏳ PENDING'}
+                                                        {formData.paymentStatus === 'paid' ? '? PAID' : '? PENDING'}
                                                     </span>
                                                 </div>
                                                 {formData.paymentTransactionId && (
@@ -4157,7 +4247,7 @@ const NOCApplication = () => {
                                     {/* Exemption Status (if applicable) */}
                                     {exemptionStatus?.isExempt && (
                                         <div className="noc-exemption-banner" style={{ marginBottom: '20px' }}>
-                                            <h4 style={{ margin: '0 0 10px 0' }}>✅ Exemption Status</h4>
+                                            <h4 style={{ margin: '0 0 10px 0' }}>? Exemption Status</h4>
                                             <p><strong>Type:</strong> {exemptionStatus.exemptionType}</p>
                                             <p><strong>Message:</strong> {exemptionStatus.message}</p>
                                         </div>
@@ -4166,7 +4256,7 @@ const NOCApplication = () => {
                                     {/* Final Declaration */}
                                     <div className="noc-card" style={{ marginBottom: '20px', background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)', border: '2px solid var(--cgwa-primary)' }}>
                                         <div className="noc-card-header" style={{ background: 'var(--cgwa-primary)', color: 'white' }}>
-                                            📜 Final Declaration
+                                            ?? Final Declaration
                                         </div>
                                         <div className="noc-card-body">
                                             <p style={{ marginBottom: '15px', lineHeight: '1.6' }}>
@@ -4191,7 +4281,7 @@ const NOCApplication = () => {
 
                                     {/* Submit Alert */}
                                     <div className="noc-alert noc-alert-info">
-                                        <strong>ℹ️ Ready to Submit:</strong> Please review all the above information carefully.
+                                        <strong>?? Ready to Submit:</strong> Please review all the above information carefully.
                                         Once submitted, you will not be able to make changes to your application.
                                     </div>
                                 </div>
@@ -4241,7 +4331,7 @@ const NOCApplication = () => {
                                 justifyContent: 'center',
                                 margin: '0 auto 20px auto'
                             }}>
-                                ✓
+                                ?
                             </div>
 
                             <h2 style={{ color: '#28a745', marginBottom: '10px' }}>Application Submitted!</h2>
@@ -4255,7 +4345,7 @@ const NOCApplication = () => {
                                     <strong>Status:</strong> <span style={{ float: 'right', background: '#d4edda', color: '#155724', padding: '2px 8px', borderRadius: '4px', fontSize: '0.9rem' }}>{successData.status}</span>
                                 </div>
                                 <div>
-                                    <strong>Total Fee Paid:</strong> <span style={{ float: 'right', fontWeight: 'bold' }}>₹{successData.totalAmount?.toLocaleString('en-IN') || 0}</span>
+                                    <strong>Total Fee Paid:</strong> <span style={{ float: 'right', fontWeight: 'bold' }}>?{successData.totalAmount?.toLocaleString('en-IN') || 0}</span>
                                 </div>
                             </div>
 
@@ -4277,12 +4367,15 @@ const NOCApplication = () => {
                 )
             }
 
-            <NOCFooter />
-        </div >
+        </LayoutWithSidebar>
     );
 };
 
 export default NOCApplication;
+
+
+
+
 
 
 

@@ -1,0 +1,222 @@
+/* =========================================
+   ENTERPRISE SAAS GLOBAL OVERRIDES
+   Ensures the clean, minimalist look across all modules
+   ========================================= */
+
+/* 1. Reset Global Backgrounds */
+body,
+.officer-portal,
+.help-page,
+.public-landing,
+.auth-container,
+.auth-page,
+.noc-portal-wrapper {
+    background: var(--gray-50) !important;
+    background-image: none !important;
+}
+
+/* 2. Global Card / Surface Styling */
+.card,
+.officer-container,
+.officer-stat-card,
+.officer-app-card,
+.help-container,
+.help-container-wide,
+.premium-timeline-card,
+.timeline-card,
+.faq-item,
+.office-card,
+.helpline-card,
+.email-item,
+.auth-box,
+.login-box,
+.step-container,
+.noc-card {
+    background: var(--white) !important;
+    border: 1px solid var(--gray-200) !important;
+    box-shadow: var(--shadow-sm) !important;
+    border-radius: var(--radius-md) !important;
+}
+
+/* Elevate on hover globally */
+.card:hover,
+.officer-stat-card:hover,
+.officer-app-card:hover,
+.premium-timeline-card:hover {
+    box-shadow: var(--shadow-md) !important;
+    transform: translateY(-2px) !important;
+    border-color: var(--gray-300) !important;
+}
+
+/* 3. Button Standardization (No Gradients) */
+.btn-primary,
+.officer-btn-primary,
+.public-btn-primary,
+.submit-btn,
+button[type="submit"]:not(.search-btn):not(.mobile-close-btn) {
+    background: var(--color-primary-600) !important;
+    color: var(--white) !important;
+    border: none !important;
+    box-shadow: var(--shadow-sm) !important;
+    border-radius: var(--radius-md) !important;
+    background-image: none !important;
+}
+
+.btn-primary:hover,
+.officer-btn-primary:hover,
+.public-btn-primary:hover,
+.submit-btn:hover,
+button[type="submit"]:not(.search-btn):not(.mobile-close-btn):hover {
+    background: var(--color-primary-800) !important;
+    box-shadow: var(--shadow) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* Success Buttons */
+.btn-success,
+.officer-btn-success {
+    background: var(--success-600) !important;
+    background-image: none !important;
+    color: var(--white) !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+.btn-success:hover,
+.officer-btn-success:hover {
+    background: #047857 !important;
+}
+
+/* Secondary / Outline Buttons */
+.btn-secondary,
+.officer-btn-secondary {
+    background: var(--white) !important;
+    color: var(--gray-700) !important;
+    border: 1px solid var(--gray-300) !important;
+    box-shadow: var(--shadow-sm) !important;
+    background-image: none !important;
+}
+
+.btn-secondary:hover,
+.officer-btn-secondary:hover {
+    background: var(--gray-50) !important;
+    border-color: var(--gray-400) !important;
+    color: var(--gray-900) !important;
+}
+
+/* 4. Form Controls Standardization */
+.form-input,
+.officer-input,
+.form-select,
+.officer-select,
+.form-textarea,
+.officer-textarea,
+input[type="text"]:not(.search-input),
+input[type="password"],
+input[type="email"],
+input[type="number"],
+select,
+textarea {
+    background-color: var(--white) !important;
+    border: 1px solid var(--gray-300) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: none !important;
+    color: var(--gray-900) !important;
+    transition: all 0.2s ease !important;
+}
+
+.form-input:focus,
+.officer-input:focus,
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--color-primary-500) !important;
+    box-shadow: 0 0 0 3px var(--color-primary-100) !important;
+    outline: none !important;
+}
+
+/* 5. Stat Icon Cleanups (No dark gradients) */
+.officer-stat-icon.primary {
+    background: var(--primary-50) !important;
+    color: var(--primary-600) !important;
+}
+
+.officer-stat-icon.success {
+    background: var(--success-50) !important;
+    color: var(--success-600) !important;
+}
+
+.officer-stat-icon.warning {
+    background: var(--warning-50) !important;
+    color: var(--warning-600) !important;
+}
+
+.officer-stat-icon.danger {
+    background: var(--error-50) !important;
+    color: var(--error-600) !important;
+}
+
+/* Remove decorative stat card linear gradients / fake borders */
+.card-stat::before,
+.step-number::after,
+.card-accent {
+    display: none !important;
+}
+
+/* 6. Badges */
+.badge-primary,
+.officer-badge.under-review {
+    background: var(--primary-50) !important;
+    color: var(--primary-700) !important;
+}
+
+.badge-success,
+.officer-badge.approved {
+    background: var(--success-50) !important;
+    color: var(--success-700) !important;
+}
+
+.badge-warning,
+.officer-badge.pending {
+    background: var(--warning-50) !important;
+    color: var(--warning-700) !important;
+}
+
+.badge-error,
+.officer-badge.rejected {
+    background: var(--error-50) !important;
+    color: var(--error-700) !important;
+    display: inline-flex !important;
+}
+
+/* 7. Tables */
+thead,
+.officer-table thead,
+.rt-thead {
+    background: var(--gray-50) !important;
+    border-bottom: 1px solid var(--gray-200) !important;
+}
+
+th,
+.officer-table th {
+    color: var(--gray-700) !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    font-size: 0.75rem !important;
+}
+
+/* 8. Text readibility standardization */
+.officer-page-title,
+.help-header h1,
+h1,
+h2,
+h3 {
+    color: var(--gray-900) !important;
+    letter-spacing: -0.02em !important;
+}
+
+.officer-page-subtitle,
+.help-subtitle,
+p.text-muted {
+    color: var(--gray-500) !important;
+}

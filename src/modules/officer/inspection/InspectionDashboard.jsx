@@ -3,10 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import OfficerHeader from '../shared/components/OfficerHeader';
 import OfficerSidebar from '../shared/components/OfficerSidebar';
 import officerService from '../services/officerService';
+import ConsultationCallButton from '../../../components/ConsultationCallButton';
+import { useNotifications } from '../../../context/NotificationContext';
+import { getOfficerData } from '../shared/utils/officerAuth';
+import { EXTERNAL_URLS } from '../../../config/constants';
 import '../shared/styles/officer-portal.css';
 
 const InspectionDashboard = () => {
     const navigate = useNavigate();
+    const notifCtx = useNotifications();
     const [statistics, setStatistics] = useState({
         todayCount: 0,
         pendingCount: 0,
@@ -15,11 +20,15 @@ const InspectionDashboard = () => {
     });
     const [todaysSchedule, setTodaysSchedule] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [officerInfo, setOfficerInfo] = useState(null);
 
 
 
     useEffect(() => {
         const fetchDashboardData = async () => {
+            const userData = getOfficerData();
+            setOfficerInfo(userData);
+
             setLoading(true);
             try {
                 // Fetch stats and today's schedule
@@ -53,33 +62,6 @@ const InspectionDashboard = () => {
 
             } catch (error) {
                 console.error("Error fetching dashboard data:", error);
-                // Fallback Mock Data for Demo
-                setStatistics({
-                    todayCount: 3,
-                    pendingCount: 12,
-                    completedMonth: 8,
-                    overdueCount: 1
-                });
-                setTodaysSchedule([
-                    {
-                        id: 'insp-001',
-                        applicationNumber: 'RJ/CGWA/NOC/2026/001234',
-                        applicantName: 'Rajesh Kumar Sharma',
-                        location: 'Sanganer, Jaipur',
-                        time: '10:00 AM',
-                        status: 'SCHEDULED',
-                        type: 'New NOC Verification'
-                    },
-                    {
-                        id: 'insp-002',
-                        applicationNumber: 'RJ/CGWA/NOC/2026/01452',
-                        applicantName: 'Hotel Blue Diamond',
-                        location: 'Ajmer Road, Jaipur',
-                        time: '02:00 PM',
-                        status: 'SCHEDULED',
-                        type: 'New NOC Verification'
-                    }
-                ]);
             } finally {
                 setLoading(false);
             }
@@ -92,13 +74,24 @@ const InspectionDashboard = () => {
         navigate(`/officer/inspection/conduct/${inspectionId}`);
     };
 
+    const handleConsultationCall = (item) => {
+        // Standardised room naming: consultation-{appNumber}-INSPECTION
+        const sanitised = String(item.applicationNumber || 'ROOM')
+            .trim()
+            .replace(/[\/\\\s]+/g, '-')
+            .replace(/[^a-zA-Z0-9\-_]/g, '')
+            .toUpperCase();
+        const roomId = `consultation-${sanitised}-INSPECTION`;
+        notifCtx?.startCall?.(roomId);
+    };
+
     return (
         <div className="officer-portal">
             <OfficerHeader
-                officerName="Vikram Singh"
+                officerName={officerInfo?.name || officerInfo?.username || 'Field Inspector'}
                 officerRole="INSPECTION"
-                officerDesignation="Field Inspector"
-                district="Jaipur"
+                officerDesignation={officerInfo?.designation || 'Field Inspector'}
+                district={officerInfo?.district || 'Jaipur'}
             />
 
             <div className="officer-layout">
@@ -163,7 +156,7 @@ const InspectionDashboard = () => {
                         {/* Today's Schedule */}
                         <div className="officer-mt-4">
                             <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem', color: 'var(--officer-text-primary)' }}>
-                                Today's Schedule (2026-01-16)
+                                Today's Schedule ({new Date().toISOString().split('T')[0]})
                             </h2>
 
                             <div style={{ display: 'grid', gap: '1rem' }}>
@@ -203,12 +196,21 @@ const InspectionDashboard = () => {
                                                 📍 {item.location} • {item.applicationNumber}
                                             </p>
                                         </div>
-                                        <button
-                                            className="officer-btn officer-btn-primary"
-                                            onClick={() => handleStartInspection(item.id)}
-                                        >
-                                            Start Inspection →
-                                        </button>
+                                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                            <ConsultationCallButton
+                                                applicationNumber={item.applicationNumber}
+                                                officerType="INSPECTION"
+                                                label="📞 Video Call"
+                                                variant="primary"
+                                                style={{ padding: '6px 14px', fontSize: '0.82rem' }}
+                                            />
+                                            <button
+                                                className="officer-btn officer-btn-primary"
+                                                onClick={() => handleStartInspection(item.id)}
+                                            >
+                                                Start Inspection →
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>

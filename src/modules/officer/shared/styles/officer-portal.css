@@ -1,20 +1,22 @@
-/* Officer Portal - BhuNeer Theme Styles */
+/* Officer Portal - Using Global Theme */
+@import url('/src/styles/theme.css');
+@import url('/src/styles/components.css');
 
-/* Color Variables */
+/* Officer-specific aliases */
 :root {
-    --officer-primary: #1e3a8a;
-    --officer-primary-light: #3b82f6;
-    --officer-primary-lighter: #60a5fa;
-    --officer-secondary: #475569;
-    --officer-success: #22c55e;
-    --officer-warning: #f59e0b;
-    --officer-danger: #ef4444;
-    --officer-info: #3b82f6;
-    --officer-text: #1e293b;
-    --officer-text-light: #64748b;
-    --officer-border: #e2e8f0;
-    --officer-bg-light: #f8fafc;
-    --officer-white: #ffffff;
+    --officer-primary: var(--color-primary-900);
+    --officer-primary-light: var(--color-primary-600);
+    --officer-primary-lighter: var(--color-primary-400);
+    --officer-secondary: var(--gray-600);
+    --officer-success: var(--color-success-500);
+    --officer-warning: var(--color-warning-500);
+    --officer-danger: var(--color-error-500);
+    --officer-info: var(--color-info-500);
+    --officer-text: var(--gray-800);
+    --officer-text-light: var(--gray-500);
+    --officer-border: var(--gray-300);
+    --officer-bg-light: var(--gray-50);
+    --officer-white: var(--white);
 }
 
 /* Scenic Background */
@@ -127,45 +129,74 @@
 .officer-sidebar {
     width: 260px;
     background: var(--officer-white);
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+    border-right: 1px solid var(--gray-200);
     padding: 1.5rem 0;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
 }
 
 .officer-nav {
     list-style: none;
     padding: 0;
     margin: 0;
+    flex: 1;
 }
 
 .officer-nav-item {
-    margin: 0.25rem 0;
+    margin: 4px 12px;
 }
 
 .officer-nav-link {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.875rem 1.5rem;
-    color: var(--officer-text);
+    gap: 12px;
+    padding: 12px 16px;
+    color: var(--gray-600);
     text-decoration: none;
-    transition: all 0.2s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     font-weight: 500;
-    border-left: 3px solid transparent;
+    border-radius: var(--radius-lg);
+    font-size: 0.9375rem;
+    position: relative;
 }
 
 .officer-nav-link:hover {
-    background: var(--officer-bg-light);
-    border-left-color: var(--officer-primary-light);
+    background: var(--gray-50);
+    color: var(--officer-primary);
 }
 
 .officer-nav-link.active {
-    background: linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0%, transparent 100%);
+    background: var(--color-primary-50);
     color: var(--officer-primary);
-    border-left-color: var(--officer-primary);
+    font-weight: 600;
+}
+
+.officer-nav-link.active::after {
+    content: '';
+    position: absolute;
+    left: -12px;
+    top: 25%;
+    height: 50%;
+    width: 4px;
+    background: var(--officer-primary);
+    border-radius: 0 4px 4px 0;
 }
 
 .officer-nav-icon {
     font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    color: var(--gray-400);
+    transition: all 0.2s ease;
+}
+
+.officer-nav-link.active .officer-nav-icon,
+.officer-nav-link:hover .officer-nav-icon {
+    color: var(--officer-primary);
+    transform: scale(1.1);
 }
 
 /* Main Content */
@@ -742,5 +773,136 @@
     /* Show official header in print */
     .officer-report-header {
         display: block !important;
+    }
+}
+
+/* Inspection Specific Styles */
+.inspection-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.back-button {
+    background: var(--officer-bg-light);
+    border: 1px solid var(--officer-border);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.app-id-badge {
+    background: var(--officer-primary);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-left: auto;
+}
+
+.inspection-grid {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: 2rem;
+}
+
+.inspection-info-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.info-card h3 {
+    font-size: 1.125rem;
+    margin-bottom: 1.5rem;
+    color: var(--officer-primary);
+    border-bottom: 1px solid var(--officer-border);
+    padding-bottom: 0.5rem;
+}
+
+.info-row {
+    margin-bottom: 1rem;
+}
+
+.location-status {
+    padding: 1.5rem;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--officer-bg-light);
+    border: 1px solid var(--officer-border);
+}
+
+.location-status.captured {
+    border-color: var(--officer-success);
+    background: rgba(34, 197, 94, 0.05);
+}
+
+.location-status.pending {
+    border-color: var(--officer-warning);
+    background: rgba(245, 158, 11, 0.05);
+}
+
+.location-status .icon {
+    font-size: 1.5rem;
+}
+
+.photo-upload-container {
+    padding: 2rem;
+    border: 2px dashed var(--officer-border);
+    border-radius: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.photo-upload-container:hover {
+    border-color: var(--officer-primary);
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.photo-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.photo-preview-item {
+    position: relative;
+    aspect-ratio: 1;
+}
+
+.photo-preview-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.remove-photo {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: var(--officer-danger);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+@media (max-width: 1024px) {
+    .inspection-grid {
+        grid-template-columns: 1fr;
     }
 }

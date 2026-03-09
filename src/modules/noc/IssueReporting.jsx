@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import CommonPlaceholder from './components/CommonPlaceholder';
 
 const IssueReporting = () => {
@@ -17,8 +17,8 @@ const IssueReporting = () => {
                         <form>
                             <div className="grid-2-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                 <div className="form-group">
-                                    <label className="bhuneer-label">Category</label>
-                                    <select className="bhuneer-input">
+                                    <label className="form-label">Category</label>
+                                    <select className="form-input">
                                         <option value="">Select Category</option>
                                         <option value="Technical">Technical Error / Bug</option>
                                         <option value="Payment">Payment Issue</option>
@@ -28,30 +28,30 @@ const IssueReporting = () => {
                                     </select>
                                 </div>
                                 <div className="form-group">
-                                    <label className="bhuneer-label">Related Application No. (Optional)</label>
-                                    <input type="text" className="bhuneer-input" placeholder="e.g. 21-4/3482/GJ/IND/2021" />
+                                    <label className="form-label">Related Application No. (Optional)</label>
+                                    <input type="text" className="form-input" placeholder="e.g. 21-4/3482/GJ/IND/2021" />
                                 </div>
                             </div>
 
                             <div className="form-group">
-                                <label className="bhuneer-label">Subject</label>
-                                <input type="text" className="bhuneer-input" placeholder="Brief summary of the issue" />
+                                <label className="form-label">Subject</label>
+                                <input type="text" className="form-input" placeholder="Brief summary of the issue" />
                             </div>
 
                             <div className="form-group">
-                                <label className="bhuneer-label">Detailed Description</label>
-                                <textarea className="bhuneer-input" rows="5" placeholder="Please provide detailed information about the issue you are facing..."></textarea>
+                                <label className="form-label">Detailed Description</label>
+                                <textarea className="form-input" rows="5" placeholder="Please provide detailed information about the issue you are facing..."></textarea>
                             </div>
 
                             <div className="form-group">
-                                <label className="bhuneer-label">Screenshot / Error Log</label>
+                                <label className="form-label">Screenshot / Error Log</label>
                                 <div className="file-upload-input-group">
                                     <input type="file" style={{ padding: '0.5rem' }} />
                                 </div>
                             </div>
 
                             <div style={{ marginTop: '2rem', textAlign: 'center' }}>
-                                <button className="bhuneer-submit-btn">Submit Grievance</button>
+                                <button className="btn-primary">Submit Grievance</button>
                             </div>
                         </form>
                     </div>
@@ -92,3 +92,4 @@ const IssueReporting = () => {
 };
 
 export default IssueReporting;
+

@@ -12,8 +12,21 @@ const InspectionList = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [assignments, setAssignments] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [officerInfo, setOfficerInfo] = useState(null);
+
+    // Helper to retrieve stored officer data from localStorage
+    const getOfficerData = () => {
+        try {
+            const data = localStorage.getItem('officerData');
+            return data ? JSON.parse(data) : null;
+        } catch (e) {
+            return null;
+        }
+    };
 
     useEffect(() => {
+        const userData = getOfficerData();
+        setOfficerInfo(userData);
         fetchAssignments();
     }, []);
 
@@ -22,7 +35,6 @@ const InspectionList = () => {
         try {
             const response = await officerService.getMyInspections();
             if (response.success && response.data.inspections) {
-                // Map API data to UI model
                 const mappedInspections = response.data.inspections.map(item => ({
                     id: item.inspectionId,
                     appId: item.applicationNumber || 'N/A',
@@ -36,27 +48,7 @@ const InspectionList = () => {
             }
         } catch (error) {
             console.error("Error fetching assignments:", error);
-            // Fallback for development
-            setAssignments([
-                {
-                    id: 'insp-001',
-                    appId: 'NOC-2026-1234',
-                    name: 'Rajesh Kumar Sharma',
-                    location: 'Sanganer, Jaipur',
-                    date: '2026-01-16',
-                    status: 'PENDING',
-                    priority: 'HIGH'
-                },
-                {
-                    id: 'insp-002',
-                    appId: 'NOC-2026-1452',
-                    name: 'Hotel Blue Diamond',
-                    location: 'Ajmer Road, Jaipur',
-                    date: '2026-01-16',
-                    status: 'PENDING',
-                    priority: 'MEDIUM'
-                }
-            ]);
+            setAssignments([]);
         } finally {
             setLoading(false);
         }
@@ -77,10 +69,10 @@ const InspectionList = () => {
     return (
         <div className="officer-portal">
             <OfficerHeader
-                officerName="Vikram Singh"
+                officerName={officerInfo?.name || officerInfo?.username || 'Officer'}
                 officerRole="INSPECTION"
-                officerDesignation="Field Inspector"
-                district="Jaipur"
+                officerDesignation={officerInfo?.designation || 'Field Inspector'}
+                district={officerInfo?.district || ''}
             />
 
             <div className="officer-layout">

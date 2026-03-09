@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import NOCHeader from './components/NOCHeader';
-import NOCFooter from './components/NOCFooter';
-import Sidebar from './components/Sidebar';
-import './styles/noc-portal.css';
-import PublicHeader from '../public/components/PublicHeader';
+﻿import React, { useState, useEffect } from 'react';
+import { useToast } from '../../context/ToastContext';
+import { Link, useNavigate } from 'react-router-dom';
+import { EXTERNAL_URLS } from '../../config/constants';
+import LayoutWithSidebar from './components/LayoutWithSidebar';
+import nocApplicationService from './services/nocApplicationService';
+import { useNotifications } from '../../context/NotificationContext';
+import { useAuth } from '../../context/AuthContext';
 
 // DUMMY DATA - Comprehensive sample queries showing all details
 const DUMMY_QUERIES = [
@@ -126,28 +127,74 @@ const DUMMY_QUERIES = [
 ];
 
 const NOCQueries = () => {
-    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const navigate = useNavigate();
+    const notifCtx = useNotifications();
+    const { user } = useAuth();
+    const [queries, setQueries] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all'); // 'all', 'pending', 'resolved'
-    const [loading, setLoading] = useState(false);
+
+    // Derived states using useMemo for performance
+    const stats = React.useMemo(() => {
+        const pending = queries.filter(q => q.status === 'OPEN').length;
+        const resolved = queries.filter(q => ['CLOSED', 'RESOLVED'].includes(q.status)).length;
+        const underReview = queries.filter(q => q.status === 'RESPONDED').length;
+        const total = queries.length;
+        return { pending, resolved, underReview, total };
+    }, [queries]);
+
+    const filteredQueries = React.useMemo(() => {
+        if (filter === 'pending') {
+            return queries.filter(q => q.status === 'OPEN');
+        } else if (filter === 'resolved') {
+            return queries.filter(q => ['CLOSED', 'RESOLVED'].includes(q.status));
+        }
+        return queries;
+    }, [queries, filter]);
     const [selectedQuery, setSelectedQuery] = useState(null);
+    const { success: toastSuccess, info: toastInfo, warning: toastWarning, error: toastError } = useToast();
 
     // Reply state
     const [replyText, setReplyText] = useState({});
     const [uploadingFile, setUploadingFile] = useState({});
     const [submittingReply, setSubmittingReply] = useState({});
 
-    // Filter queries based on selected filter
-    const getFilteredQueries = () => {
-        if (filter === 'pending') {
-            return DUMMY_QUERIES.filter(q => q.status === 'OPEN');
-        } else if (filter === 'resolved') {
-            return DUMMY_QUERIES.filter(q => q.status === 'RESOLVED');
+    useEffect(() => {
+        fetchQueries();
+    }, []);
+
+    const fetchQueries = async () => {
+        try {
+            setLoading(true);
+            const result = await nocApplicationService.getUserQueries();
+
+            // Robust data extraction
+            let data = [];
+            if (result && result.success) {
+                if (result.data) {
+                    if (Array.isArray(result.data.queries)) data = result.data.queries;
+                    else if (Array.isArray(result.data)) data = result.data;
+                } else if (Array.isArray(result.queries)) {
+                    data = result.queries;
+                }
+            } else if (Array.isArray(result)) {
+                data = result;
+            }
+
+            setQueries(data);
+
+            if (data.length === 0 && result.message) {
+                console.info("Server Message:", result.message);
+            }
+        } catch (err) {
+            console.error('Error fetching queries:', err);
+            setQueries([]);
+            toastError("Could not connect to the evaluation server. Please try again later.");
+        } finally {
+            setLoading(false);
         }
-        return DUMMY_QUERIES;
     };
 
-    const queries = getFilteredQueries();
-    const pendingCount = DUMMY_QUERIES.filter(q => q.status === 'OPEN').length;
 
     const handleReplyChange = (queryId, text) => {
         setReplyText(prev => ({ ...prev, [queryId]: text }));
@@ -157,30 +204,72 @@ const NOCQueries = () => {
         setUploadingFile(prev => ({ ...prev, [queryId]: file }));
     };
 
-    const handleSubmitReply = (queryId) => {
+    const handleSubmitReply = async (queryId) => {
         const text = replyText[queryId];
         const file = uploadingFile[queryId];
 
         if (!text || text.trim() === '') {
-            alert('Please enter a response');
+            toastWarning('Please enter a response');
             return;
         }
 
         setSubmittingReply(prev => ({ ...prev, [queryId]: true }));
 
-        // Simulate API call
-        setTimeout(() => {
-            alert(`Reply submitted successfully!\n\nResponse: ${text}\n${file ? `Document: ${file.name}` : 'No document attached'}`);
-            setReplyText(prev => ({ ...prev, [queryId]: '' }));
-            setUploadingFile(prev => ({ ...prev, [queryId]: null }));
+        try {
+            const response = await nocApplicationService.replyToQuery(queryId, {
+                response: text,
+                file: file
+            });
+
+            if (response.success) {
+                toastSuccess(`Reply submitted successfully!`);
+                setReplyText(prev => ({ ...prev, [queryId]: '' }));
+                setUploadingFile(prev => ({ ...prev, [queryId]: null }));
+                // Refresh queries
+                fetchQueries();
+            } else {
+                toastError(response.message || 'Failed to submit reply');
+            }
+        } catch (err) {
+            console.error('Error submitting reply:', err);
+            toastError('Error submitting reply. Please try again.');
+        } finally {
             setSubmittingReply(prev => ({ ...prev, [queryId]: false }));
-        }, 1500);
+        }
+    };
+
+    const handleJoinConsultation = (query) => {
+        // Use standardized room ID helper
+        const appIdentifier = query.applicationNumber || query.trackingId || query.applicationId;
+        const roomName = nocApplicationService.getConsultationRoomId(appIdentifier);
+
+        if (!roomName) {
+            toastError("Unable to generate consultation room. Missing application details.");
+            return;
+        }
+
+        // 1. Start local UI
+        notifCtx?.startCall?.(roomName);
+
+        // 2. Emit invite to officer
+        notifCtx?.emitCallInvite?.(roomName, {
+            callerId: user?.id,
+            callerName: user?.name || user?.username || user?.id || 'Applicant',
+            callerType: 'APPLICANT',
+            applicationNumber: query.applicationNumber || query.trackingId || 'N/A',
+            applicationId: query.applicationId || query.id,
+            room: roomName
+        });
+
+        toastInfo(`Initiating call for Application: ${query.applicationNumber || query.trackingId || 'N/A'}`);
     };
 
     const handleViewDetails = (queryId) => {
-        const query = DUMMY_QUERIES.find(q => q.queryId === queryId);
-        setSelectedQuery(query);
-        alert(`Query Details:\n\nID: ${query.queryId}\nSubject: ${query.subject}\nStatus: ${query.status}\nCategory: ${query.category}\nPriority: ${query.priority}\n\n${query.officerRemarks ? `Officer Remarks: ${query.officerRemarks}` : ''}`);
+        const query = queries.find(q => q.queryId === queryId);
+        if (query) {
+            setSelectedQuery(query);
+            toastInfo(`Viewing details for ${query.queryId}`);
+        }
     };
 
     const getStatusBadge = (status) => {
@@ -250,7 +339,7 @@ const NOCQueries = () => {
                             </span>
                             {query.raisedBy && (
                                 <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                                    <strong>Raised By:</strong> {query.raisedBy}
+                                    <strong>Raised By:</strong> <span className="notranslate">{typeof query.raisedBy === 'object' ? (query.raisedBy.name || query.raisedBy.username || 'Officer') : query.raisedBy}</span>
                                 </span>
                             )}
                         </div>
@@ -271,7 +360,7 @@ const NOCQueries = () => {
                         Officer's Query:
                     </p>
                     <p style={{ margin: 0, fontSize: '0.95rem', color: isPending ? '#7f1d1d' : '#1e3a8a', lineHeight: '1.6' }}>
-                        {query.message}
+                        {query.query || query.message}
                     </p>
                     <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: '#64748b', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
                         <span>
@@ -287,18 +376,18 @@ const NOCQueries = () => {
                 </div>
 
                 {/* Show existing response if already replied */}
-                {query.userResponse && (
+                {query.response && (
                     <div style={{ background: '#f0fdf4', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid #10b981', marginBottom: '1rem' }}>
                         <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', fontWeight: 'bold', color: '#065f46' }}>
                             Your Response:
                         </p>
                         <p style={{ margin: 0, fontSize: '0.95rem', color: '#047857', lineHeight: '1.6' }}>
-                            {query.userResponse.response}
+                            {query.response}
                         </p>
-                        {query.userResponse.documentUrl && (
+                        {query.responseDocument && (
                             <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: '#dcfce7', borderRadius: '6px' }}>
                                 <a
-                                    href={query.userResponse.documentUrl}
+                                    href={`${nocApplicationService.baseUrl}${query.responseDocument.filePath}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-blue"
@@ -307,13 +396,13 @@ const NOCQueries = () => {
                                     <span style={{ fontSize: '1.2rem' }}>📎</span>
                                     <div>
                                         <div style={{ fontWeight: 'bold' }}>Attached Document</div>
-                                        <div style={{ fontSize: '0.85rem', color: '#16a34a' }}>{query.userResponse.documentName}</div>
+                                        <div style={{ fontSize: '0.85rem', color: '#16a34a' }}>{query.responseDocument.fileName}</div>
                                     </div>
                                 </a>
                             </div>
                         )}
                         <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: '#064e3b' }}>
-                            <strong>Submitted On:</strong> {new Date(query.userResponse.submittedAt).toLocaleDateString('en-IN', {
+                            <strong>Submitted On:</strong> {new Date(query.respondedAt).toLocaleDateString('en-IN', {
                                 year: 'numeric',
                                 month: 'long',
                                 day: 'numeric',
@@ -350,7 +439,7 @@ const NOCQueries = () => {
                             ⚠️ Action Required - Submit Your Response
                         </h4>
                         <textarea
-                            className="bhuneer-input"
+                            className="form-input"
                             rows="5"
                             placeholder="Provide a detailed response addressing all points raised by the officer. Be specific and include relevant technical details, calculations, or explanations as needed..."
                             value={currentReply}
@@ -359,7 +448,7 @@ const NOCQueries = () => {
                         />
 
                         <div style={{ marginBottom: '1rem' }}>
-                            <label className="bhuneer-label" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                            <label className="form-label" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
                                 Upload Supporting Documents (Optional)
                             </label>
                             <div className="file-upload-input-group">
@@ -389,7 +478,22 @@ const NOCQueries = () => {
 
                         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', alignItems: 'center' }}>
                             <button
-                                className="bhuneer-secondary-btn"
+                                className="btn-primary"
+                                onClick={() => handleJoinConsultation(query)}
+                                style={{
+                                    padding: '0.75rem 1.5rem',
+                                    background: '#0ea5e9',
+                                    border: 'none',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    marginRight: 'auto'
+                                }}
+                            >
+                                📞 Talk to Officer (Online)
+                            </button>
+                            <button
+                                className="btn-secondary"
                                 onClick={() => {
                                     setReplyText(prev => ({ ...prev, [query.queryId]: '' }));
                                     setUploadingFile(prev => ({ ...prev, [query.queryId]: null }));
@@ -399,7 +503,7 @@ const NOCQueries = () => {
                                 Clear Form
                             </button>
                             <button
-                                className="bhuneer-submit-btn"
+                                className="btn-primary"
                                 onClick={() => handleSubmitReply(query.queryId)}
                                 disabled={isSubmitting || !currentReply.trim()}
                                 style={{ padding: '0.75rem 2rem' }}
@@ -434,220 +538,204 @@ const NOCQueries = () => {
     };
 
     return (
-        <div className="noc-portal">
-            <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
-            <button className="sidebar-toggle-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
-            <PublicHeader/>
-            <div className="main-content" style={{ marginLeft: window.innerWidth >= 1024 ? '280px' : '0' }}>
-                <div className="page-gradient-header"></div>
+        <LayoutWithSidebar defaultCollapsed={true} showSidebar={true}>
+            <div className="content-container">
+                <div className="breadcrumb">
+                    <Link to="/noc/dashboard">Dashboard</Link>
+                    <span className="separator">›</span>
+                    <span className="current">Queries</span>
+                </div>
 
-                <div className="content-container">
-                    <div className="breadcrumb">
-                        <Link to="/noc/dashboard">Dashboard</Link>
-                        <span className="separator">›</span>
-                        <span className="current">Queries</span>
-                    </div>
+                <div className="page-title-section">
+                    <h1 className="page-main-title">📋 Evaluation Queries</h1>
+                    <p className="page-subtitle">
+                        View and respond to queries raised by CGWA officers during application evaluation
+                    </p>
+                </div>
 
-                    <div className="page-title-section">
-                        <h1 className="page-main-title">📝 Evaluation Queries</h1>
-                        <p className="page-subtitle">
-                            View and respond to queries raised by CGWA officers during application evaluation
-                        </p>
-                    </div>
-
-                    {/* Statistics Bar */}
+                {/* Statistics Bar */}
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '1rem',
+                    marginBottom: '2rem',
+                    padding: '0 2rem'
+                }}>
                     <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                        gap: '1rem',
-                        marginBottom: '2rem',
-                        padding: '0 2rem'
+                        background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
+                        padding: '1.5rem',
+                        borderRadius: '12px',
+                        border: '2px solid #fca5a5'
                     }}>
-                        <div style={{
-                            background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
-                            padding: '1.5rem',
-                            borderRadius: '12px',
-                            border: '2px solid #fca5a5'
-                        }}>
-                            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#991b1b' }}>
-                                {DUMMY_QUERIES.filter(q => q.status === 'OPEN').length}
-                            </div>
-                            <div style={{ fontSize: '0.9rem', color: '#7f1d1d', fontWeight: 'bold' }}>
-                                Pending Replies
-                            </div>
+                        <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#991b1b' }}>
+                            {stats.pending}
                         </div>
-                        <div style={{
-                            background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-                            padding: '1.5rem',
-                            borderRadius: '12px',
-                            border: '2px solid #fcd34d'
-                        }}>
-                            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#92400e' }}>
-                                {DUMMY_QUERIES.filter(q => q.status === 'RESPONDED').length}
-                            </div>
-                            <div style={{ fontSize: '0.9rem', color: '#78350f', fontWeight: 'bold' }}>
-                                Under Review
-                            </div>
-                        </div>
-                        <div style={{
-                            background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
-                            padding: '1.5rem',
-                            borderRadius: '12px',
-                            border: '2px solid #6ee7b7'
-                        }}>
-                            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#065f46' }}>
-                                {DUMMY_QUERIES.filter(q => q.status === 'RESOLVED').length}
-                            </div>
-                            <div style={{ fontSize: '0.9rem', color: '#064e3b', fontWeight: 'bold' }}>
-                                Resolved
-                            </div>
-                        </div>
-                        <div style={{
-                            background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
-                            padding: '1.5rem',
-                            borderRadius: '12px',
-                            border: '2px solid #93c5fd'
-                        }}>
-                            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1e3a8a' }}>
-                                {DUMMY_QUERIES.length}
-                            </div>
-                            <div style={{ fontSize: '0.9rem', color: '#1e40af', fontWeight: 'bold' }}>
-                                Total Queries
-                            </div>
+                        <div style={{ fontSize: '0.9rem', color: '#7f1d1d', fontWeight: 'bold' }}>
+                            Pending Replies
                         </div>
                     </div>
-
-                    {/* Filter Tabs */}
-                    <div style={{ marginBottom: '2rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', padding: '0 2rem' }}>
-                        <button
-                            className={filter === 'all' ? 'bhuneer-submit-btn' : 'bhuneer-secondary-btn'}
-                            onClick={() => setFilter('all')}
-                            style={{ padding: '0.75rem 1.5rem', fontWeight: 'bold' }}
-                        >
-                            📊 All Queries ({DUMMY_QUERIES.length})
-                        </button>
-                        <button
-                            className={filter === 'pending' ? 'bhuneer-submit-btn' : 'bhuneer-secondary-btn'}
-                            onClick={() => setFilter('pending')}
-                            style={{ padding: '0.75rem 1.5rem', fontWeight: 'bold' }}
-                        >
-                            ⚠️ Pending ({DUMMY_QUERIES.filter(q => q.status === 'OPEN').length})
-                        </button>
-                        <button
-                            className={filter === 'resolved' ? 'bhuneer-submit-btn' : 'bhuneer-secondary-btn'}
-                            onClick={() => setFilter('resolved')}
-                            style={{ padding: '0.75rem 1.5rem', fontWeight: 'bold' }}
-                        >
-                            ✅ Resolved ({DUMMY_QUERIES.filter(q => q.status === 'RESOLVED').length})
-                        </button>
-                    </div>
-
-                    <div style={{ padding: '0 2rem' }}>
-                        <div className="dashboard-card" style={{ maxWidth: '1200px', margin: '0 auto' }}>
-                            <div className="card-title-bar" style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)' }}>
-                                <h2 className="card-main-title" style={{ color: 'white' }}>
-                                    {filter === 'pending' ? '⚠️ Pending Queries - Action Required' :
-                                        filter === 'resolved' ? '✅ Resolved Queries' :
-                                            '📋 All Queries'}
-                                </h2>
-                                {pendingCount > 0 && filter !== 'resolved' && (
-                                    <span style={{
-                                        background: '#fef3c7',
-                                        color: '#92400e',
-                                        padding: '0.5rem 1rem',
-                                        borderRadius: '20px',
-                                        fontSize: '0.9rem',
-                                        fontWeight: 'bold',
-                                        marginLeft: '1rem'
-                                    }}>
-                                        🔔 {pendingCount} Urgent Action{pendingCount > 1 ? 's' : ''} Required
-                                    </span>
-                                )}
-                            </div>
-
-                            <div className="card-content-area" style={{ padding: '0' }}>
-                                {loading ? (
-                                    <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
-                                        <div className="spinner" style={{
-                                            margin: '0 auto 1rem',
-                                            width: '50px',
-                                            height: '50px',
-                                            border: '5px solid #e5e7eb',
-                                            borderTop: '5px solid #3b82f6',
-                                            borderRadius: '50%',
-                                            animation: 'spin 1s linear infinite'
-                                        }} />
-                                        <p style={{ fontSize: '1.1rem' }}>Loading queries...</p>
-                                    </div>
-                                ) : queries.length === 0 ? (
-                                    <div style={{ padding: '4rem 2rem', textAlign: 'center', color: '#64748b' }}>
-                                        <div style={{ fontSize: '5rem', marginBottom: '1rem' }}>📭</div>
-                                        <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.5rem', color: '#1e293b' }}>
-                                            No Queries Found
-                                        </h3>
-                                        <p style={{ margin: 0, fontSize: '1.1rem' }}>
-                                            {filter === 'pending'
-                                                ? '🎉 Great! You have no pending queries at the moment.'
-                                                : filter === 'resolved'
-                                                    ? 'No resolved queries to display.'
-                                                    : 'No queries have been raised for your applications yet.'}
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div style={{
-                                            padding: '1rem 1.5rem',
-                                            background: '#f8fafc',
-                                            borderBottom: '2px solid #e2e8f0',
-                                            fontSize: '0.9rem',
-                                            color: '#64748b',
-                                            fontWeight: 'bold'
-                                        }}>
-                                            Showing {queries.length} {queries.length === 1 ? 'query' : 'queries'}
-                                        </div>
-                                        {queries.map(query => renderQueryItem(query))}
-                                    </>
-                                )}
-                            </div>
+                    <div style={{
+                        background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                        padding: '1.5rem',
+                        borderRadius: '12px',
+                        border: '2px solid #fcd34d'
+                    }}>
+                        <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#92400e' }}>
+                            {stats.underReview}
+                        </div>
+                        <div style={{ fontSize: '0.9rem', color: '#78350f', fontWeight: 'bold' }}>
+                            Under Review
                         </div>
                     </div>
-
-                    {/* Help Section */}
-                    <div style={{ padding: '2rem', marginTop: '2rem' }}>
-                        <div style={{
-                            maxWidth: '1200px',
-                            margin: '0 auto',
-                            background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
-                            padding: '2rem',
-                            borderRadius: '12px',
-                            border: '2px solid #93c5fd'
-                        }}>
-                            <h3 style={{ margin: '0 0 1rem', color: '#1e40af', fontSize: '1.25rem' }}>
-                                💡 Important Guidelines for Responding to Queries
-                            </h3>
-                            <ul style={{ margin: 0, paddingLeft: '1.5rem', color: '#1e3a8a', lineHeight: '1.8' }}>
-                                <li><strong>Be Comprehensive:</strong> Address all points raised by the officer in detail</li>
-                                <li><strong>Provide Evidence:</strong> Attach relevant documents, reports, or certificates to support your response</li>
-                                <li><strong>Be Timely:</strong> Respond to pending queries within 7 days to avoid delays in application processing</li>
-                                <li><strong>Use Technical Details:</strong> Include calculations, specifications, and technical data where applicable</li>
-                                <li><strong>Professional Communication:</strong> Maintain formal and respectful language in all responses</li>
-                                <li><strong>Document Quality:</strong> Ensure uploaded documents are clear, legible, and properly formatted (PDF preferred)</li>
-                            </ul>
+                    <div style={{
+                        background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
+                        padding: '1.5rem',
+                        borderRadius: '12px',
+                        border: '2px solid #6ee7b7'
+                    }}>
+                        <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#065f46' }}>
+                            {stats.resolved}
+                        </div>
+                        <div style={{ fontSize: '0.9rem', color: '#064e3b', fontWeight: 'bold' }}>
+                            Resolved
+                        </div>
+                    </div>
+                    <div style={{
+                        background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
+                        padding: '1.5rem',
+                        borderRadius: '12px',
+                        border: '2px solid #93c5fd'
+                    }}>
+                        <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1e3a8a' }}>
+                            {stats.total}
+                        </div>
+                        <div style={{ fontSize: '0.9rem', color: '#1e40af', fontWeight: 'bold' }}>
+                            Total Queries
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <style jsx>{`
-                @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                }
-            `}</style>
+                {/* Filter Tabs */}
+                <div style={{ marginBottom: '2rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', padding: '0 2rem' }}>
+                    <button
+                        className={filter === 'all' ? 'btn-primary' : 'btn-secondary'}
+                        onClick={() => setFilter('all')}
+                        style={{ padding: '0.75rem 1.5rem', fontWeight: 'bold' }}
+                    >
+                        📊 All Queries ({stats.total})
+                    </button>
+                    <button
+                        className={filter === 'pending' ? 'btn-primary' : 'btn-secondary'}
+                        onClick={() => setFilter('pending')}
+                        style={{ padding: '0.75rem 1.5rem', fontWeight: 'bold' }}
+                    >
+                        ⚠️ Pending ({stats.pending})
+                    </button>
+                    <button
+                        className={filter === 'resolved' ? 'btn-primary' : 'btn-secondary'}
+                        onClick={() => setFilter('resolved')}
+                        style={{ padding: '0.75rem 1.5rem', fontWeight: 'bold' }}
+                    >
+                        ✅ Resolved ({stats.resolved})
+                    </button>
+                </div>
 
-            <NOCFooter />
-        </div>
+                <div style={{ padding: '0 2rem' }}>
+                    <div className="dashboard-card" style={{ maxWidth: '1200px', margin: '0 auto' }}>
+                        <div className="card-title-bar" style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)' }}>
+                            <h2 className="card-main-title" style={{ color: 'white' }}>
+                                {filter === 'pending' ? '⚠️ Pending Queries - Action Required' :
+                                    filter === 'resolved' ? '✅ Resolved Queries' :
+                                        '📋 All Queries'}
+                            </h2>
+                            {stats.pending > 0 && filter !== 'resolved' && (
+                                <span style={{
+                                    background: '#fef3c7',
+                                    color: '#92400e',
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '20px',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 'bold',
+                                    marginLeft: '1rem'
+                                }}>
+                                    🔔 {stats.pending} Urgent Action{stats.pending > 1 ? 's' : ''} Required
+                                </span>
+                            )}
+                        </div>
+
+                        <div className="card-content-area" style={{ padding: '0' }}>
+                            {loading ? (
+                                <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
+                                    <div className="spinner" style={{
+                                        margin: '0 auto 1rem',
+                                        width: '50px',
+                                        height: '50px',
+                                        border: '5px solid #e5e7eb',
+                                        borderTop: '5px solid #3b82f6',
+                                        borderRadius: '50%',
+                                        animation: 'spin 1s linear infinite'
+                                    }} />
+                                    <p style={{ fontSize: '1.1rem' }}>Loading queries...</p>
+                                </div>
+                            ) : filteredQueries.length === 0 ? (
+                                <div style={{ padding: '4rem 2rem', textAlign: 'center', color: '#64748b' }}>
+                                    <div style={{ fontSize: '5rem', marginBottom: '1rem' }}>📥</div>
+                                    <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.5rem', color: '#1e293b' }}>
+                                        No Queries Found
+                                    </h3>
+                                    <p style={{ margin: 0, fontSize: '1.1rem' }}>
+                                        {filter === 'pending'
+                                            ? '🎉 Great! You have no pending queries at the moment.'
+                                            : filter === 'resolved'
+                                                ? 'No resolved queries to display.'
+                                                : 'No queries have been raised for your applications yet.'}
+                                    </p>
+                                </div>
+                            ) : (
+                                <>
+                                    <div style={{
+                                        padding: '1rem 1.5rem',
+                                        background: '#f8fafc',
+                                        borderBottom: '2px solid #e2e8f0',
+                                        fontSize: '0.9rem',
+                                        color: '#64748b',
+                                        fontWeight: 'bold'
+                                    }}>
+                                        Showing {filteredQueries.length} {filteredQueries.length === 1 ? 'query' : 'queries'}
+                                    </div>
+                                    {filteredQueries.map(query => renderQueryItem(query))}
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Help Section */}
+                <div style={{ padding: '2rem', marginTop: '2rem' }}>
+                    <div style={{
+                        maxWidth: '1200px',
+                        margin: '0 auto',
+                        background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                        padding: '2rem',
+                        borderRadius: '12px',
+                        border: '2px solid #93c5fd'
+                    }}>
+                        <h3 style={{ margin: '0 0 1rem', color: '#1e40af', fontSize: '1.25rem' }}>
+                            💡 Important Guidelines for Responding to Queries
+                        </h3>
+                        <ul style={{ margin: 0, paddingLeft: '1.5rem', color: '#1e3a8a', lineHeight: '1.8' }}>
+                            <li><strong>Be Comprehensive:</strong> Address all points raised by the officer in detail</li>
+                            <li><strong>Provide Evidence:</strong> Attach relevant documents, reports, or certificates to support your response</li>
+                            <li><strong>Be Timely:</strong> Respond to pending queries within 7 days to avoid delays in application processing</li>
+                            <li><strong>Use Technical Details:</strong> Include calculations, specifications, and technical data where applicable</li>
+                            <li><strong>Professional Communication:</strong> Maintain formal and respectful language in all responses</li>
+                            <li><strong>Document Quality:</strong> Ensure uploaded documents are clear, legible, and properly formatted (PDF preferred)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div></LayoutWithSidebar>
     );
 };
 
 export default NOCQueries;
+

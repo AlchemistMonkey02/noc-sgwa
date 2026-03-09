@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import NOCHeader from './components/NOCHeader';
 import NOCFooter from './components/NOCFooter';
@@ -20,6 +21,7 @@ import { getDistricts } from './utils/blockClassification';
 
 const RigNOCApplication = () => {
     const navigate = useNavigate();
+    const { success: toastSuccess } = useToast();
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState(initialRigFormData);
     const [errors, setErrors] = useState({});
@@ -89,7 +91,7 @@ const RigNOCApplication = () => {
             latitude: '28.6139',
             longitude: '77.2090'
         }));
-        alert('Pinned location successfully (Mock)');
+        toastSuccess('Pinned location successfully (Mock)');
     };
 
     const handleSubmit = () => {
@@ -108,7 +110,7 @@ const RigNOCApplication = () => {
         };
 
         console.log('Rig Application Submitted:', submissionData);
-        alert(`Application Submitted Successfully!\nApplication ID: ${applicationId}`);
+        toastSuccess(`Application Submitted Successfully! Application ID: ${applicationId}`);
         navigate('/noc/dashboard');
     };
 

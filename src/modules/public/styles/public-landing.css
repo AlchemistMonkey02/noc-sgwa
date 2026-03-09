@@ -1,29 +1,25 @@
+/* =========================================
+   PUBLIC LANDING PAGE - ENTERPRISE SAAS THEME
+   ========================================= */
+
 :root {
-    /* Blue Theme Colors */
-    --gov-blue-primary: #1e3a8a;
-    /* Deep Blue */
-    --gov-blue-secondary: #2563eb;
-    /* Bright Blue */
-    --gov-blue-light: #eff6ff;
-    /* Very Light Blue */
-    --gov-blue-hover: #1d4ed8;
-    --text-main: #0f172a;
-    --text-secondary: #475569;
-    --border-color: #cbd5e1;
-    --white: #ffffff;
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    --font-heading: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    --font-body: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --saas-bg: #f8fafc;
+    --saas-surface: #ffffff;
+    --saas-border: #e2e8f0;
+    --saas-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --saas-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    --saas-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --saas-shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-body {
+body.gov-portal-body {
     margin: 0;
-    font-family: var(--font-body);
-    background-color: var(--gov-blue-light);
-    color: var(--text-main);
+    font-family: 'Inter', var(--font-sans);
+    /* Ensure a very clean sans-serif */
+    background-color: var(--saas-bg);
+    color: var(--gray-800);
     overflow-x: hidden;
-    /* Prevent horizontal scroll */
+    min-height: 100vh;
 }
 
 .gov-portal {
@@ -32,47 +28,138 @@ body {
     flex-direction: column;
 }
 
+/* =========================================
+   HERO SECTION (Clean & Authoritative)
+   ========================================= */
+.landing-hero {
+    background-color: #0f172a;
+    /* Slate 900 for high contrast */
+    background-image: radial-gradient(circle at top right, rgba(30, 58, 138, 0.3), transparent 400px);
+    padding: var(--space-12) var(--space-6);
+    text-align: center;
+    color: var(--white);
+    position: relative;
+    border-bottom: 1px solid var(--gray-800);
+    margin-bottom: var(--space-10);
+}
+
+.hero-content {
+    max-width: 900px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 2;
+}
+
+.hero-title {
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    margin: 0 0 var(--space-4) 0;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hero-subtitle {
+    font-size: var(--text-lg);
+    color: var(--gray-400);
+    max-width: 650px;
+    margin: 0 auto var(--space-8) auto;
+    line-height: 1.6;
+    font-weight: 400;
+}
+
+.hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-6);
+    flex-wrap: wrap;
+    margin-top: var(--space-8);
+}
+
+.stat-item {
+    padding: var(--space-4) var(--space-8);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(4px);
+    /* Very subtle blur here only */
+}
+
+.stat-value {
+    display: block;
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: -0.02em;
+}
+
+.stat-label {
+    font-size: var(--text-xs);
+    color: var(--gray-400);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+    margin-top: var(--space-1);
+}
 
 /* =========================================
-   MAIN LAYOUT (3 Columns)
+   MAIN LAYOUT (2-Column + Floating Login)
    ========================================= */
 .portal-main {
     display: grid;
-    grid-template-columns: 280px 1fr 320px;
-    gap: 2rem;
-    max-width: 1400px;
-    margin: 180px auto 2rem;
-    /* Adjusted for Fixed Header */
-    padding: 0 1rem;
+    grid-template-columns: 280px 1fr 380px;
+    gap: var(--space-8);
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 var(--space-6) var(--space-12) var(--space-6);
     width: 100%;
     box-sizing: border-box;
     flex: 1;
-    /* Expand to fill space */
 }
 
 /* =========================================
-   SIDEBARS (Left & Right commonalities)
+   ENTERPRISE CARDS & PANELS
    ========================================= */
 .sidebar-section,
+.login-panel,
+.notifications-bar {
+    background: var(--saas-surface);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    margin-bottom: var(--space-6);
+    box-shadow: var(--saas-shadow-md);
+    border: 1px solid var(--saas-border);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
 .login-panel {
-    background: var(--white);
-    border-radius: 8px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--border-color);
+    /* Make login panel slightly elevated to indicate importance */
+    box-shadow: var(--saas-shadow-lg);
+    border-top: 4px solid var(--color-primary-600);
 }
 
 .sidebar-title,
-.login-title {
-    font-size: 1.1rem;
-    color: var(--gov-blue-primary);
-    margin-top: 0;
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 2px solid var(--gov-blue-light);
+.login-title,
+.notif-bar-title {
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+    margin: 0 0 var(--space-5) 0;
     font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 0.1em;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    border-bottom: 1px solid var(--gray-100);
+    padding-bottom: var(--space-3);
+}
+
+.sidebar-title span,
+.notif-bar-title span {
+    font-size: 1.1em;
 }
 
 /* Left Sidebar Menu */
@@ -83,23 +170,50 @@ body {
 }
 
 .sidebar-menu li {
-    margin-bottom: 0.75rem;
+    margin-bottom: var(--space-1);
 }
 
 .sidebar-menu li a {
     text-decoration: none;
-    color: var(--text-main);
-    font-size: 0.95rem;
+    color: var(--gray-700);
+    font-size: var(--text-sm);
     display: block;
-    padding: 0.5rem;
-    border-radius: 4px;
-    transition: all 0.2s;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+    font-weight: 500;
 }
 
 .sidebar-menu li a:hover {
-    color: var(--gov-blue-secondary);
-    background: var(--gov-blue-light);
-    transform: translateX(5px);
+    color: var(--color-primary-700);
+    background: var(--color-primary-50);
+}
+
+/* Sticky Notices */
+.sticky-notices {
+    position: sticky;
+    top: 100px;
+    background: var(--white);
+    border: 1px solid var(--color-warning-200);
+}
+
+.notice-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.notice-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: var(--color-warning-50);
+    border-radius: var(--radius-md);
+    font-size: var(--text-xs);
+    line-height: 1.5;
+    color: var(--gray-800);
+    border-left: 3px solid var(--color-warning-500);
 }
 
 /* =========================================
@@ -108,478 +222,295 @@ body {
 .center-content {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: var(--space-8);
 }
 
-.section-title,
-.notif-bar-title {
-    font-size: 1.5rem;
-    color: var(--gov-blue-primary);
-    margin-top: 0;
-    margin-bottom: 1.5rem;
+.section-title {
+    font-size: var(--text-xl);
     font-weight: 700;
-    border-left: 5px solid var(--gov-blue-secondary);
-    padding-left: 1rem;
+    color: var(--gray-900);
+    margin: 0 0 var(--space-5) 0;
+    letter-spacing: -0.01em;
 }
 
-/* Services Grid */
 .services-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: var(--space-5);
 }
 
 .service-card-gov {
-    background: var(--white);
-    border-radius: 12px;
-    padding: 1.5rem 1rem;
-    text-align: center;
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--border-color);
+    background: var(--saas-surface);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    box-shadow: var(--saas-shadow-sm);
+    border: 1px solid var(--saas-border);
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 1rem;
+    align-items: flex-start;
+    /* Left align for SaaS feel */
+    position: relative;
+    overflow: hidden;
 }
 
 .service-card-gov:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.15);
-    /* Blue shadow */
-    border-color: var(--gov-blue-secondary);
+    transform: translateY(-4px);
+    box-shadow: var(--saas-shadow-hover);
+    border-color: var(--color-primary-300);
 }
 
 .service-icon-gov {
-    font-size: 2.5rem;
-    background: var(--gov-blue-light);
-    width: 70px;
-    height: 70px;
+    font-size: 2rem;
+    background: var(--color-primary-50);
+    color: var(--color-primary-600);
+    width: 48px;
+    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
-    margin-bottom: 0.5rem;
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-4);
+    transition: all 0.2s ease;
+}
+
+.service-card-gov:hover .service-icon-gov {
+    background: var(--color-primary-100);
+    color: var(--color-primary-700);
+    transform: scale(1.05);
 }
 
 .service-card-gov h3 {
-    font-size: 0.95rem;
+    font-size: var(--text-base);
+    margin: 0 0 var(--space-2) 0;
+    color: var(--gray-900);
+    font-weight: 600;
+}
+
+.service-description {
+    font-size: var(--text-sm);
+    color: var(--gray-500);
     margin: 0;
-    color: var(--text-main);
-    font-weight: 600;
-    line-height: 1.4;
+    line-height: 1.5;
 }
 
-/* Notifications Bar */
-.notifications-bar {
-    background: var(--white);
-    border-radius: 8px;
-    padding: 1.5rem;
-    border: 1px solid var(--border-color);
-    box-shadow: var(--shadow-sm);
+/* Add a subtle arrow indicator on hover */
+.service-card-gov::after {
+    content: '→';
+    position: absolute;
+    bottom: var(--space-6);
+    right: var(--space-6);
+    color: var(--color-primary-600);
+    font-weight: bold;
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 0.2s ease;
 }
 
-.notif-items {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+.service-card-gov:hover::after {
+    opacity: 1;
+    transform: translateX(0);
 }
 
-.notif-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem;
-    background: var(--gov-blue-light);
-    border-radius: 6px;
-    font-size: 0.95rem;
-    border-left: 3px solid var(--gov-blue-secondary);
-}
-
-.notif-icon {
-    font-size: 1.2rem;
-}
-
-.view-all-link {
-    display: inline-block;
-    margin-top: 1rem;
-    color: var(--gov-blue-secondary);
-    font-weight: 600;
-    text-decoration: none;
-}
 
 /* =========================================
-   LOGIN PANEL (Right Sidebar)
+   LOGIN PANEL (Form Styles)
    ========================================= */
-.login-panel {
-    background: linear-gradient(to bottom, var(--white), #f8fafc);
-    position: sticky;
-    top: 1rem;
-    /* Sticky login on scroll */
-}
-
 .login-form-gov {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: var(--space-4);
 }
 
 .form-field {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: var(--space-2);
 }
 
 .form-field label {
-    font-size: 0.9rem;
+    font-size: var(--text-xs);
     font-weight: 600;
-    color: var(--text-secondary);
+    color: var(--gray-600);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .gov-input,
 .gov-select {
-    padding: 0.75rem;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    font-size: 0.95rem;
+    padding: var(--space-3) var(--space-3);
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
     width: 100%;
+    transition: all 0.2s ease;
+    background: var(--white);
+    color: var(--gray-900);
     box-sizing: border-box;
-    /* Important for padding */
-    transition: border 0.2s;
 }
 
 .gov-input:focus,
 .gov-select:focus {
-    border-color: var(--gov-blue-secondary);
+    border-color: var(--color-primary-500);
     outline: none;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    box-shadow: 0 0 0 3px var(--color-primary-100);
+}
+
+.login-btn-gov {
+    background: var(--color-primary-600);
+    color: var(--white);
+    padding: var(--space-3);
+    border: none;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    cursor: pointer;
+    font-size: var(--text-sm);
+    transition: background 0.2s ease;
+    margin-top: var(--space-2);
+}
+
+.login-btn-gov:hover {
+    background: var(--color-primary-700);
+}
+
+.create-account-btn {
+    display: inline-block;
+    width: 100%;
+    padding: var(--space-3);
+    background: var(--white);
+    color: var(--gray-700);
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    font-size: var(--text-sm);
+    text-decoration: none;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.create-account-btn:hover {
+    background: var(--gray-50);
+    color: var(--gray-900);
+    border-color: var(--gray-400);
+}
+
+.login-divider {
+    text-align: center;
+    margin: var(--space-4) 0;
+    position: relative;
+}
+
+.login-divider span {
+    background: var(--white);
+    padding: 0 var(--space-2);
+    color: var(--gray-400);
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    position: relative;
+    z-index: 1;
+}
+
+.login-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--gray-200);
+}
+
+.helper-text {
+    font-size: var(--text-xs);
+    color: var(--gray-500);
+    margin: 0 0 var(--space-3) 0;
+    text-align: center;
+}
+
+.login-links {
+    margin-top: var(--space-4);
+    text-align: center;
+}
+
+.login-links a {
+    font-size: var(--text-xs);
+    color: var(--color-primary-600);
+    font-weight: 500;
 }
 
 /* Captcha Styling */
 .captcha-container {
     display: flex;
-    gap: 10px;
-    align-items: center;
+    flex-direction: column;
+    gap: var(--space-2);
 }
 
 .captcha-strip {
-    background: linear-gradient(45deg, #e2e8f0, #cbd5e1);
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
+    background: var(--gray-100);
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    height: 50px;
     display: flex;
-    gap: 8px;
-    font-family: monospace;
-    font-size: 1.2rem;
-    font-weight: bold;
-    letter-spacing: 2px;
-    color: var(--text-main);
-    user-select: none;
-    border: 1px solid #94a3b8;
-}
-
-.captcha-strip span {
-    display: inline-block;
-    transform: rotate(var(--r));
-}
-
-.login-btn-gov {
-    background: linear-gradient(135deg, var(--gov-blue-secondary), var(--gov-blue-primary));
-    color: var(--white);
-    padding: 0.85rem;
-    border: none;
-    border-radius: 6px;
-    font-weight: 700;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    font-size: 1rem;
-    margin-top: 0.5rem;
-    transition: opacity 0.2s;
 }
 
-.login-btn-gov:hover {
-    opacity: 0.9;
-}
-
-.login-links {
-    margin-top: 1.5rem;
+.captcha-input-area input {
     text-align: center;
-    font-size: 0.9rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.login-links a {
-    color: var(--gov-blue-secondary);
-    text-decoration: none;
+    letter-spacing: 2px;
     font-weight: 600;
 }
+
 
 /* =========================================
    FOOTER
    ========================================= */
 .portal-footer {
-    background: var(--gov-blue-primary);
-    color: var(--white);
+    background: var(--white);
+    border-top: 1px solid var(--gray-200);
+    color: var(--gray-500);
     text-align: center;
-    padding: 1.5rem;
+    padding: var(--space-8) var(--space-6);
     margin-top: auto;
-    font-size: 0.9rem;
-    border-top: 4px solid var(--gov-blue-secondary);
 }
 
 .portal-footer p {
-    margin: 0;
-    opacity: 0.9;
+    max-width: 800px;
+    margin: 0 auto;
+    font-size: var(--text-xs);
+    line-height: 1.6;
+}
+
+.portal-footer strong {
+    color: var(--gray-700);
 }
 
 /* =========================================
-   LEGACY / OTHER PAGES SUPPORT (Restoring Rig Page Styles)
+   RESPONSIVE DESIGN
    ========================================= */
-.page-container {
-    flex: 1;
-}
-
-.hero-section {
-    /* Used in RigRegistrationInfo */
-    text-align: center;
-    color: var(--white);
-    padding: 4rem 2rem;
-    border-radius: 0 0 20px 20px;
-    /* Background is typically set inline in the component to gradients */
-}
-
-/* Provide default if inline overrides are missing, but usually they are inline */
-.content-wrapper {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem;
-}
-
-/* Stats Row for Rig Info */
-.stats-row {
-    display: flex;
-    gap: 2rem;
-    margin-bottom: 4rem;
-}
-
-/* Responsive Handling */
-/* Responsive Handling */
-@media (max-width: 1024px) {
+@media (max-width: 1200px) {
     .portal-main {
-        grid-template-columns: 1fr;
-        /* Switch to single column stack */
-        margin-top: 120px;
-        /* Reduced from 180px */
-        gap: 1.5rem;
-    }
-
-    .left-sidebar,
-    .right-sidebar {
-        order: 2;
-        /* Move sidebars below content or adjust as needed */
-    }
-
-    /* For mobile: Stack everything vertically */
-    .center-content {
-        order: 1;
+        grid-template-columns: 1fr 350px;
+        /* Hide left sidebar on medium screens */
     }
 
     .left-sidebar {
-        order: 2;
+        display: none;
+    }
+}
+
+@media (max-width: 850px) {
+    .portal-main {
+        grid-template-columns: 1fr;
+        padding: 0 var(--space-4) var(--space-8) var(--space-4);
     }
 
     .login-panel {
-        order: 3;
-        /* Login at bottom or top depending on preference, usually top for access */
         position: static;
-        /* Remove sticky on mobile */
-        margin-bottom: 2rem;
-    }
-
-    .right-sidebar {
-        order: 3;
-    }
-}
-
-@media (max-width: 768px) {
-    .portal-main {
-        margin-top: 100px;
-        /* Further reduced */
-    }
-
-    .services-grid {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-        /* Smaller cards */
-        gap: 1rem;
-    }
-
-    .service-card-gov {
-        padding: 1rem;
-    }
-
-    .section-title {
-        font-size: 1.25rem;
-    }
-}
-
-/* =========================================
-   REUSABLE PUBLIC HEADER COMPONENT
-   (For pages using <PublicHeader /> like Services/Rig Info)
-   ========================================= */
-.public-header {
-    background: var(--white);
-    box-shadow: var(--shadow-md);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    width: 100%;
-}
-
-.header-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 2rem;
-    max-width: 1400px;
-    margin: 0 auto;
-}
-
-/* Logo Section */
-.header-logo {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    cursor: pointer;
-    text-decoration: none;
-}
-
-.logo-icon {
-    font-size: 2rem;
-    background: var(--gov-blue-light);
-    width: 45px;
-    height: 45px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    border: 2px solid var(--gov-blue-secondary);
-}
-
-.logo-text {
-    display: flex;
-    flex-direction: column;
-}
-
-.logo-title {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: var(--gov-blue-primary);
-    line-height: 1;
-}
-
-.logo-subtitle {
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    font-weight: 600;
-    letter-spacing: 0.5px;
-}
-
-/* Nav Links - Scoped to .public-header to avoid conflict */
-.public-header .header-nav {
-    display: flex;
-    gap: 2rem;
-    background: transparent;
-    /* Override main landing nav background */
-    padding: 0;
-}
-
-.public-header .nav-link {
-    color: var(--text-main);
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 0.95rem;
-    padding: 0.5rem;
-    transition: color 0.2s;
-}
-
-.public-header .nav-link:hover {
-    color: var(--gov-blue-secondary);
-    background: transparent;
-}
-
-/* Header Buttons */
-.header-actions {
-    display: flex;
-    gap: 1rem;
-}
-
-.header-btn {
-    padding: 0.6rem 1.25rem;
-    border-radius: 6px;
-    font-weight: 600;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: all 0.2s;
-}
-
-.header-btn.login {
-    background: transparent;
-    color: var(--gov-blue-primary);
-    border: 1px solid var(--gov-blue-primary);
-}
-
-.header-btn.login:hover {
-    background: var(--gov-blue-light);
-}
-
-.header-btn.register {
-    background: var(--gov-blue-primary);
-    color: var(--white);
-    border: 1px solid var(--gov-blue-primary);
-}
-
-.header-btn.register:hover {
-    background: var(--gov-blue-hover);
-}
-
-/* Mobile Toggle */
-.mobile-menu-toggle {
-    display: none;
-    /* Hidden by default on desktop */
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: var(--text-main);
-}
-
-@media (max-width: 768px) {
-    .public-header .header-nav {
-        display: none;
-        /* Hide nav on mobile initially */
-    }
-
-    .public-header .header-nav.mobile-open {
-        display: flex;
-        flex-direction: column;
-        position: absolute;
-        top: 100%;
-        left: 0;
-        width: 100%;
-        background: var(--white);
-        padding: 1rem;
-        box-shadow: var(--shadow-md);
-        border-top: 1px solid var(--border-color);
-    }
-
-    .mobile-menu-toggle {
-        display: block;
-    }
-
-    .header-actions {
-        display: none;
-        /* Could move to mobile menu if needed */
+        margin-top: var(--space-6);
     }
 }

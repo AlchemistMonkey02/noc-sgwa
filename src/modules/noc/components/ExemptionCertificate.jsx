@@ -109,120 +109,175 @@ const ExemptionCertificate = ({ formData, exemptionResult, onDownload, onSubmit 
     };
 
     return (
-        <div className="exemption-certificate-container">
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '20px' }}>
             {/* Success Banner */}
             <div style={{
-                background: 'linear-gradient(135deg, #d4edda 0%, #c3f0ca 100%)',
-                border: '3px solid #28a745',
-                borderRadius: '12px',
-                padding: '30px',
+                background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+                border: '1px solid #bbf7d0',
+                borderRadius: '16px',
+                padding: '40px',
                 textAlign: 'center',
-                marginBottom: '30px',
-                boxShadow: '0 4px 20px rgba(40, 167, 69, 0.2)'
+                marginBottom: '40px',
+                boxShadow: '0 10px 25px rgba(22, 163, 74, 0.1)'
             }}>
-                <div style={{ fontSize: '4rem', marginBottom: '15px' }}>🎉</div>
-                <h1 style={{ color: '#28a745', margin: '0 0 10px 0', fontSize: '2rem' }}>
+                <div style={{ fontSize: '4rem', marginBottom: '20px', animation: 'bounce 2s infinite' }}>🎉</div>
+                <h1 style={{ color: '#16a34a', margin: '0 0 12px 0', fontSize: '2.5rem', fontWeight: '800', letterSpacing: '-0.5px' }}>
                     CONGRATULATIONS!
                 </h1>
-                <h2 style={{ color: '#155724', margin: '0 0 15px 0', fontSize: '1.5rem' }}>
+                <h2 style={{ color: '#15803d', margin: '0 0 16px 0', fontSize: '1.5rem', fontWeight: '600' }}>
                     You are EXEMPT from NOC Application
                 </h2>
-                <p style={{ fontSize: '1.1rem', color: '#155724', margin: 0 }}>
+                <p style={{ fontSize: '1.15rem', color: '#166534', margin: 0, opacity: '0.9' }}>
                     {exemptionResult.message}
                 </p>
             </div>
 
             {/* Certificate Display */}
-            <div className="noc-card" style={{ marginBottom: '30px' }}>
-                <div className="noc-card-header" style={{ background: '#0d4a8f', color: 'white', fontSize: '1.2rem' }}>
-                    📜 Exemption Certificate
+            <div style={{
+                background: '#ffffff',
+                borderRadius: '16px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.05)',
+                marginBottom: '40px',
+                overflow: 'hidden'
+            }}>
+                <div style={{ background: '#0f172a', color: 'white', padding: '20px 30px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ fontSize: '1.5rem' }}>📜</span>
+                    <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '600' }}>Exemption Certificate Preview</h3>
                 </div>
-                <div className="noc-card-body" style={{ padding: '30px' }}>
+
+                <div style={{ padding: '40px' }}>
                     {/* Certificate Header */}
-                    <div style={{ textAlign: 'center', marginBottom: '25px', borderBottom: '2px solid #dee2e6', paddingBottom: '20px' }}>
-                        <h3 style={{ margin: '0 0 5px 0', color: '#0d4a8f' }}>EXEMPTION CERTIFICATE</h3>
-                        <p style={{ margin: '5px 0', color: '#6c757d' }}>State Groundwater Authority, Rajasthan</p>
-                        <div style={{ marginTop: '15px', display: 'flex', justifyContent: 'center', gap: '30px', fontSize: '0.9rem' }}>
-                            <div><strong>Certificate No:</strong> {certificateNumber}</div>
-                            <div><strong>Date:</strong> {issueDate}</div>
+                    <div style={{ textAlign: 'center', marginBottom: '35px', paddingBottom: '25px', borderBottom: '2px solid #f1f5f9' }}>
+                        <h3 style={{ margin: '0 0 8px 0', color: '#0f172a', fontSize: '1.8rem', fontWeight: '700', letterSpacing: '1px' }}>EXEMPTION CERTIFICATE</h3>
+                        <p style={{ margin: '0', color: '#64748b', fontSize: '1.1rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>State Groundwater Authority, Rajasthan</p>
+                        <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '40px', fontSize: '0.95rem', color: '#475569' }}>
+                            <div style={{ background: '#f8fafc', padding: '8px 16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}><strong>Certificate No:</strong> <span style={{ fontFamily: 'monospace', color: '#0f172a' }}>{certificateNumber}</span></div>
+                            <div style={{ background: '#f8fafc', padding: '8px 16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}><strong>Date:</strong> <span style={{ color: '#0f172a' }}>{issueDate}</span></div>
                         </div>
                     </div>
 
-                    {/* Applicant Details */}
-                    <div style={{ marginBottom: '20px' }}>
-                        <h4 style={{ color: '#0d4a8f', marginBottom: '10px' }}>Applicant Details</h4>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', padding: '15px', background: '#f8f9fa', borderRadius: '8px' }}>
-                            <div><strong>Name:</strong> {formData.applicantName || 'N/A'}</div>
-                            <div><strong>Organization:</strong> {formData.organizationName || 'Individual'}</div>
-                            <div><strong>Purpose:</strong> {formData.groundWaterUtilizationFor || 'N/A'}</div>
-                            <div><strong>Water Requirement:</strong> {formData.dailyWaterRequirement || 0} m³/day</div>
+                    {/* Information Grid */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginBottom: '35px' }}>
+                        {/* Applicant Details */}
+                        <div>
+                            <h4 style={{ color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Applicant Details</h4>
+                            <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', height: '100%' }}>
+                                <div style={{ marginBottom: '12px' }}><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Name</p><p style={{ margin: '2px 0 0 0', fontWeight: '600', color: '#0f172a', fontSize: '1.05rem' }}>{formData.applicantName || 'N/A'}</p></div>
+                                <div style={{ marginBottom: '12px' }}><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Organization</p><p style={{ margin: '2px 0 0 0', fontWeight: '500', color: '#334155' }}>{formData.organizationName || 'Individual'}</p></div>
+                                <div><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Purpose</p><p style={{ margin: '2px 0 0 0', fontWeight: '500', color: '#334155' }}>{formData.groundWaterUtilizationFor || 'N/A'}</p></div>
+                            </div>
+                        </div>
+
+                        {/* Location Details */}
+                        <div>
+                            <h4 style={{ color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Location & Technicals</h4>
+                            <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', height: '100%' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+                                    <div><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>State</p><p style={{ margin: '2px 0 0 0', fontWeight: '500', color: '#334155' }}>{formData.state || 'Rajasthan'}</p></div>
+                                    <div><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>District</p><p style={{ margin: '2px 0 0 0', fontWeight: '500', color: '#334155' }}>{formData.district || 'N/A'}</p></div>
+                                </div>
+                                <div style={{ marginBottom: '15px' }}><p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>Block/Tehsil</p><p style={{ margin: '2px 0 0 0', fontWeight: '500', color: '#334155' }}>{formData.block || 'N/A'}</p></div>
+                                <div style={{ position: 'relative' }}>
+                                    <p style={{ margin: 0, fontSize: '0.85rem', color: '#059669', fontWeight: '600' }}>Water Requirement</p>
+                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '5px' }}>
+                                        <p style={{ margin: '2px 0 0 0', fontWeight: '700', color: '#059669', fontSize: '1.4rem' }}>{formData.dailyWaterRequirement || 0}</p>
+                                        <span style={{ fontSize: '0.9rem', color: '#059669' }}>KLD</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Location Details */}
-                    <div style={{ marginBottom: '20px' }}>
-                        <h4 style={{ color: '#0d4a8f', marginBottom: '10px' }}>Location Details</h4>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', padding: '15px', background: '#f8f9fa', borderRadius: '8px' }}>
-                            <div><strong>State:</strong> {formData.state || 'Rajasthan'}</div>
-                            <div><strong>District:</strong> {formData.district || 'N/A'}</div>
-                            <div><strong>Block:</strong> {formData.block || 'N/A'}</div>
-                        </div>
-                    </div>
-
-                    {/* Exemption Status */}
+                    {/* Exemption Status Highlight */}
                     <div style={{
-                        background: 'linear-gradient(135deg, #d4edda 0%, #c3f0ca 100%)',
-                        border: '2px solid #28a745',
+                        background: '#f0fdf4',
+                        border: '1px solid #86efac',
+                        borderLeft: '5px solid #22c55e',
                         borderRadius: '8px',
-                        padding: '20px',
-                        marginBottom: '20px',
-                        textAlign: 'center'
+                        padding: '24px',
+                        marginBottom: '30px',
                     }}>
-                        <h4 style={{ margin: '0 0 10px 0', color: '#28a745' }}>EXEMPTION STATUS</h4>
-                        <p style={{ margin: '10px 0', fontSize: '1.05rem', color: '#155724' }}>
-                            This project is <strong>EXEMPT</strong> from the requirement of obtaining NOC under SGWA Act 2025
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                            <span style={{ background: '#22c55e', color: 'white', fontSize: '0.7rem', padding: '3px 8px', borderRadius: '12px', fontWeight: 'bold' }}>EXEMPT STATUS VERIFIED</span>
+                        </div>
+                        <p style={{ margin: '0 0 12px 0', fontSize: '1.1rem', color: '#166534', fontWeight: '500' }}>
+                            This project is formally <strong>EXEMPT</strong> from obtaining an NOC under the SGWA Act 2025.
                         </p>
-                        <p style={{ margin: '5px 0', color: '#155724' }}>
-                            <strong>Exemption Category:</strong> {exemptionResult.exemptionType}
-                        </p>
-                        <p style={{ margin: '5px 0', color: '#155724' }}>
-                            <strong>Category Code:</strong> {exemptionResult.exemptionCode}
-                        </p>
+                        <div style={{ display: 'flex', gap: '20px' }}>
+                            <p style={{ margin: 0, color: '#15803d', fontSize: '0.95rem' }}>
+                                <strong>Category:</strong> {exemptionResult.exemptionType}
+                            </p>
+                            <p style={{ margin: 0, color: '#15803d', fontSize: '0.95rem' }}>
+                                <strong style={{ opacity: 0.8 }}>Code:</strong> <span style={{ fontFamily: 'monospace' }}>{exemptionResult.exemptionCode}</span>
+                            </p>
+                        </div>
                     </div>
 
                     {/* Important Notes */}
-                    <div className="noc-alert noc-alert-info">
-                        <strong>📋 Important Notes:</strong>
-                        <ul style={{ marginTop: '10px', marginBottom: 0 }}>
-                            <li>This exemption is subject to compliance with all applicable water conservation regulations</li>
-                            <li>Groundwater extraction must be used only for the stated purpose</li>
-                            <li>Any change in project scope may require fresh evaluation</li>
-                            <li>Keep this certificate for your records</li>
+                    <div style={{ background: '#fffbeb', borderRadius: '8px', padding: '20px', border: '1px solid #fde68a' }}>
+                        <h5 style={{ margin: '0 0 10px 0', color: '#b45309', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>📋</span> Important Conditions
+                        </h5>
+                        <ul style={{ margin: 0, paddingLeft: '20px', color: '#92400e', fontSize: '0.9rem', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <li>This exemption is subject to compliance with all applicable water conservation regulations.</li>
+                            <li>Groundwater extraction must be used exclusively for the stated agricultural purpose.</li>
+                            <li>Any future expansion exceeding 50 KLD will require a fresh evaluation and standard NOC.</li>
                         </ul>
                     </div>
                 </div>
             </div>
 
             {/* Action Buttons */}
-            <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', marginBottom: '40px' }}>
                 <button
                     onClick={handleDownload}
-                    className="noc-btn noc-btn-primary"
-                    style={{ padding: '12px 30px', fontSize: '1.1rem' }}
+                    style={{
+                        padding: '16px 32px',
+                        fontSize: '1.1rem',
+                        background: 'white',
+                        color: '#3b82f6',
+                        border: '2px solid #3b82f6',
+                        borderRadius: '12px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'all 0.2s',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+                    }}
+                    onMouseOver={(e) => { e.currentTarget.style.background = '#eff6ff'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                    onMouseOut={(e) => { e.currentTarget.style.background = 'white'; e.currentTarget.style.transform = 'translateY(0)' }}
                 >
-                    📥 Download Certificate (PDF)
+                    📥 Download PDF
                 </button>
                 <button
                     onClick={handleSubmit}
-                    className="noc-btn noc-btn-success"
-                    style={{ padding: '12px 30px', fontSize: '1.1rem' }}
+                    style={{
+                        padding: '16px 32px',
+                        fontSize: '1.1rem',
+                        background: '#059669',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '12px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'all 0.2s',
+                        boxShadow: '0 10px 15px -3px rgba(5, 150, 105, 0.3)'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                    onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                 >
-                    ✓ Submit to Authority
+                    ✓ Complete Submission
                 </button>
             </div>
 
             {/* Help Section */}
-            <div className="noc-alert noc-alert-warning">
+            <div className="noc-alert noc-alert-warning" style={{ marginTop: '20px' }}>
                 <strong>ℹ️ Need Help?</strong>
                 <p style={{ margin: '10px 0 0 0' }}>
                     If you have any questions about this exemption or need to verify its status,

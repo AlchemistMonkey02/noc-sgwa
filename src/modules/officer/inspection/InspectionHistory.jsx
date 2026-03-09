@@ -10,69 +10,65 @@ const InspectionHistory = () => {
     const navigate = useNavigate();
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [officerInfo, setOfficerInfo] = useState(null);
 
     useEffect(() => {
-        const fetchHistory = async () => {
-            setLoading(true);
-            try {
-                const response = await officerService.getMyInspections({ status: 'COMPLETED' });
-                if (response.success && response.data.inspections) {
-                    const mappedHistory = response.data.inspections.map(item => ({
-                        id: item.inspectionId,
-                        appId: item.applicationNumber,
-                        applicantName: item.holderName || item.applicantName,
-                        location: item.location,
-                        date: item.scheduledDate.split('T')[0],
-                        result: item.reportResult || 'SUBMITTED', // assuming backend field
-                        remarks: item.reportRemarks || ''
-                    }));
-                    setHistory(mappedHistory);
-                }
-            } catch (error) {
-                console.error("Error fetching history:", error);
-                // Fallback Mock Data
-                setHistory([
-                    {
-                        id: 'insp-005',
-                        appId: 'NOC-2026-0098',
-                        applicantName: 'Modern Tex Corp',
-                        location: 'Sitapura, Jaipur',
-                        date: '2026-01-10',
-                        result: 'RECOMMENDED',
-                        remarks: 'All documents verified on site.'
-                    },
-                    {
-                        id: 'insp-006',
-                        appId: 'NOC-2025-9988',
-                        applicantName: 'Grand Hyatt',
-                        location: 'Kukas, Jaipur',
-                        date: '2025-12-28',
-                        result: 'CONDITIONAL',
-                        remarks: 'Flow meter needs calibration.'
-                    }
-                ]);
-            } finally {
-                setLoading(false);
-            }
-        };
-
+        const userData = getOfficerData();
+        setOfficerInfo(userData);
         fetchHistory();
     }, []);
 
+    const fetchHistory = async () => {
+        setLoading(true);
+        try {
+            const response = await officerService.getMyInspections({ status: 'COMPLETED' });
+            if (response.success && response.data.inspections) {
+                const mappedHistory = response.data.inspections.map(item => ({
+                    id: item.inspectionId,
+                    appId: item.applicationNumber,
+                    applicantName: item.holderName || item.applicantName,
+                    location: item.location,
+                    date: item.scheduledDate.split('T')[0],
+                    result: item.reportResult || 'SUBMITTED',
+                    remarks: item.reportRemarks || ''
+                }));
+                setHistory(mappedHistory);
+            }
+        } catch (error) {
+            console.error("Error fetching history:", error);
+            setHistory([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getOfficerData = () => {
+        try {
+            const data = localStorage.getItem('officerData');
+            return data ? JSON.parse(data) : null;
+        } catch (e) {
+            return null;
+        }
+    };
+
     const getStatusColor = (status) => {
-        switch (status) {
-            case 'RECOMMENDED': return '#166534'; // green
-            case 'CONDITIONAL': return '#b45309'; // amber
-            case 'NOT_RECOMMENDED': return '#b91c1c'; // red
+        if (!status) return '#374151';
+        switch (status.toUpperCase()) {
+            case 'COMPLETED':
+            case 'SUBMITTED': return '#047857';
+            case 'REJECTED': return '#b91c1c';
+            case 'PENDING': return '#b45309';
             default: return '#374151';
         }
     };
 
     const getStatusBg = (status) => {
-        switch (status) {
-            case 'RECOMMENDED': return '#dcfce7';
-            case 'CONDITIONAL': return '#fef3c7';
-            case 'NOT_RECOMMENDED': return '#fee2e2';
+        if (!status) return '#f3f4f6';
+        switch (status.toUpperCase()) {
+            case 'COMPLETED':
+            case 'SUBMITTED': return '#d1fae5';
+            case 'REJECTED': return '#fee2e2';
+            case 'PENDING': return '#fef3c7';
             default: return '#f3f4f6';
         }
     };
@@ -80,10 +76,10 @@ const InspectionHistory = () => {
     return (
         <div className="officer-portal">
             <OfficerHeader
-                officerName="Vikram Singh"
+                officerName={officerInfo?.name || officerInfo?.username || 'Officer'}
                 officerRole="INSPECTION"
-                officerDesignation="Field Inspector"
-                district="Jaipur"
+                officerDesignation={officerInfo?.designation || 'Field Inspector'}
+                district={officerInfo?.district || 'Jaipur'}
             />
 
             <div className="officer-layout">

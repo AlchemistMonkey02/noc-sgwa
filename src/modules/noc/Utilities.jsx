@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../../context/ToastContext';
 import { Link } from 'react-router-dom';
 import NOCHeader from './components/NOCHeader';
 import NOCFooter from './components/NOCFooter';
@@ -9,6 +10,7 @@ import './styles/noc-portal.css';
 const Utilities = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [activeTool, setActiveTool] = useState('district-finder');
+    const { error: toastError } = useToast();
 
     // Assessment Unit Tool State
     const [districtForAssessment, setDistrictForAssessment] = useState('');
@@ -79,11 +81,11 @@ const Utilities = () => {
                 setDistrictProfile(stats);
             } else {
                 setDistrictProfile(null);
-                alert('No data found for this district.');
+                toastError('No data found for this district.');
             }
         } catch (err) {
             console.error("Failed to fetch district profile", err);
-            alert('Error fetching details.');
+            toastError('Error fetching details.');
         } finally {
             setFinderLoading(false);
         }

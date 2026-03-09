@@ -7,6 +7,8 @@ import Timeline from '../shared/components/Timeline';
 import StatusBadge from '../shared/components/StatusBadge';
 import '../shared/styles/officer-portal.css';
 
+import officerService from '../services/officerService';
+
 const DGOApplicationDetail = () => {
     const { applicationId } = useParams();
     const navigate = useNavigate();
@@ -14,57 +16,66 @@ const DGOApplicationDetail = () => {
     const [timeline, setTimeline] = useState([]);
     const [documents, setDocuments] = useState([]);
 
-    useEffect(() => {
-        fetchApplicationDetails();
-        fetchTimeline();
-        fetchDocuments();
-    }, [applicationId]);
+    const fetchData = async () => {
+        try {
+            const response = await officerService.getApplicationDetails(applicationId);
+            if (response.success && response.data) {
+                const appData = response.data;
+                setApplication({
+                    applicationId: appData._id || appData.id,
+                    applicationNumber: appData.applicationNumber || appData.trackingId,
+                    applicantName: appData.applicantName || appData.applicantDetails?.name || 'N/A',
+                    email: appData.email || appData.applicantDetails?.email || 'N/A',
+                    mobile: appData.mobile || appData.applicantDetails?.mobile || 'N/A',
+                    organizationName: appData.organizationName || appData.projectDetails?.applicantName || 'N/A',
+                    projectName: appData.projectName || appData.projectDetails?.projectName || 'N/A',
+                    projectType: appData.projectType || appData.projectDetails?.projectType || 'N/A',
+                    district: appData.district || appData.locationDetails?.district || 'N/A',
+                    block: appData.block || appData.locationDetails?.block || 'N/A',
+                    waterRequirement: appData.waterRequirement?.totalTotalRequirement ? `${appData.waterRequirement.totalTotalRequirement} m³/day` : (appData.waterRequirement || '0 m³/day'),
+                    submittedDate: appData.submittedDate || new Date().toISOString(),
+                    status: appData.status || 'PENDING_VERIFICATION'
+                });
 
-    const fetchApplicationDetails = async () => {
-        // Mock data
-        setApplication({
-            applicationId: 'NOC2026001234',
-            applicationNumber: 'RJ/CGWA/NOC/2026/001234',
-            applicantName: 'Rajesh Kumar Sharma',
-            email: 'rajesh.sharma@example.com',
-            mobile: '9876543210',
-            organizationName: 'ABC Industries Pvt Ltd',
-            projectName: 'ABC Textile Manufacturing Unit',
-            projectType: 'Industrial',
-            district: 'Jaipur',
-            block: 'Sanganer',
-            waterRequirement: '150.25 m³/day',
-            submittedDate: '2026-01-09T08:00:00Z',
-            status: 'PENDING_VERIFICATION'
-        });
-    };
+                if (appData.history && appData.history.length > 0) {
+                    setTimeline(appData.history.map(h => ({
+                        type: h.action,
+                        title: h.action,
+                        timestamp: h.timestamp || h.date,
+                        actor: h.actor?.name || 'System',
+                        remarks: h.remarks || ''
+                    })));
+                } else {
+                    setTimeline([{
+                        type: 'SUBMITTED',
+                        title: 'Application Submitted',
+                        timestamp: appData.submittedDate || new Date().toISOString(),
+                        actor: appData.applicantName || 'Applicant',
+                        remarks: 'Application received'
+                    }]);
+                }
 
-    const fetchTimeline = async () => {
-        setTimeline([
-            {
-                type: 'SUBMITTED',
-                title: 'Application Submitted',
-                timestamp: '2026-01-09T08:00:00Z',
-                actor: 'Rajesh Kumar Sharma (Applicant)',
-                remarks: 'NOC application submitted for groundwater extraction'
-            },
-            {
-                type: 'PAYMENT_VERIFIED',
-                title: 'Payment Verified',
-                timestamp: '2026-01-09T08:30:00Z',
-                actor: 'System',
-                remarks: 'Payment of ₹21,600 verified successfully'
+                if (appData.documents && appData.documents.length > 0) {
+                    setDocuments(appData.documents.map(d => ({
+                        id: d.documentId || d._id,
+                        name: d.documentType ? d.documentType.replace('_', ' ') : 'Document',
+                        type: d.documentType || 'unknown',
+                        status: d.verified || d.status === 'VERIFIED' ? 'VERIFIED' : 'PENDING',
+                        required: true,
+                        documentId: d.documentId
+                    })));
+                } else {
+                    setDocuments([]);
+                }
             }
-        ]);
+        } catch (error) {
+            console.error("Failed to fetch application details", error);
+        }
     };
 
-    const fetchDocuments = async () => {
-        setDocuments([
-            { id: 'DOC001', name: 'Land Ownership Certificate', type: 'land_ownership', status: 'PENDING', required: true },
-            { id: 'DOC002', name: 'Site Map with GPS Coordinates', type: 'site_map', status: 'PENDING', required: true },
-            { id: 'DOC003', name: 'Water Balance Plan', type: 'water_balance', status: 'PENDING', required: true }
-        ]);
-    };
+    useEffect(() => {
+        fetchData();
+    }, [applicationId]);
 
     const handleVerifyDocuments = () => {
         navigate(`/officer/dgo/applications/${applicationId}/verify-documents`);
@@ -193,7 +204,7 @@ const DGOApplicationDetail = () => {
                                     documents={documents}
                                     applicationId={applicationId}
                                     applicationDetails={application}
-                                    onVerificationComplete={() => fetchDocuments()} // Refresh list after verification
+                                    onVerificationComplete={() => fetchData()} // Refresh list after verification
                                 />
                             </div>
 

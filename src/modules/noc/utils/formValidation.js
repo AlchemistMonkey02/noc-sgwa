@@ -71,12 +71,12 @@ export const validateStep1 = (formData) => {
         errors.msmeType = 'MSME type is required';
     }
 
-    if (formData.isMSME === 'Yes' && !formData.msmeRegistrationNumber.trim()) {
+    if (formData.isMSME === 'Yes' && !(formData.msmeRegistrationNumber || '').trim()) {
         errors.msmeRegistrationNumber = 'MSME registration number is required';
     }
 
     // --- APPLICANT DETAILS (Moved from Step 5) ---
-    if (!formData.applicantName.trim()) {
+    if (!(formData.applicantName || '').trim()) {
         errors.applicantName = 'Applicant name is required';
     }
 
@@ -100,7 +100,7 @@ export const validateStep1 = (formData) => {
         errors.applicantAadhaar = 'Invalid Aadhaar number (12 digits required)';
     }
 
-    if (!formData.organizationName.trim()) {
+    if (!(formData.organizationName || '').trim()) {
         errors.organizationName = 'Organization name is required';
     }
 
@@ -114,7 +114,7 @@ export const validateStep1 = (formData) => {
 export const validateStep2 = (formData) => {
     const errors = {};
 
-    if (!formData.projectName.trim()) {
+    if (!(formData.projectName || '').trim()) {
         errors.projectName = 'Project name is required';
     }
 
@@ -130,11 +130,11 @@ export const validateStep2 = (formData) => {
         errors.block = 'Block is required';
     }
 
-    if (!formData.assessmentUnit.trim()) {
+    if (!(formData.assessmentUnit || '').trim()) {
         errors.assessmentUnit = 'Assessment unit is required';
     }
 
-    if (!formData.projectAddress.trim()) {
+    if (!(formData.projectAddress || '').trim()) {
         errors.projectAddress = 'Project address is required';
     }
 
@@ -154,7 +154,7 @@ export const validateStep2 = (formData) => {
 
     if (!formData.geology) {
         errors.geology = 'Geology type is required';
-    } else if (formData.geology === 'Other' && (!formData.otherGeology || !formData.otherGeology.trim())) {
+    } else if (formData.geology === 'Other' && !(formData.otherGeology || '').trim()) {
         errors.otherGeology = 'Please specify the aquifer type';
     }
 
@@ -253,19 +253,19 @@ export const validateStep6 = (formData) => {
     // Flow Meter validation (MANDATORY for ALL)
     const flowMeter = formData.flowMeterDetails || {};
 
-    if (!flowMeter.meterType || !flowMeter.meterType.trim()) {
+    if (!flowMeter.meterType || !(flowMeter.meterType || '').trim()) {
         errors['flowMeter.meterType'] = 'Meter type is required';
     }
 
-    if (!flowMeter.manufacturer || !flowMeter.manufacturer.trim()) {
+    if (!flowMeter.manufacturer || !(flowMeter.manufacturer || '').trim()) {
         errors['flowMeter.manufacturer'] = 'Manufacturer name is required';
     }
 
-    if (!flowMeter.modelNumber || !flowMeter.modelNumber.trim()) {
+    if (!flowMeter.modelNumber || !(flowMeter.modelNumber || '').trim()) {
         errors['flowMeter.modelNumber'] = 'Model number is required';
     }
 
-    if (!flowMeter.bisStandard || !flowMeter.bisStandard.trim()) {
+    if (!flowMeter.bisStandard || !(flowMeter.bisStandard || '').trim()) {
         errors['flowMeter.bisStandard'] = 'BIS/IS Standard Certification Number is required';
     }
 
@@ -273,7 +273,7 @@ export const validateStep6 = (formData) => {
         errors['flowMeter.telemetryEnabled'] = 'Telemetry must be enabled (mandatory)';
     }
 
-    if (!flowMeter.telemetryProvider || !flowMeter.telemetryProvider.trim()) {
+    if (!flowMeter.telemetryProvider || !(flowMeter.telemetryProvider || '').trim()) {
         errors['flowMeter.telemetryProvider'] = 'Telemetry service provider is required';
     }
 
@@ -285,29 +285,29 @@ export const validateStep6 = (formData) => {
     if (formData.piezometerRequired) {
         const piezometer = formData.piezometerDetails || {};
 
-        if (!piezometer.distanceFromWell || !piezometer.distanceFromWell.toString().trim()) {
+        if (!piezometer.distanceFromWell || !(piezometer.distanceFromWell.toString() || '').trim()) {
             errors['piezometer.distanceFromWell'] = 'Distance from pumping well is required';
         }
         // Strict 50m check removed as per user request to allow test data
 
 
-        if (!piezometer.depth || !piezometer.depth.toString().trim()) {
+        if (!piezometer.depth || !(piezometer.depth.toString() || '').trim()) {
             errors['piezometer.depth'] = 'Piezometer depth is required';
         }
 
-        if (!piezometer.piezometerLocation || !piezometer.piezometerLocation.trim()) {
+        if (!piezometer.piezometerLocation || !(piezometer.piezometerLocation || '').trim()) {
             errors['piezometer.piezometerLocation'] = 'Piezometer location is required';
         }
 
-        if (!piezometer.coordinates || !piezometer.coordinates.latitude || !piezometer.coordinates.latitude.toString().trim()) {
+        if (!piezometer.coordinates || !piezometer.coordinates.latitude || !(piezometer.coordinates.latitude.toString() || '').trim()) {
             errors['piezometer.coordinates.latitude'] = 'GPS Latitude is required';
         }
 
-        if (!piezometer.coordinates || !piezometer.coordinates.longitude || !piezometer.coordinates.longitude.toString().trim()) {
+        if (!piezometer.coordinates || !piezometer.coordinates.longitude || !(piezometer.coordinates.longitude.toString() || '').trim()) {
             errors['piezometer.coordinates.longitude'] = 'GPS Longitude is required';
         }
 
-        if (!piezometer.nablLabName || !piezometer.nablLabName.trim()) {
+        if (!piezometer.nablLabName || !(piezometer.nablLabName || '').trim()) {
             errors['piezometer.nablLabName'] = 'NABL accredited lab name is required';
         }
     }

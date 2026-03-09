@@ -5,10 +5,46 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/logos/logo-black.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Google Fonts - Poppins -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
   <title>Rajasthan Ground Water (Conservation & Management) Authority</title>
+
+  <!-- React & Google Translate Fix (Prevents 'removeChild' errors) -->
+  <script type="text/javascript">
+    if (typeof Node === 'function' && Node.prototype) {
+      const originalRemoveChild = Node.prototype.removeChild;
+      Node.prototype.removeChild = function (child) {
+        if (child && child.parentNode !== this) return child;
+        return originalRemoveChild.apply(this, arguments);
+      };
+      const originalInsertBefore = Node.prototype.insertBefore;
+      Node.prototype.insertBefore = function (newNode, referenceNode) {
+        if (referenceNode && referenceNode.parentNode !== this) return newNode;
+        return originalInsertBefore.apply(this, arguments);
+      };
+    }
+  </script>
 </head>
 
 <body>
+  <div id="google_translate_element" style="display:none;"></div>
+  <script type="text/javascript">
+    function googleTranslateElementInit() {
+      new google.translate.TranslateElement({
+        pageLanguage: 'en',
+        includedLanguages: 'en,hi',
+        autoDisplay: false
+      }, 'google_translate_element');
+    }
+  </script>
+  <script type="text/javascript"
+    src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
 </body>

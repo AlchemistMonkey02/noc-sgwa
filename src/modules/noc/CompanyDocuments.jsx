@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../../context/ToastContext';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -9,6 +10,7 @@ import './styles/noc-portal.css';
 const CompanyDocuments = () => {
     const navigate = useNavigate();
     const { logout } = useAuth();
+    const { success: toastSuccess, error: toastError, warning: toastWarning } = useToast();
     // const [sidebarOpen, setSidebarOpen] = useState(false); // Removed manual sidebar state
     const [companyId, setCompanyId] = useState(null);
     const [documents, setDocuments] = useState([]);
@@ -82,19 +84,19 @@ const CompanyDocuments = () => {
 
         // Check if company ID is available
         if (!companyId) {
-            alert('❌ Company ID not found. Please refresh the page and try again.');
+            toastError('Company ID not found. Please refresh the page and try again.');
             return;
         }
 
         // Validation
         if (file.size > 5 * 1024 * 1024) {
-            alert('File size exceeds 5MB limit');
+            toastWarning('File size exceeds 5MB limit');
             return;
         }
 
         const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
         if (!validTypes.includes(file.type)) {
-            alert('Invalid file type. Please upload PDF, JPG, or PNG.');
+            toastWarning('Invalid file type. Please upload PDF, JPG, or PNG.');
             return;
         }
 
@@ -149,15 +151,15 @@ const CompanyDocuments = () => {
                 // Auto-open removed as per user request
                 // Document will appear in the list below
 
-                alert('✅ Document uploaded successfully!');
+                toastSuccess('Document uploaded successfully!');
             } else {
                 const errorData = await response.json();
                 console.error('Upload error:', errorData);
-                alert('❌ ' + (errorData.message || errorData.error?.message || 'Document upload failed'));
+                toastError(errorData.message || errorData.error?.message || 'Document upload failed');
             }
         } catch (error) {
             console.error('Error uploading document:', error);
-            alert('❌ Network error during upload');
+            toastError('Network error during upload');
         } finally {
             setUploadingFiles(prev => ({ ...prev, [docType]: false }));
             // Reset file input
@@ -180,16 +182,16 @@ const CompanyDocuments = () => {
             });
 
             if (response.ok) {
-                alert('✅ Document deleted successfully!');
+                toastSuccess('Document deleted successfully!');
                 if (companyId) {
                     await fetchDocuments(companyId);
                 }
             } else {
-                alert('❌ Failed to delete document');
+                toastError('Failed to delete document');
             }
         } catch (error) {
             console.error('Error deleting document:', error);
-            alert('❌ Network error during deletion');
+            toastError('Network error during deletion');
         }
     };
 
@@ -212,7 +214,7 @@ const CompanyDocuments = () => {
             setViewerModal({ isOpen: true, documentUrl, documentName: fileName });
         } catch (error) {
             console.error('Error viewing document:', error);
-            alert('❌ Failed to load document. Please try again.');
+            toastError('Failed to load document. Please try again.');
         }
     };
 
@@ -248,7 +250,6 @@ const CompanyDocuments = () => {
 
     return (
         <LayoutWithSidebar defaultCollapsed={true}>
-            <div className="page-gradient-header"></div>
 
             <div className="content-container">
                 {/* Breadcrumb */}

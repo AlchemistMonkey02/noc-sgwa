@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import OfficerHeader from '../shared/components/OfficerHeader';
 import OfficerSidebar from '../shared/components/OfficerSidebar';
 import ApplicationCard from '../shared/components/ApplicationCard';
+import officerService from '../services/officerService';
+import { getOfficerData } from '../shared/utils/officerAuth';
 import '../shared/styles/officer-portal.css';
 
 const EnforcementDashboard = () => {
@@ -16,45 +18,76 @@ const EnforcementDashboard = () => {
     });
 
     const [approvalQueue, setApprovalQueue] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [officerInfo, setOfficerInfo] = useState(null);
 
     useEffect(() => {
-        fetchStatistics();
-        fetchApprovalQueue();
+        const userData = getOfficerData();
+        setOfficerInfo(userData);
+
+        fetchDashboardData();
     }, []);
 
+    const fetchDashboardData = async () => {
+        try {
+            setLoading(true);
+            await Promise.all([
+                fetchStatistics(),
+                fetchApprovalQueue()
+            ]);
+        } catch (error) {
+            console.error('Error fetching enforcement dashboard:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const fetchStatistics = async () => {
-        // Mock data
-        setStatistics({
-            total: 20,
-            pendingFinalApproval: 8,
-            approved: 10,
-            rejected: 2,
-            nocIssued: 8
-        });
+        try {
+            const response = await officerService.getEnforcementDashboard();
+            if (response.success) {
+                const data = response.data;
+                setStatistics({
+                    total: data.stats?.totalDecisions || 0,
+                    pendingFinalApproval: data.stats?.pendingApproval || 0,
+                    approved: data.stats?.approved || 0,
+                    rejected: data.stats?.rejected || 0,
+                    nocIssued: data.stats?.nocIssued || 0
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching statistics:', error);
+        }
     };
 
     const fetchApprovalQueue = async () => {
-        // Mock data
-        setApprovalQueue([
-            {
-                applicationId: 'NOC2026001234',
-                applicationNumber: 'RJ/CGWA/NOC/2026/001234',
-                applicantName: 'Rajesh Kumar Sharma',
-                projectName: 'ABC Textile Manufacturing Unit',
-                projectType: 'Industrial',
-                district: 'Jaipur',
-                block: 'Sanganer',
-                blockCategory: 'SEMI_CRITICAL',
-                waterRequirement: '150.25 m³/day',
-                submittedDate: '2026-01-09T08:00:00Z',
-                dgoRecommendation: 'RECOMMEND_APPROVAL',
-                sgwaRecommendation: 'RECOMMEND_APPROVAL_WITH_CONDITIONS',
-                proposedValidityYears: 3,
-                conditionsCount: 5,
-                status: 'PENDING_FINAL_APPROVAL',
-                daysInQueue: 1
+        try {
+            const response = await officerService.getEnforcementApprovalQueue();
+            if (response.success) {
+                const data = response.data;
+                if (data.queue) {
+                    const mapped = data.queue.map(app => ({
+                        applicationId: app.id || app._id,
+                        applicationNumber: app.applicationNumber,
+                        applicantName: app.applicantDetails?.name || app.projectDetails?.applicantName || 'N/A',
+                        projectName: app.projectDetails?.projectName || 'N/A',
+                        projectType: app.projectDetails?.projectType || 'N/A',
+                        district: app.locationDetails?.district || app.location?.districtId || 'N/A',
+                        block: app.locationDetails?.block || app.location?.blockId || 'N/A',
+                        waterRequirement: `${app.waterRequirement?.total || app.waterRequirement?.dailyRequirement || 0} m³/day`,
+                        submittedDate: app.submittedAt || app.submittedDate,
+                        dgoRecommendation: app.reviewHistory?.find(r => r.role === 'DGO')?.action || 'N/A',
+                        sgwaRecommendation: app.reviewHistory?.find(r => r.role === 'SGWA')?.action || 'N/A',
+                        conditionsCount: app.conditionsCount || app.conditions?.length || 0,
+                        status: app.status,
+                        daysInQueue: app.daysInQueue || 0
+                    }));
+                    setApprovalQueue(mapped);
+                }
             }
-        ]);
+        } catch (error) {
+            console.error('Error fetching approval queue:', error);
+        }
     };
 
     const handleApplicationClick = (application) => {
@@ -64,10 +97,10 @@ const EnforcementDashboard = () => {
     return (
         <div className="officer-portal">
             <OfficerHeader
-                officerName="Suresh Patel"
+                officerName={officerInfo?.name || officerInfo?.username || 'Enforcement Officer'}
                 officerRole="ENFORCEMENT"
-                officerDesignation="Chief Engineer"
-                district=""
+                officerDesignation={officerInfo?.designation || 'Chief Engineer'}
+                district={officerInfo?.district || ''}
             />
 
             <div className="officer-layout">
@@ -160,6 +193,8 @@ const EnforcementDashboard = () => {
                                     <ApplicationCard
                                         application={application}
                                         onClick={handleApplicationClick}
+                                        showCallButton={true}
+                                        officerType="ENFORCEMENT"
                                     />
                                     {/* Additional info specific to enforcement */}
                                     <div style={{

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { getUserTypeDisplayName, getUserTypeIcon } from '../../utils/authUtils';
+import { handleApiError } from '../../utils/error-handler';
 import NOCHeader from './components/NOCHeader';
 import NOCFooter from './components/NOCFooter';
 import './styles/noc-portal.css';
@@ -11,6 +13,7 @@ const NOCLogin = () => {
     const location = useLocation();
     const [searchParams] = useSearchParams();
     const { login, userType, selectUserType, user, loading: authLoading } = useAuth(); // Destructure properly
+    const { t } = useTranslation();
     const [formData, setFormData] = useState({
         username: '',
         password: '',
@@ -76,7 +79,8 @@ const NOCLogin = () => {
                 setLoading(false);
             }
         } catch (err) {
-            setError('Login failed. Please try again.');
+            const apiError = handleApiError(err, 'Login failed. Please try again.');
+            setError(apiError.message);
             setLoading(false);
         }
     };
@@ -84,228 +88,164 @@ const NOCLogin = () => {
 
 
     return (
-        <div className="noc-portal" style={{ background: 'white', minHeight: '100vh' }}>
+        <div className="noc-portal">
             {/* Flash Message Modal */}
             {flashMessage && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'rgba(0,0,0,0.6)',
-                    zIndex: 9999,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backdropFilter: 'blur(2px)'
-                }}>
-                    <div style={{
-                        background: 'white',
-                        padding: '30px',
-                        borderRadius: '12px',
-                        width: '90%',
-                        maxWidth: '400px',
-                        textAlign: 'center',
-                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                        border: '1px solid #e2e8f0',
-                        animation: 'fadeIn 0.3s ease-out'
-                    }}>
-                        <div style={{
-                            fontSize: '3rem',
-                            marginBottom: '15px',
-                            background: '#dcfce7',
-                            width: '80px',
-                            height: '80px',
-                            borderRadius: '50%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            margin: '0 auto 20px auto',
-                            color: '#166534'
-                        }}>
-                            {flashMessage.toLowerCase().includes('error') || flashMessage.toLowerCase().includes('expired') ? '⚠️' : '✅'}
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-xl border border-gray-100 max-w-sm w-full p-8 text-center animate-in fade-in zoom-in duration-300">
+                        <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${flashMessage.toLowerCase().includes('error') || flashMessage.toLowerCase().includes('expired')
+                            ? 'bg-error-50 text-error-600' : 'bg-success-50 text-success-600'
+                            }`}>
+                            {flashMessage.toLowerCase().includes('error') || flashMessage.toLowerCase().includes('expired') ? (
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                            ) : (
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            )}
                         </div>
-                        <h3 style={{ margin: '0 0 10px 0', color: '#1e293b', fontSize: '1.25rem' }}>Notification</h3>
-                        <p style={{ color: '#64748b', marginBottom: '25px', lineHeight: '1.5' }}>
-                            {flashMessage}
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">{t('nocLogin.notification')}</h3>
+                        <p className="text-gray-500 mb-8 leading-relaxed">
+                            {flashMessage === 'logoutSuccess' ? t('nocLogin.logoutSuccess') : flashMessage}
                         </p>
                         <button
                             onClick={() => setFlashMessage('')}
-                            style={{
-                                width: '100%',
-                                padding: '12px',
-                                background: '#0f172a',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '8px',
-                                cursor: 'pointer',
-                                fontWeight: '600',
-                                fontSize: '0.95rem',
-                                transition: 'background 0.2s'
-                            }}
-                            onMouseOver={(e) => e.target.style.background = '#1e293b'}
-                            onMouseOut={(e) => e.target.style.background = '#0f172a'}
+                            className="btn btn-primary w-full"
                         >
-                            Okay, Got it
+                            {t('nocLogin.btnGotIt')}
                         </button>
                     </div>
                 </div>
             )}
 
-            <NOCHeader />
+            <PublicHeader />
 
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 20px', background: '#fff' }}>
-                <div style={{
-                    width: '100%',
-                    maxWidth: '480px',
-                    background: 'white',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 25px rgba(0,0,0,0.08)',
-                    padding: '40px',
-                    border: '1px solid #f1f5f9'
-                }}>
-                    <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
-                            {userType ? getUserTypeIcon(userType) : '💧'}
+            <div className="auth-page-container">
+                <div className="auth-card">
+                    <div className="auth-header">
+                        <div className="auth-icon-wrapper">
+                            {userType ? (
+                                <div className="text-3xl">{getUserTypeIcon(userType)}</div>
+                            ) : (
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary-600"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>
+                            )}
                         </div>
-                        <h2 style={{ color: '#0f4c81', margin: '0 0 10px 0', fontSize: '1.8rem', fontWeight: '700' }}>
-                            {userType ? `${getUserTypeDisplayName(userType)} Login` : 'Ground Water Department Login'}
+                        <h2 className="auth-title">
+                            {userType ? `${getUserTypeDisplayName(userType)} ${t('nocLogin.titleSuffix')}` : t('nocLogin.defaultTitle')}
                         </h2>
-                        <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0 }}>
-                            Login to Ground Water Department Portal
+                        <p className="auth-subtitle">
+                            {t('nocLogin.subtitle')}
                         </p>
-                        <div style={{ width: '60px', height: '3px', background: '#f1f5f9', margin: '15px auto' }}></div>
                     </div>
 
                     {error && (
-                        <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px', borderRadius: '4px', marginBottom: '20px', fontSize: '0.85rem' }}>
-                            {error}
+                        <div className="alert alert-danger mb-6 p-3">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                            <span className="text-sm font-medium">{error}</span>
                         </div>
                     )}
 
                     <form onSubmit={handleSubmit}>
-
                         {/* Username */}
-                        <div style={{ marginBottom: '20px' }}>
-                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#334155', marginBottom: '8px' }}>
-                                Username / Email ID <span style={{ color: 'red' }}>*</span>
-                            </label>
-                            <input
-                                type="text"
-                                name="username"
-                                value={formData.username}
-                                onChange={handleChange}
-                                style={{
-                                    width: '100%',
-                                    padding: '12px 15px',
-                                    borderRadius: '6px',
-                                    border: '1px solid #e2e8f0',
-                                    background: '#eff6ff',
-                                    fontSize: '0.95rem',
-                                    fontWeight: '500',
-                                    color: '#0f172a',
-                                    boxSizing: 'border-box'
-                                }}
-                            />
+                        <div className="form-group mb-4">
+                            <label className="form-label">{t('nocLogin.usernameLabel')} <span className="text-error">*</span></label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                </div>
+                                <input
+                                    type="text"
+                                    className="form-input pl-10"
+                                    name="username"
+                                    value={formData.username}
+                                    onChange={handleChange}
+                                    placeholder={t('nocLogin.usernamePlaceholder')}
+                                    required
+                                />
+                            </div>
                         </div>
 
                         {/* Password */}
-                        <div style={{ marginBottom: '20px' }}>
-                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#334155', marginBottom: '8px' }}>
-                                Password <span style={{ color: 'red' }}>*</span>
-                            </label>
-                            <div style={{ position: 'relative' }}>
+                        <div className="form-group mb-6">
+                            <div className="flex justify-between items-center mb-2">
+                                <label className="form-label mb-0">{t('nocLogin.passwordLabel')} <span className="text-error">*</span></label>
+                                <a href="#" className="text-xs font-semibold text-primary-600 hover:text-primary-700">{t('nocLogin.forgot')}</a>
+                            </div>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                                </div>
                                 <input
                                     type={showPassword ? 'text' : 'password'}
+                                    className="form-input pl-10 pr-10"
                                     name="password"
                                     value={formData.password}
                                     onChange={handleChange}
-                                    style={{
-                                        width: '100%',
-                                        padding: '12px 15px',
-                                        borderRadius: '6px',
-                                        border: '1px solid #e2e8f0',
-                                        background: '#eff6ff',
-                                        fontSize: '0.95rem',
-                                        boxSizing: 'border-box'
-                                    }}
+                                    placeholder="••••••••"
+                                    required
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer' }}
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
                                 >
-                                    {showPassword ? '🙈' : '👁️'}
+                                    {showPassword ? (
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                                    ) : (
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                    )}
                                 </button>
                             </div>
                         </div>
 
                         {/* Captcha */}
-                        <div style={{ marginBottom: '25px' }}>
-                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#334155', marginBottom: '8px' }}>
-                                Enter Captcha <span style={{ color: 'red' }}>*</span>
-                            </label>
-                            <div style={{ display: 'flex', gap: '15px' }}>
-                                <div style={{
-                                    background: '#f1f5f9',
-                                    padding: '10px 20px',
-                                    borderRadius: '6px',
-                                    fontWeight: '700',
-                                    fontSize: '1.1rem',
-                                    letterSpacing: '5px',
-                                    fontFamily: 'monospace',
-                                    userSelect: 'none'
-                                }}>
+                        <div className="form-group mb-8">
+                            <label className="form-label">{t('nocLogin.securityLabel')} <span className="text-error">*</span></label>
+                            <div className="flex flex-wrap items-center gap-4">
+                                <div className="bg-gray-50 px-6 py-3 rounded-lg border border-gray-100 text-2xl tracking-[4px] font-mono font-bold text-primary-900 shadow-sm grow text-center">
                                     5 A 7 K 9
                                 </div>
                                 <input
                                     type="text"
+                                    className="form-input w-32"
                                     name="captcha"
-                                    placeholder="Enter captcha"
+                                    placeholder={t('nocLogin.captchaPlaceholder')}
                                     value={formData.captcha}
                                     onChange={handleChange}
-                                    style={{
-                                        flex: 1,
-                                        padding: '10px 15px',
-                                        borderRadius: '6px',
-                                        border: '1px solid #e2e8f0',
-                                        background: 'white'
-                                    }}
+                                    required
                                 />
                             </div>
                         </div>
 
                         <button
                             type="submit"
-                            style={{
-                                width: '100px',
-                                padding: '10px 20px',
-                                background: '#1e3a8a',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '6px',
-                                fontWeight: '600',
-                                cursor: 'pointer',
-                                fontSize: '0.95rem'
-                            }}
-                            disabled={loading}
+                            className="btn btn-primary w-full btn-lg"
+                            disabled={loading || authLoading}
                         >
-                            {loading ? '...' : 'Login'}
+                            {loading || authLoading ? (
+                                <span className="flex items-center gap-2">
+                                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                    {t('nocLogin.signingIn')}
+                                </span>
+                            ) : t('nocLogin.btnSignIn')}
                         </button>
-
                     </form>
 
-                    <div style={{ marginTop: '30px', textAlign: 'center', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <a href="#" style={{ color: '#0f4c81', textDecoration: 'none', fontWeight: '600' }}>Forgot Password?</a>
-                        <div style={{ color: '#64748b' }}>
-                            Don't have an account? <Link to="/noc/register" style={{ color: '#0f4c81', textDecoration: 'none', fontWeight: '600' }}>Register New Account</Link>
-                        </div>
-                        <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #e2e8f0' }}>
-                            <Link to="/role-selection" style={{ color: '#64748b', textDecoration: 'none', fontSize: '0.85rem' }}>← Change Service Type</Link>
-                        </div>
-                        <div>
-                            <Link to="/" style={{ color: '#64748b', textDecoration: 'none', fontSize: '0.85rem' }}>← Back to Public Portal</Link>
+                    <div className="mt-8 pt-8 border-t border-gray-100 text-center">
+                        <p className="text-gray-500 mb-4">
+                            {t('nocLogin.noAccount')}{' '}
+                            <Link to="?register=true" className="text-primary-700 font-semibold hover:text-primary-800 transition-colors no-underline">
+                                {t('nocLogin.createAccount')}
+                            </Link>
+                        </p>
+
+                        <div className="flex flex-col gap-2">
+                            <Link to="/role-selection" className="text-xs font-medium text-gray-500 hover:text-primary-600 transition-colors no-underline flex items-center justify-center gap-1">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                                {t('nocLogin.changeService')}
+                            </Link>
+                            <Link to="/" className="text-xs font-medium text-gray-500 hover:text-primary-600 transition-colors no-underline flex items-center justify-center gap-1">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                                {t('nocLogin.backToPortal')}
+                            </Link>
                         </div>
                     </div>
                 </div>

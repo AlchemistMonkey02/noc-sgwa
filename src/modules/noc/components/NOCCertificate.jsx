@@ -1,36 +1,59 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useToast } from '../../../context/ToastContext';
+import { nocApplicationService } from '../services/nocApplicationService';
 import '../styles/CertificateTemplate.css';
 
 const NOCCertificate = ({ nocData }) => {
-    // Destructure with defaults to avoid crashes
+    const { info: toastInfo, success: toastSuccess, error: toastError } = useToast();
+    const [isDownloading, setIsDownloading] = useState(false);
+
+    // Safeguard extraction for nested API data structure
+    const application = nocData?.applicationId || {};
+    const projectDetails = application?.projectDetails || {};
+    const locationInfo = application?.location || {};
+
+    // Water Requirements (Section 4) - Abstracted Structure Handling
+    const waterReq = application?.waterRequirementBreakup || {};
+    const gwReq = waterReq.groundWaterRequirement || {};
+    const dewateringReq = waterReq.dewateringRequirement || {};
+
+    // Map extracted data with defaults
     const {
-        companyName = 'N/A',
-        projectAddress = 'N/A',
-        pinCode = '',
-        state = 'Rajasthan',
-        district = 'N/A',
-        town = '',
-        block = '',
-        communicationAddress = 'N/A',
-        nocNumber = 'N/A',
-        issueDate = '',
-        applicationNumber = '',
-        nocType = 'New',
-        projectStatus = 'Existing',
-        validFrom = '',
-        validUpto = '',
-        category = 'Safe',
-        approvedWaterQuantity = '0',
-        approvedWaterQuantityAnnual = '0',
+        // Project parsing 
+        companyName = projectDetails?.projectName || 'N/A',
+        projectAddress = locationInfo?.address || 'N/A',
+        pinCode = locationInfo?.pincode || '',
+        state = locationInfo?.stateId || 'Rajasthan',
+        district = locationInfo?.districtId || 'N/A',
+        town = locationInfo?.village || locationInfo?.tehsil || '',
+        block = locationInfo?.blockId || '',
+        communicationAddress = 'Registered Office Address',
 
-        // Structures Data
-        total_ex = 0, total_prop = 0, grand_total = 0,
-        dw_ex = 0, dcb_ex = 0, bw_ex = 0, tw_ex = 0, mpu_ex = 0,
-        dw_prop = 0, dcb_prop = 0, bw_prop = 0, tw_prop = 0, mpu_prop = 0,
-        total_dw = 0, total_dcb = 0, total_bw = 0, total_tw = 0, total_mpu = 0,
+        // Certificate Core Data
+        nocNumber = nocData?.nocNumber || 'N/A',
+        applicationNumber = application?.applicationNumber || 'N/A',
+        nocType = application?.applicationType || 'New',
+        projectStatus = application?.projectStatus || 'Existing',
+        category = locationInfo?.blockCategory || 'Safe',
 
-        emblemImage = '/logos/india-emblem.png', // Default placeholder path if needed
-        qrCodeImage,
+        // Format dates correctly from ISO strings if present
+        issueDate = nocData?.issueDate ? new Date(nocData.issueDate).toLocaleDateString() : '',
+        validFrom = nocData?.validFrom ? new Date(nocData.validFrom).toLocaleDateString() : '',
+        validUpto = nocData?.validUpto ? new Date(nocData.validUpto).toLocaleDateString() : '',
+
+        // Approved Quantities
+        approvedWaterQuantity = nocData?.approvedWaterQuantity || gwReq.totalRequirementKld || '0.00',
+        approvedWaterQuantityAnnual = nocData?.approvedWaterQuantityAnnual || gwReq.totalRequirementAnnual || '0.00',
+
+        // Structures Data (Placeholder logic, abstracting true API shape if needed)
+        structures = application?.groundWaterStructures || {},
+        total_ex = structures.existingTotal || 0, total_prop = structures.proposedTotal || 0, grand_total = (structures.existingTotal || 0) + (structures.proposedTotal || 0),
+        dw_ex = structures.existingDW || 0, dcb_ex = structures.existingDCB || 0, bw_ex = structures.existingBW || 0, tw_ex = structures.existingTW || 0, mpu_ex = structures.existingMPU || 0,
+        dw_prop = structures.proposedDW || 0, dcb_prop = structures.proposedDCB || 0, bw_prop = structures.proposedBW || 0, tw_prop = structures.proposedTW || 0, mpu_prop = structures.proposedMPU || 0,
+        total_dw = dw_ex + dw_prop, total_dcb = dcb_ex + dcb_prop, total_bw = bw_ex + bw_prop, total_tw = tw_ex + tw_prop, total_mpu = mpu_ex + mpu_prop,
+
+        emblemImage = '/logos/india-emblem.png',
+        qrCodeImage = nocData?.qrCode,
         signatureImage
     } = nocData || {};
 
@@ -38,8 +61,29 @@ const NOCCertificate = ({ nocData }) => {
         window.print();
     };
 
-    const handleDownload = () => {
-        alert('Download function would be integrated here.');
+    const handleDownload = async () => {
+        if (!nocNumber || nocNumber === 'N/A') {
+            toastError("Cannot download: Invalid NOC Number.");
+            return;
+        }
+
+        try {
+            setIsDownloading(true);
+            toastInfo('Downloading certificate...');
+            // Assumes API route is /applications/noc/ref/:trackingId/document, trackingId seems to act as refNumber
+            const trackingId = application?.trackingId || nocNumber;
+            await nocApplicationService.downloadCertificate(trackingId);
+            toastSuccess('Certificate downloaded successfully.');
+        } catch (error) {
+            console.error('Download error:', error);
+            if (error.response?.data?.error?.code === 'FILE_NOT_FOUND_ON_DISK') {
+                toastError("Certificate file is missing from storage on the server.");
+            } else {
+                toastError("Failed to download certificate. " + (error.message || ""));
+            }
+        } finally {
+            setIsDownloading(false);
+        }
     };
 
     return (
@@ -48,8 +92,12 @@ const NOCCertificate = ({ nocData }) => {
                 <button className="bhuneer-submit-btn" onClick={handlePrint} style={{ marginRight: '10px' }}>
                     🖨️ Print Certificate
                 </button>
-                <button className="bhuneer-secondary-btn" onClick={handleDownload}>
-                    📥 Download PDF
+                <button
+                    className="bhuneer-secondary-btn"
+                    onClick={handleDownload}
+                    disabled={isDownloading}
+                >
+                    {isDownloading ? '⏳ Downloading...' : '📥 Download PDF'}
                 </button>
             </div>
 

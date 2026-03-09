@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import './styles/public-landing.css';
 
 import PublicHeader from './components/PublicHeader';
+import publicService from './services/publicService';
 
 const ApplicationStatus = () => {
     const navigate = useNavigate();
@@ -23,45 +24,46 @@ const ApplicationStatus = () => {
         setError('');
         setStatusData(null);
 
-        // Simulate API call / Mock Logic
-        setTimeout(() => {
-            setLoading(false);
+        try {
+            const response = await publicService.trackApplication(searchId.trim());
+            if (response.success && response.data) {
+                const appInfo = response.data;
 
-            // Mock Status Logic based on ID patterns (matching internal tracker logic)
-            if (searchId.toUpperCase().includes('RJ-NOC')) {
-                let mockStage = 2;
-                let mockStatus = 'Under Scrutiny';
-                let mockColor = 'warning';
+                // Map API response to UI state
+                let currentStageIndex = 1;
+                const backendStages = appInfo.stages || [];
 
-                if (searchId.includes('APP')) {
-                    mockStage = 5;
-                    mockStatus = 'Approved';
-                    mockColor = 'success';
-                } else if (searchId.includes('REJ')) {
-                    mockStage = 2;
-                    mockStatus = 'Rejected';
-                    mockColor = 'danger';
+                // Find current active stage or highest completed
+                for (let i = 0; i < backendStages.length; i++) {
+                    if (backendStages[i].status === 'COMPLETED' || backendStages[i].status === 'IN_PROGRESS') {
+                        currentStageIndex = i + 1;
+                    }
                 }
 
                 setStatusData({
-                    id: searchId,
-                    projectName: 'Groundwater Extraction Project',
-                    applicantName: 'Demo Applicant',
-                    submittedDate: '2025-12-15',
-                    status: mockStatus,
-                    statusColor: mockColor,
-                    currentStage: mockStage,
-                    stages: [
-                        { id: 1, label: 'Submitted', date: '2025-12-15' },
-                        { id: 2, label: 'Document Verification', date: '2025-12-18' },
+                    id: appInfo.applicationNumber || appInfo.trackingId,
+                    projectName: appInfo.projectName || 'Groundwater Extraction Project',
+                    applicantName: appInfo.applicantName || 'Applicant',
+                    submittedDate: appInfo.submittedDate ? new Date(appInfo.submittedDate).toLocaleDateString() : 'N/A',
+                    status: appInfo.status,
+                    statusColor: appInfo.statusColor || (appInfo.status === 'APPROVED' ? 'success' : appInfo.status === 'REJECTED' ? 'danger' : 'warning'),
+                    currentStage: currentStageIndex,
+                    stages: backendStages.length > 0 ? backendStages : [
+                        { id: 1, label: 'Submitted', date: appInfo.submittedDate ? new Date(appInfo.submittedDate).toLocaleDateString() : 'Pending' },
+                        { id: 2, label: 'Document Verification', date: appInfo.currentStage === 'Document Verification' ? 'In Progress' : 'Pending' },
                         { id: 3, label: 'Technical Review', date: 'Pending' },
                         { id: 4, label: 'NOC Issuance', date: 'Pending' }
                     ]
                 });
             } else {
-                setError('Application not found. Please check the reference number.');
+                setError(response.message || 'Application not found. Please check the reference number.');
             }
-        }, 1000);
+        } catch (err) {
+            console.error("Tracking Error:", err);
+            setError(err.message || 'Failed to fetch tracking data. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (

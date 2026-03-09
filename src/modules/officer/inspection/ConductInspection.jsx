@@ -1,93 +1,76 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import officerService from '../services/officerService';
 import OfficerHeader from '../shared/components/OfficerHeader';
 import OfficerSidebar from '../shared/components/OfficerSidebar';
-import officerService from '../services/officerService';
 import '../shared/styles/officer-portal.css';
+// import './ConductInspection.css'; // Removed to fix Vite build error as file doesn't exist
 
 const ConductInspection = () => {
     const { inspectionId } = useParams();
     const navigate = useNavigate();
-    const [submitting, setSubmitting] = useState(false);
     const [loading, setLoading] = useState(true);
-
-    // Application Data state
+    const [submitting, setSubmitting] = useState(false);
     const [applicationData, setApplicationData] = useState(null);
+    const [officerData, setOfficerData] = useState(null);
 
-    // Form Data State
+    // Form State
     const [formData, setFormData] = useState({
-        locationMatch: null,
-        landUseMatch: null,
-        existingSources: '0',
-        meterInstalled: null,
-        rainwaterHarvesting: '',
-        plantationStatus: '',
-        remarks: '',
+        locationMatch: '',
+        landUseMatch: '',
+        borewellExists: '',
+        waterSource: '',
+        meterInstalled: '',
+        meterReading: '',
+        piezometerInstalled: '',
+        dwraDetails: '',
         recommendation: 'RECOMMENDED',
-        photos: []
+        remarks: ''
     });
 
-    // Geolocation State
-    const [geoLocation, setGeoLocation] = useState(null);
-    const [locationError, setLocationError] = useState(null);
-    const [isLocating, setIsLocating] = useState(false);
+    const [photos, setPhotos] = useState([]);
+    const [currentLocation, setCurrentLocation] = useState(null);
 
-    // Fetch details on mount
     useEffect(() => {
-        const fetchDetails = async () => {
-            setLoading(true);
-            try {
-                // Fetch details using service
-                const response = await officerService.getInspectionDetails(inspectionId);
-                if (response.success) {
-                    setApplicationData(response.data);
-                } else {
-                    throw new Error('API returned unsuccessful response');
-                }
-            } catch (error) {
-                console.error("Error fetching inspection details:", error);
-                // Fallback Mock Data for Development/Demo if API fails
-                setApplicationData({
-                    appId: 'NOC-2026-1234',
-                    applicantName: 'Rajesh Kumar Sharma',
-                    projectType: 'Industrial (Textile)',
-                    address: 'Plot 45, Industrial Area, Sanganer, Jaipur',
-                    coordinates: { lat: 26.8467, lng: 75.7873 },
-                    waterSource: 'Borewell',
-                    proposedExtraction: '150 m³/day'
-                });
-            } finally {
-                setLoading(false);
-            }
-        };
-
+        const storedOfficer = localStorage.getItem('officerData');
+        if (storedOfficer) {
+            setOfficerData(JSON.parse(storedOfficer));
+        }
         fetchDetails();
+        captureLocation();
     }, [inspectionId]);
 
-    const handleCaptureLocation = () => {
-        setLocationError(null);
-        setIsLocating(true);
+    const fetchDetails = async () => {
+        try {
+            setLoading(true);
+            const response = await officerService.getInspectionDetails(inspectionId);
+            if (response.success) {
+                setApplicationData(response.data);
+            }
+        } catch (error) {
+            console.error('Error fetching inspection details:', error);
+            // Fallback for dev if needed, but the requirement is to remove mock data.
+            // However, to make it robust, let's keep a graceful error state.
+            setApplicationData(null);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const captureLocation = () => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
-                    setGeoLocation({
+                    setCurrentLocation({
                         lat: position.coords.latitude,
                         lng: position.coords.longitude,
-                        accuracy: position.coords.accuracy,
-                        timestamp: new Date().toISOString()
+                        accuracy: position.coords.accuracy
                     });
-                    setIsLocating(false);
                 },
                 (error) => {
-                    console.error("Geolocation error:", error);
-                    setLocationError("Could not retrieve location. Please enable location services.");
-                    setIsLocating(false);
-                },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                    console.error('Error capturing location:', error);
+                }
             );
-        } else {
-            setLocationError("Geolocation is not supported by your browser.");
-            setIsLocating(false);
         }
     };
 
@@ -96,85 +79,90 @@ const ConductInspection = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleRadioChange = (name, value) => {
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleFileChange = (e) => {
+    const handlePhotoUpload = async (e) => {
         const files = Array.from(e.target.files);
-        // In a real implementation we might upload immediately or on submit.
-        // Here we store them in state to be sent with submit.
-        setFormData(prev => ({ ...prev, photos: files }));
+        if (files.length === 0) return;
+
+        try {
+            const uploadedPhotos = [];
+            for (const file of files) {
+                const formData = new FormData();
+                formData.append('file', file);
+                const response = await officerService.uploadDocument(formData);
+                if (response.success) {
+                    uploadedPhotos.push(response.data.id || response.data._id);
+                }
+            }
+            setPhotos(prev => [...prev, ...uploadedPhotos]);
+        } catch (error) {
+            console.error('Photo upload failed:', error);
+            alert('Failed to upload some photos');
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Validation: Geo-location is mandatory for transparency
-        if (!geoLocation) {
-            // For dev/demo convenience, multiple alerts might be annoying, but requirements say "fully functional".
-            // If they are testing locally without https/gps, this might block them.
-            // I'll allow override with a confirm or just warn.
-            const proceed = window.confirm("Geolocation has not been captured. It is highly recommended to capture location for verification. Proceed anyway?");
-            if (!proceed) return;
+        if (!formData.recommendation) {
+            alert('Please provide a recommendation');
+            return;
         }
 
-        setSubmitting(true);
-
         try {
-            // Prepare payload
-            // In a real scenario, we'd upload photos first to get IDs, then submit report.
-            // officerService.submitInspectionReport expects JSON usually.
-
-            const reportPayload = {
+            setSubmitting(true);
+            const reportData = {
                 ...formData,
-                // Photos would typically be IDs here, but for now sending metadata or assuming upload happened
-                geoLocation,
-                submittedAt: new Date().toISOString()
+                coordinates: currentLocation ? `${currentLocation.lat}, ${currentLocation.lng}` : 'N/A',
+                photos,
+                inspectionId
             };
 
-            const response = await officerService.submitInspectionReport(inspectionId, reportPayload);
+            const response = await officerService.submitInspectionReport(inspectionId, reportData);
 
             if (response.success) {
                 alert('Inspection Report Submitted Successfully!');
                 navigate('/officer/inspection/dashboard');
-            } else {
-                // Even if API fails (mock environment), show success for the "working" feel unless it's a hard error
-                console.warn("API responded with failure, falling back to success for demo flow");
-                alert('Inspection Report Submitted Successfully!');
-                navigate('/officer/inspection/dashboard');
             }
         } catch (error) {
-            console.error("Error submitting report:", error);
-            // Fallback for demo
-            alert('Inspection Report Submitted Successfully (Simulation)!');
-            navigate('/officer/inspection/dashboard');
+            console.error('Error submitting report:', error);
+            alert(`Submission failed: ${error.message}`);
         } finally {
             setSubmitting(false);
         }
     };
 
-    if (loading) return (
-        <div className="officer-portal">
-            <OfficerHeader officerName="Vikram Singh" officerRole="INSPECTION" />
-            <div className="officer-layout">
-                <OfficerSidebar role="INSPECTION" />
-                <main className="officer-content">
-                    <div className="officer-container">
-                        <div style={{ textAlign: 'center', padding: '2rem' }}>Loading inspection details...</div>
-                    </div>
-                </main>
+    if (loading) {
+        return (
+            <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>Loading inspection data...</p>
             </div>
-        </div>
-    );
+        );
+    }
+
+    if (!applicationData) {
+        return (
+            <div className="error-container" style={{ textAlign: 'center', padding: '5rem' }}>
+                <h2>Inspection record not found</h2>
+                <p>The inspection assigned to ID {inspectionId} could not be retrieved.</p>
+                <button
+                    className="officer-btn officer-btn-primary"
+                    style={{ marginTop: '1rem' }}
+                    onClick={() => navigate('/officer/inspection/dashboard')}
+                >
+                    Back to Dashboard
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="officer-portal">
             <OfficerHeader
-                officerName="Vikram Singh"
+                officerName={officerData?.name || "Officer"}
                 officerRole="INSPECTION"
-                officerDesignation="Field Inspector"
-                district="Jaipur"
+                officerDesignation={officerData?.designation || "Inspection Officer"}
+                district={officerData?.district || ""}
             />
 
             <div className="officer-layout">
@@ -182,199 +170,204 @@ const ConductInspection = () => {
 
                 <main className="officer-content">
                     <div className="officer-container">
-                        {/* Header with Back Button */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-                            <button
-                                onClick={() => navigate(-1)}
-                                className="officer-btn officer-btn-secondary"
-                                style={{ padding: '0.5rem' }}
-                            >
-                                ← Back
-                            </button>
-                            <div>
-                                <h1 className="officer-page-title">Conduct Inspection</h1>
-                                <p className="officer-page-subtitle">Inspection ID: {inspectionId}</p>
-                            </div>
+                        <div className="inspection-header">
+                            <button className="back-button" onClick={() => navigate(-1)}>← Back</button>
+                            <h1 className="officer-page-title">Conduct Site Inspection</h1>
+                            <div className="app-id-badge">{applicationData.applicationNumber || applicationData.appId}</div>
                         </div>
 
-                        {/* Top Info Card */}
-                        {applicationData && (
-                            <div className="officer-card" style={{ marginBottom: '1.5rem', padding: '1.5rem' }}>
-                                <h2 style={{ fontSize: '1.25rem', margin: '0 0 1rem 0' }}>Application Details</h2>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
-                                    <div>
-                                        <label className="officer-label">Applicant Name</label>
-                                        <div style={{ fontWeight: '600' }}>{applicationData.applicantName}</div>
+                        <div className="inspection-grid">
+                            {/* Left: Application Info */}
+                            <div className="inspection-info-panel">
+                                <div className="officer-card info-card">
+                                    <h3>Applicant Information</h3>
+                                    <div className="info-row">
+                                        <label className="officer-label">Applicant Name:</label>
+                                        <div style={{ fontWeight: '600' }}>{applicationData.applicantDetails?.name || applicationData.applicantName}</div>
                                     </div>
-                                    <div>
-                                        <label className="officer-label">Application ID</label>
-                                        <div style={{ fontWeight: '600' }}>{applicationData.appId}</div>
+                                    <div className="info-row">
+                                        <label className="officer-label">Project Type:</label>
+                                        <div style={{ fontWeight: '600' }}>{applicationData.projectDetails?.projectType || applicationData.projectType}</div>
                                     </div>
-                                    <div>
-                                        <label className="officer-label">Project Type</label>
-                                        <div style={{ fontWeight: '600' }}>{applicationData.projectType}</div>
+                                    <div className="info-row">
+                                        <label className="officer-label">Site Address:</label>
+                                        <div style={{ fontWeight: '600' }}>{applicationData.locationDetails?.village || applicationData.address}</div>
                                     </div>
-                                    <div>
-                                        <label className="officer-label">Site Address</label>
-                                        <div style={{ fontWeight: '600' }}>{applicationData.address}</div>
+                                </div>
+
+                                <div className="officer-card info-card location-card">
+                                    <h3>Geotagging Status</h3>
+                                    <div className={`location-status ${currentLocation ? 'captured' : 'pending'}`}>
+                                        {currentLocation ? (
+                                            <>
+                                                <span className="icon">📍</span>
+                                                <div>
+                                                    <p>Coordinates Captured</p>
+                                                    <small>{currentLocation.lat.toFixed(6)}, {currentLocation.lng.toFixed(6)}</small>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span className="icon">⌛</span>
+                                                <p>Capturing Geolocation...</p>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             </div>
-                        )}
 
-                        {/* Inspection Form */}
-                        <form onSubmit={handleSubmit} className="officer-card" style={{ padding: '2rem' }}>
-                            <h2 style={{ fontSize: '1.25rem', margin: '0 0 1.5rem 0', borderBottom: '1px solid #eee', paddingBottom: '0.5rem' }}>
-                                Site Verification Report
-                            </h2>
+                            {/* Right: Inspection Form */}
+                            <form className="inspection-form officer-card" style={{ padding: '2rem' }} onSubmit={handleSubmit}>
+                                <div className="form-section">
+                                    <h3>1. Physical Verification</h3>
+                                    <div className="form-group-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                        <div className="officer-form-group">
+                                            <label className="officer-label required">Does the site location match application?</label>
+                                            <select
+                                                className="officer-select"
+                                                name="locationMatch"
+                                                value={formData.locationMatch}
+                                                onChange={handleInputChange}
+                                                required
+                                            >
+                                                <option value="">Select</option>
+                                                <option value="Yes">Yes, matches perfectly</option>
+                                                <option value="No">No, significant discrepancy</option>
+                                            </select>
+                                        </div>
+                                        <div className="officer-form-group">
+                                            <label className="officer-label required">Current Land Use match?</label>
+                                            <select
+                                                className="officer-select"
+                                                name="landUseMatch"
+                                                value={formData.landUseMatch}
+                                                onChange={handleInputChange}
+                                                required
+                                            >
+                                                <option value="">Select</option>
+                                                <option value="Yes">Yes</option>
+                                                <option value="No">No (Describe below)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
 
-                            {/* Geolocation Section */}
-                            <div className="officer-form-group">
-                                <label className="officer-label">1. Geolocation Verification</label>
-                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                                    <button
-                                        type="button"
-                                        className="officer-btn officer-btn-secondary"
-                                        onClick={handleCaptureLocation}
-                                        disabled={isLocating}
-                                    >
-                                        {isLocating ? 'Acquiring Signal...' : '📍 Capture Current Location'}
-                                    </button>
-
-                                    {geoLocation && (
-                                        <span style={{ color: 'green', fontSize: '0.9rem', display: 'flex', alignItems: 'center' }}>
-                                            ✅ Location Captured ({geoLocation.lat.toFixed(4)}, {geoLocation.lng.toFixed(4)})
-                                            <br />
-                                            <span style={{ fontSize: '0.75rem', color: '#666', marginLeft: '0.5rem' }}>
-                                                Accuracy: {geoLocation.accuracy.toFixed(1)}m
-                                            </span>
-                                        </span>
+                                <div className="form-section" style={{ marginTop: '2rem' }}>
+                                    <h3>2. Water Extraction Infrastructure</h3>
+                                    <div className="form-group-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                        <div className="officer-form-group">
+                                            <label className="officer-label">Is there an existing borewell?</label>
+                                            <select className="officer-select" name="borewellExists" value={formData.borewellExists} onChange={handleInputChange}>
+                                                <option value="">Select</option>
+                                                <option value="Yes">Yes</option>
+                                                <option value="No">No (Proposed only)</option>
+                                            </select>
+                                        </div>
+                                        <div className="officer-form-group">
+                                            <label className="officer-label">Water Meter Installed?</label>
+                                            <select className="officer-select" name="meterInstalled" value={formData.meterInstalled} onChange={handleInputChange}>
+                                                <option value="">Select</option>
+                                                <option value="Yes">Yes, Functional</option>
+                                                <option value="No">No</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    {formData.meterInstalled === 'Yes' && (
+                                        <div className="officer-form-group" style={{ marginTop: '1rem' }}>
+                                            <label className="officer-label">Current Meter Reading (m³)</label>
+                                            <input
+                                                className="officer-input"
+                                                type="number"
+                                                name="meterReading"
+                                                value={formData.meterReading}
+                                                onChange={handleInputChange}
+                                                placeholder="Enter value"
+                                            />
+                                        </div>
                                     )}
-                                    {locationError && (
-                                        <span style={{ color: 'red', fontSize: '0.9rem' }}>⚠️ {locationError}</span>
-                                    )}
                                 </div>
-                                <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.5rem' }}>
-                                    You must be at the site location to verify coordinates.
-                                </p>
-                            </div>
 
-                            {/* Checklist */}
-                            <div className="officer-form-group">
-                                <label className="officer-label required">2. Does the site location match the application details?</label>
-                                <div style={{ display: 'flex', gap: '2rem' }}>
-                                    <label><input type="radio" name="locationMatch" value="yes" checked={formData.locationMatch === 'yes' || formData.locationMatch === true} onChange={() => handleRadioChange('locationMatch', true)} required /> Yes</label>
-                                    <label><input type="radio" name="locationMatch" value="no" checked={formData.locationMatch === 'no' || formData.locationMatch === false} onChange={() => handleRadioChange('locationMatch', false)} /> No</label>
-                                </div>
-                            </div>
-
-                            <div className="officer-form-group">
-                                <label className="officer-label required">3. Does recent land use align with project type?</label>
-                                <div style={{ display: 'flex', gap: '2rem' }}>
-                                    <label><input type="radio" name="landUseMatch" value="yes" checked={formData.landUseMatch === 'yes' || formData.landUseMatch === true} onChange={() => handleRadioChange('landUseMatch', true)} required /> Yes</label>
-                                    <label><input type="radio" name="landUseMatch" value="no" checked={formData.landUseMatch === 'no' || formData.landUseMatch === false} onChange={() => handleRadioChange('landUseMatch', false)} /> No</label>
-                                </div>
-                            </div>
-
-                            <div className="officer-form-group">
-                                <label className="officer-label">4. Number of existing borewells found on site</label>
-                                <input
-                                    type="number"
-                                    className="officer-input"
-                                    name="existingSources"
-                                    value={formData.existingSources}
-                                    onChange={handleInputChange}
-                                />
-                            </div>
-
-                            <div className="officer-form-group">
-                                <label className="officer-label required">5. Is flow meter installed on existing sources?</label>
-                                <div style={{ display: 'flex', gap: '2rem' }}>
-                                    <label><input type="radio" name="meterInstalled" value="yes" checked={formData.meterInstalled === 'yes' || formData.meterInstalled === true} onChange={() => handleRadioChange('meterInstalled', true)} required /> Yes</label>
-                                    <label><input type="radio" name="meterInstalled" value="no" checked={formData.meterInstalled === 'no' || formData.meterInstalled === false} onChange={() => handleRadioChange('meterInstalled', false)} /> No</label>
-                                    <label><input type="radio" name="meterInstalled" value="na" checked={formData.meterInstalled === 'na'} onChange={() => handleRadioChange('meterInstalled', 'na')} /> Not Applicable (New Project)</label>
-                                </div>
-                            </div>
-
-                            <div className="officer-form-group">
-                                <label className="officer-label">6. Rainwater Harvesting Status</label>
-                                <select className="officer-select" name="rainwaterHarvesting" value={formData.rainwaterHarvesting} onChange={handleInputChange}>
-                                    <option value="">Select Status</option>
-                                    <option value="implemented">Implemented & Functional</option>
-                                    <option value="under_construction">Under Construction</option>
-                                    <option value="not_started">Not Started</option>
-                                    <option value="proposal_stage">Proposal Verified</option>
-                                </select>
-                            </div>
-
-                            <div className="officer-form-group">
-                                <label className="officer-label">7. Upload Site Photographs (Max 5)</label>
-                                <input
-                                    type="file"
-                                    multiple
-                                    className="officer-input"
-                                    accept="image/*"
-                                    onChange={handleFileChange}
-                                />
-                                <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.25rem' }}>Include photos of: Site overview, Existing sources, Metering (if any), Plantation area.</p>
-                                {formData.photos.length > 0 && (
-                                    <div style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
-                                        {formData.photos.length} files selected
+                                <div className="form-section" style={{ marginTop: '2rem' }}>
+                                    <h3>3. Site Photos (Mandatory)</h3>
+                                    <div className="photo-upload-container">
+                                        <input
+                                            type="file"
+                                            id="photo-upload"
+                                            multiple
+                                            accept="image/*"
+                                            onChange={handlePhotoUpload}
+                                            style={{ display: 'none' }}
+                                        />
+                                        <label htmlFor="photo-upload" className="officer-btn officer-btn-secondary" style={{ display: 'inline-block', cursor: 'pointer' }}>
+                                            <span>📷</span> Upload Photos
+                                        </label>
+                                        <div className="photo-preview-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginTop: '1rem' }}>
+                                            {photos.map((photoId, idx) => (
+                                                <div key={idx} className="photo-preview" style={{ borderRadius: '8px', overflow: 'hidden', height: '100px', background: '#f1f5f9' }}>
+                                                    <img src={officerService.getDocumentUrl(photoId)} alt="Site" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                )}
-                            </div>
+                                </div>
 
-                            <div className="officer-form-group">
-                                <label className="officer-label required">8. Officer Remarks</label>
-                                <textarea
-                                    className="officer-textarea"
-                                    rows="4"
-                                    name="remarks"
-                                    value={formData.remarks}
-                                    onChange={handleInputChange}
-                                    placeholder="Enter detailed observations about the site..."
-                                    required
-                                ></textarea>
-                            </div>
+                                <div className="form-section" style={{ marginTop: '2rem' }}>
+                                    <h3>4. Conclusion & Remarks</h3>
+                                    <div className="officer-form-group">
+                                        <label className="officer-label required" style={{ fontSize: '1.1rem' }}>Final Recommendation</label>
+                                        <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                                            <button
+                                                type="button"
+                                                className={`officer-btn ${formData.recommendation === 'RECOMMENDED' ? 'officer-btn-primary' : 'officer-btn-secondary'}`}
+                                                onClick={() => setFormData(prev => ({ ...prev, recommendation: 'RECOMMENDED' }))}
+                                                style={{ flex: 1, minWidth: '150px' }}
+                                            >
+                                                ✅ Recommend for NOC
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={`officer-btn ${formData.recommendation === 'CONDITIONAL' ? 'officer-btn-warning' : 'officer-btn-secondary'}`}
+                                                onClick={() => setFormData(prev => ({ ...prev, recommendation: 'CONDITIONAL' }))}
+                                                style={{ flex: 1, minWidth: '150px', color: formData.recommendation === 'CONDITIONAL' ? 'white' : 'inherit' }}
+                                            >
+                                                ⚠️ Conditional Recommendation
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={`officer-btn ${formData.recommendation === 'REJECTED' ? 'officer-btn-danger' : 'officer-btn-secondary'}`}
+                                                onClick={() => setFormData(prev => ({ ...prev, recommendation: 'REJECTED' }))}
+                                                style={{ flex: 1, minWidth: '150px', color: formData.recommendation === 'REJECTED' ? 'white' : 'inherit' }}
+                                            >
+                                                ❌ Not Recommended
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="officer-form-group" style={{ marginTop: '1.5rem' }}>
+                                        <label className="officer-label required">Detailed Remarks</label>
+                                        <textarea
+                                            className="officer-textarea"
+                                            name="remarks"
+                                            rows="4"
+                                            value={formData.remarks}
+                                            onChange={handleInputChange}
+                                            placeholder="Provide detailed site observations..."
+                                            required
+                                        ></textarea>
+                                    </div>
+                                </div>
 
-                            {/* Recommendation */}
-                            <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '8px', marginTop: '2rem' }}>
-                                <label className="officer-label required" style={{ fontSize: '1.1rem' }}>Final Recommendation</label>
-                                <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                                <div className="form-actions" style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                                    <button type="button" className="officer-btn officer-btn-secondary" onClick={() => navigate(-1)}>Cancel</button>
                                     <button
-                                        type="button"
-                                        className={`officer-btn ${formData.recommendation === 'RECOMMENDED' ? 'officer-btn-primary' : 'officer-btn-secondary'}`}
-                                        onClick={() => handleRadioChange('recommendation', 'RECOMMENDED')}
-                                        style={{ flex: 1, minWidth: '150px' }}
+                                        type="submit"
+                                        className="officer-btn officer-btn-primary"
+                                        disabled={submitting}
                                     >
-                                        ✅ Recommend for NOC
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={`officer-btn ${formData.recommendation === 'CONDITIONAL' ? 'officer-btn-warning' : 'officer-btn-secondary'}`}
-                                        onClick={() => handleRadioChange('recommendation', 'CONDITIONAL')}
-                                        style={{ flex: 1, minWidth: '150px', color: formData.recommendation === 'CONDITIONAL' ? 'white' : 'inherit' }}
-                                    >
-                                        ⚠️ Conditional Recommendation
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={`officer-btn ${formData.recommendation === 'NOT_RECOMMENDED' ? 'officer-btn-danger' : 'officer-btn-secondary'}`}
-                                        onClick={() => handleRadioChange('recommendation', 'NOT_RECOMMENDED')}
-                                        style={{ flex: 1, minWidth: '150px', color: formData.recommendation === 'NOT_RECOMMENDED' ? 'white' : 'inherit' }}
-                                    >
-                                        ❌ Not Recommended
+                                        {submitting ? 'Submitting...' : 'Submit Inspection Report'}
                                     </button>
                                 </div>
-                            </div>
-
-                            <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                                <button type="button" className="officer-btn officer-btn-secondary" onClick={() => navigate(-1)}>Cancel</button>
-                                <button type="submit" className="officer-btn officer-btn-primary" disabled={submitting}>
-                                    {submitting ? 'Submitting Report...' : 'Submit Inspection Report'}
-                                </button>
-                            </div>
-                        </form>
+                            </form>
+                        </div>
                     </div>
                 </main>
             </div>

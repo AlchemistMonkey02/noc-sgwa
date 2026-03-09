@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { EXTERNAL_URLS } from '../../../config/constants';
 import '../styles/noc-portal.css';
 import './NOCHeader.css';
 
 const NOCHeader = () => {
     const { isAuthenticated, user, logout } = useAuth();
+    const { t } = useTranslation();
     const [currentTime, setCurrentTime] = useState(new Date());
 
     useEffect(() => {
@@ -70,8 +72,8 @@ const NOCHeader = () => {
 
                         {/* Center Text */}
                         <div className="rgwa-title-text">
-                            <h1>RAJASTHAN GROUND WATER (CONSERVATION AND MANAGEMENT) AUTHORITY</h1>
-                            <p>Government of Rajasthan</p>
+                            <h1>{t('nocHeader.authorityName')}</h1>
+                            <p>{t('nocHeader.govTitle')}</p>
                         </div>
 
                         {/* Right Logo */}

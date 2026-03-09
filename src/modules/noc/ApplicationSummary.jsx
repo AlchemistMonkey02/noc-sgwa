@@ -1,87 +1,104 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useToast } from '../../context/ToastContext';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import NOCHeader from './components/NOCHeader';
 import NOCFooter from './components/NOCFooter';
 import BackButton from '../../components/BackButton';
+import nocApplicationService from './services/nocApplicationService';
 import './styles/noc-portal.css';
 import './styles/noc-certificate.css';
 
 const ApplicationSummary = () => {
     const navigate = useNavigate();
-    const location = useLocation();
+    const { success: toastSuccess, warning: toastWarning } = useToast();
+    const [searchParams] = useSearchParams();
+    const appId = searchParams.get('id') || searchParams.get('appId');
     const [agreedToDeclaration, setAgreedToDeclaration] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [loading, setLoading] = useState(!!appId);
+    const [application, setApplication] = useState(null);
 
-    // In real app, get data from form context or state management
-    const applicationData = {
-        // Step 1: NOC Type
-        nocType: 'Fresh NOC',
-        purposeType: 'Industrial',
+    useEffect(() => {
+        if (appId) {
+            fetchApplicationData();
+        }
+    }, [appId]);
 
-        // Step 2: Area Type & Block Details
-        areaType: 'Safe',
-        district: 'Jaipur',
-        block: 'Sanganer',
-        tehsil: 'Sanganer',
-        blockCategory: 'Safe',
-
-        // Step 3: Applicant Details
-        applicantType: 'Company',
-        companyName: 'ABC Industries Pvt Ltd',
-        ownerName: 'Rajesh Kumar Sharma',
-        fatherName: 'Mohan Lal Sharma',
-        email: 'rajesh.sharma@abcindustries.com',
-        mobile: '+91 9876543210',
-        aadharNumber: 'XXXX-XXXX-1234',
-
-        // Step 4: Communication Address
-        address: 'Plot No. 123, RIICO Industrial Area',
-        city: 'Jaipur',
-        pincode: '302029',
-
-        // Step 5: Project Details
-        projectName: 'Textile Manufacturing Unit',
-        projectType: 'Manufacturing',
-        industryType: 'Textile',
-        plotArea: '5000 sq.m',
-        builtUpArea: '3500 sq.m',
-
-        // Step 6: Water Requirement
-        dailyRequirement: '150.25 m³/day',
-        annualRequirement: '54,841.25 m³/year',
-        sourceType: 'Borewell',
-        numberOfBorewells: '2',
-        depthOfBorewells: '150 meters',
-
-        // Step 7: Documents
-        documentsUploaded: 10,
-
-        // Step 8: Fee Calculation
-        applicationFee: '₹21,600',
-        gstAmount: '₹3,888',
-        totalFee: '₹25,488',
-
-        // Step 9: Payment
-        paymentMode: 'Online',
-        transactionId: 'TXN123456789',
-        paymentDate: '09-Jan-2026'
+    const fetchApplicationData = async () => {
+        try {
+            setLoading(true);
+            const response = await nocApplicationService.getApplication(appId);
+            if (response.success) {
+                setApplication(response.data);
+            } else {
+                toastWarning('Failed to load application data');
+            }
+        } catch (error) {
+            console.error('Error fetching application:', error);
+            toastWarning('Error loading application data');
+        } finally {
+            setLoading(false);
+        }
     };
 
+    // In real app, get data from form context or state management
     const handleSubmitApplication = async () => {
         if (!agreedToDeclaration) {
-            alert('Please agree to the declaration before submitting');
+            toastWarning('Please agree to the declaration before submitting');
+            return;
+        }
+
+        if (!appId) {
+            toastWarning('Invalid application ID');
             return;
         }
 
         setSubmitting(true);
-
-        // Simulate API call
-        setTimeout(() => {
+        try {
+            const response = await nocApplicationService.submitApplication(appId);
+            if (response.success) {
+                toastSuccess('Application submitted successfully!');
+                navigate('/noc/dashboard');
+            } else {
+                toastWarning(response.message || 'Submission failed');
+            }
+        } catch (error) {
+            console.error('Error submitting application:', error);
+            toastWarning('Error submitting application');
+        } finally {
             setSubmitting(false);
-            alert('Application submitted successfully! Application ID: NOC-2026-001234');
-            navigate('/noc/dashboard');
-        }, 2000);
+        }
     };
+
+    if (loading) {
+        return (
+            <div className="noc-portal">
+                <NOCHeader />
+                <div className="main-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+                    <div className="loading-spinner"></div>
+                    <p>Loading application data...</p>
+                </div>
+                <NOCFooter />
+            </div>
+        );
+    }
+
+    if (!application && appId) {
+        return (
+            <div className="noc-portal">
+                <NOCHeader />
+                <div className="main-content" style={{ textAlign: 'center', padding: '50px' }}>
+                    <h2>⚠️ Application Not Found</h2>
+                    <p>We couldn't find the application you're looking for.</p>
+                    <button onClick={() => navigate('/noc/dashboard')} className="bhuneer-primary-btn">Back to Dashboard</button>
+                </div>
+                <NOCFooter />
+            </div>
+        );
+    }
+
+    // Use fetched application data or fallback to a dummy structure for visual reference if needed
+    const data = application || {};
 
     const handleEditSection = (step) => {
         // Navigate back to specific step to edit
@@ -115,11 +132,11 @@ const ApplicationSummary = () => {
                             <div className="summary-grid">
                                 <div className="summary-field">
                                     <span className="summary-label">NOC Type</span>
-                                    <span className="summary-value">{applicationData.nocType}</span>
+                                    <span className="summary-value">{data.applicationType || 'N/A'}</span>
                                 </div>
                                 <div className="summary-field">
                                     <span className="summary-label">Purpose Type</span>
-                                    <span className="summary-value">{applicationData.purposeType}</span>
+                                    <span className="summary-value">{data.applicationSubType || 'N/A'}</span>
                                 </div>
                             </div>
                         </div>
@@ -135,19 +152,19 @@ const ApplicationSummary = () => {
                             <div className="summary-grid">
                                 <div className="summary-field">
                                     <span className="summary-label">District</span>
-                                    <span className="summary-value">{applicationData.district}</span>
+                                    <span className="summary-value">{data.locationDetails?.districtId || 'N/A'}</span>
                                 </div>
                                 <div className="summary-field">
                                     <span className="summary-label">Block</span>
-                                    <span className="summary-value">{applicationData.block}</span>
+                                    <span className="summary-value">{data.locationDetails?.blockId || 'N/A'}</span>
                                 </div>
                                 <div className="summary-field">
                                     <span className="summary-label">Tehsil</span>
-                                    <span className="summary-value">{applicationData.tehsil}</span>
+                                    <span className="summary-value">{data.locationDetails?.tehsil || 'N/A'}</span>
                                 </div>
                                 <div className="summary-field">
                                     <span className="summary-label">Block Category</span>
-                                    <span className="summary-value">{applicationData.blockCategory}</span>
+                                    <span className="summary-value">{data.blockCategory?.name || 'Safe'}</span>
                                 </div>
                             </div>
                         </div>
@@ -162,20 +179,20 @@ const ApplicationSummary = () => {
                             </div>
                             <div className="summary-grid">
                                 <div className="summary-field">
-                                    <span className="summary-label">Company Name</span>
-                                    <span className="summary-value">{applicationData.companyName}</span>
+                                    <span className="summary-label">Organization Name</span>
+                                    <span className="summary-value">{data.organizationName || 'N/A'}</span>
                                 </div>
                                 <div className="summary-field">
-                                    <span className="summary-label">Owner Name</span>
-                                    <span className="summary-value">{applicationData.ownerName}</span>
+                                    <span className="summary-label">Applicant Name</span>
+                                    <span className="summary-value">{data.applicantName || 'N/A'}</span>
                                 </div>
                                 <div className="summary-field">
                                     <span className="summary-label">Email</span>
-                                    <span className="summary-value">{applicationData.email}</span>
+                                    <span className="summary-value">{data.applicantEmail || 'N/A'}</span>
                                 </div>
                                 <div className="summary-field">
                                     <span className="summary-label">Mobile</span>
-                                    <span className="summary-value">{applicationData.mobile}</span>
+                                    <span className="summary-value">{data.applicantMobile || 'N/A'}</span>
                                 </div>
                             </div>
                         </div>
@@ -191,19 +208,19 @@ const ApplicationSummary = () => {
                             <div className="summary-grid">
                                 <div className="summary-field">
                                     <span className="summary-label">Project Name</span>
-                                    <span className="summary-value">{applicationData.projectName}</span>
+                                    <span className="summary-value">{data.projectName || 'N/A'}</span>
                                 </div>
                                 <div className="summary-field">
                                     <span className="summary-label">Industry Type</span>
-                                    <span className="summary-value">{applicationData.industryType}</span>
+                                    <span className="summary-value">{data.industryType || 'N/A'}</span>
                                 </div>
                                 <div className="summary-field">
-                                    <span className="summary-label">Plot Area</span>
-                                    <span className="summary-value">{applicationData.plotArea}</span>
+                                    <span className="summary-label">Total Land Area</span>
+                                    <span className="summary-value">{data.landUseTotalArea || 0} sq.m</span>
                                 </div>
                                 <div className="summary-field">
-                                    <span className="summary-label">Built-up Area</span>
-                                    <span className="summary-value">{applicationData.builtUpArea}</span>
+                                    <span className="summary-label">Aquifer Type</span>
+                                    <span className="summary-value">{data.hydrogeology?.aquiferType || 'N/A'}</span>
                                 </div>
                             </div>
                         </div>
@@ -219,19 +236,19 @@ const ApplicationSummary = () => {
                             <div className="summary-grid">
                                 <div className="summary-field">
                                     <span className="summary-label">Daily Requirement</span>
-                                    <span className="summary-value">{applicationData.dailyRequirement}</span>
+                                    <span className="summary-value">{data.waterRequirement?.dailyRequirement || 0} m³/day</span>
                                 </div>
                                 <div className="summary-field">
                                     <span className="summary-label">Annual Requirement</span>
-                                    <span className="summary-value">{applicationData.annualRequirement}</span>
+                                    <span className="summary-value">{data.waterRequirement?.annualRequirement || 0} m³/year</span>
                                 </div>
                                 <div className="summary-field">
-                                    <span className="summary-label">Source Type</span>
-                                    <span className="summary-value">{applicationData.sourceType}</span>
+                                    <span className="summary-label">Proposed Borewells</span>
+                                    <span className="summary-value">{data.waterRequirement?.proposedExtraction?.numberOfBorewells || 0}</span>
                                 </div>
                                 <div className="summary-field">
-                                    <span className="summary-label">Number of Borewells</span>
-                                    <span className="summary-value">{applicationData.numberOfBorewells}</span>
+                                    <span className="summary-label">Proposed Tubewells</span>
+                                    <span className="summary-value">{data.waterRequirement?.proposedExtraction?.numberOfTubewells || 0}</span>
                                 </div>
                             </div>
                         </div>
@@ -246,7 +263,7 @@ const ApplicationSummary = () => {
                             </div>
                             <div className="summary-field">
                                 <span className="summary-label">Total Documents</span>
-                                <span className="summary-value">{applicationData.documentsUploaded} documents uploaded successfully</span>
+                                <span className="summary-value">{data.documents?.length || 0} documents uploaded successfully</span>
                             </div>
                         </div>
 
@@ -258,22 +275,24 @@ const ApplicationSummary = () => {
                             <div className="summary-grid">
                                 <div className="summary-field">
                                     <span className="summary-label">Application Fee</span>
-                                    <span className="summary-value">{applicationData.applicationFee}</span>
+                                    <span className="summary-value">₹{(data.fees?.applicationFee || 0).toLocaleString()}</span>
                                 </div>
                                 <div className="summary-field">
                                     <span className="summary-label">GST (18%)</span>
-                                    <span className="summary-value">{applicationData.gstAmount}</span>
+                                    <span className="summary-value">₹{(data.fees?.gstAmount || 0).toLocaleString()}</span>
                                 </div>
                                 <div className="summary-field">
                                     <span className="summary-label">Total Amount Paid</span>
                                     <span className="summary-value" style={{ fontSize: '1.25rem', fontWeight: '700', color: '#10b981' }}>
-                                        {applicationData.totalFee}
+                                        ₹{(data.fees?.totalAmount || 0).toLocaleString()}
                                     </span>
                                 </div>
                                 <div className="summary-field">
                                     <span className="summary-label">Payment Status</span>
                                     <span className="summary-value">
-                                        <span className="status-badge success">✅ Paid</span>
+                                        <span className={`status-badge ${data.paymentStatus === 'paid' ? 'success' : 'warning'}`}>
+                                            {data.paymentStatus === 'paid' ? '✅ Paid' : '⏳ Pending'}
+                                        </span>
                                     </span>
                                 </div>
                             </div>

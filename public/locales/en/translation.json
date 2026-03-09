@@ -1,0 +1,923 @@
+{
+    "nav": {
+        "home": "Home",
+        "services": "Our Services",
+        "help": "Help & Support",
+        "login": "Login",
+        "register": "Register",
+        "portal": "Portal",
+        "logout": "Logout",
+        "searchPlaceholder": "Search...",
+        "govTitle": "Government of Rajasthan",
+        "skipToMain": "Skip to Main Content",
+        "screenReader": "Screen Reader Access",
+        "rgwaTitle": "Rajasthan Ground Water Authority",
+        "rgwaSubtitle": "Government of Rajasthan",
+        "about": "About",
+        "guidelines": "Guidelines",
+        "officerPortal": "Officer Portal",
+        "tollFree": "Toll Free: 1800-XXX-XXXX",
+        "menu": "Menu",
+        "aboutMobile": "ABOUT DEPARTMENT",
+        "downloadsMobile": "DOWNLOADS",
+        "contactMobile": "CONTACT US",
+        "portalMobile": "PORTAL",
+        "logoutMobile": "LOGOUT",
+        "registerMobile": "REGISTER"
+    },
+    "hero": {
+        "title1": "Rajasthan Ground Water",
+        "title2": "Management Authority",
+        "subtitle": "A unified platform for NOC applications, renewals, and ground water conservation in Rajasthan.",
+        "applyNow": "Apply for New NOC",
+        "trackStatus": "Track Status",
+        "registerEntity": "Register Entity",
+        "stats": {
+            "issued": "NOCs Issued",
+            "rigs": "Registered Rigs",
+            "digital": "Digital Trajectory"
+        }
+    },
+    "login": {
+        "title": "Login",
+        "roleLabel": "Role",
+        "rolePlaceholder": "— Select Role —",
+        "roleOption": "NOC Applicant",
+        "idLabel": "Identifier",
+        "idPlaceholder": "Username / ID",
+        "credLabel": "Password",
+        "credPlaceholder": "••••••••",
+        "securityLabel": "Security Code",
+        "captchaLoading": "Loading...",
+        "captchaPlaceholder": "Enter code above",
+        "btnAuth": "Authenticating...",
+        "btnSignIn": "Sign In",
+        "btnOfficer": "🛡️ Access Officer Portal",
+        "divider": "New Application",
+        "helper": "Create new applicant profile",
+        "forgot": "Reset access credentials"
+    },
+    "services_cards": {
+        "section1": "Application Services",
+        "noc": {
+            "title": "Groundwater NOC",
+            "desc": "Apply for new groundwater extraction permission"
+        },
+        "rig": {
+            "title": "Rig Registration",
+            "desc": "Register drilling rigs and equipment"
+        },
+        "vendor": {
+            "title": "Vendor Registration",
+            "desc": "Register as an approved vendor"
+        },
+        "section2": "Inquiry & Tracking",
+        "track": {
+            "title": "Track Application",
+            "desc": "Track your NOC application status"
+        },
+        "ec": {
+            "title": "Know Your EC",
+            "desc": "Check environmental clearance requirements"
+        },
+        "cost": {
+            "title": "Know Your Abstraction Cost",
+            "desc": "Calculate groundwater usage charges"
+        }
+    },
+    "landing": {
+        "docsTitle": "Documentation",
+        "doc1": "Process Flow Guide",
+        "doc2": "Compliance Timelines",
+        "doc3": "Document Checklist",
+        "doc4": "Knowledge Base (FAQ)",
+        "doc5": "Support Portal",
+        "doc6": "User Manual (PDF)",
+        "alertsTitle": "Active Alerts",
+        "alert1": "New Groundwater NOC Guidelines – 2026",
+        "alert2": "Revised Fee Structure Effective Jan 2026",
+        "alert3": "Online Rig Registration Mandatory",
+        "alert4": "Water Meter Compliance Notice",
+        "regTitle": "Regulatory",
+        "reg1": "State Groundwater Act",
+        "reg2": "Eligibility Criteria",
+        "reg3": "Tariff Schedule",
+        "reg4": "Compliance Penalties",
+        "reg5": "Environmental Impact",
+        "footer1": "© 2026 Ground Water Department, Government of Rajasthan",
+        "footer2": "Integrated Water Management System | Developed with excellence by National Informatics Centre (NIC)",
+        "footer3": "Version 2.0.4 Premium | Secure Environment SSL 256-bit"
+    },
+    "dashboard": {
+        "home": "Home",
+        "title": "Dashboard",
+        "welcome": "Welcome back",
+        "overview": "Here's your overview",
+        "totalApps": "Total Applications",
+        "inDraft": "In Draft",
+        "inProcess": "In Process",
+        "approvedNocs": "Approved NOCs",
+        "queriesRaised": "Queries Raised",
+        "rejected": "Rejected",
+        "quickActions": "⚡ Quick Actions",
+        "applyFresh": "Apply For Fresh NOC",
+        "checkEligibility": "Check Eligibility",
+        "renewNoc": "Renew Existing NOC",
+        "trackApp": "Track Application",
+        "viewQueries": "View Queries",
+        "paymentDetails": "Payment Details",
+        "yourNocs": "📜 Your NOC Certificates",
+        "active": "Active",
+        "nocNumberLabel": "NOC Number:",
+        "issueDateLabel": "Issue Date:",
+        "validUntilLabel": "Valid Until:",
+        "twoYears": "2 years from issue date",
+        "viewCert": "👁️ View Certificate",
+        "download": "📥 Download",
+        "recentApps": "📄 Recent Applications",
+        "viewAll": "View All →",
+        "appId": "Application ID",
+        "type": "Type",
+        "submittedDate": "Submitted Date",
+        "status": "Status",
+        "actions": "Actions",
+        "view": "View",
+        "deadlinesTitle": "⏰ Upcoming Deadlines",
+        "due": "Due:",
+        "daysLeft": "days left",
+        "announcements": "📢 Announcements",
+        "new": "NEW",
+        "important": "IMPORTANT",
+        "toolsTitle": "🛠️ Tools & Calculators",
+        "abstraction": "Abstraction Charges",
+        "docChecklist": "Document Checklist"
+    },
+    "nocLogin": {
+        "titleSuffix": "Login",
+        "defaultTitle": "Ground Water Portal",
+        "subtitle": "Please enter your credentials to access your account",
+        "usernameLabel": "Username / Email ID",
+        "usernamePlaceholder": "yourname@example.com",
+        "passwordLabel": "Password",
+        "forgot": "Forgot?",
+        "securityLabel": "Security Check",
+        "captchaPlaceholder": "Code",
+        "signingIn": "Signing in...",
+        "btnSignIn": "Sign In to Your Account",
+        "noAccount": "Don't have an account yet?",
+        "createAccount": "Create Account",
+        "changeService": "Change Service Type",
+        "backToPortal": "Back to Public Portal",
+        "notification": "Notification",
+        "btnGotIt": "Got it, thanks",
+        "logoutSuccess": "You have been logged out successfully.",
+        "fillAll": "Please fill all required fields",
+        "invalidCaptcha": "Invalid Captcha Code",
+        "networkError": "Network error. Please check your connection and try again."
+    },
+    "sidebar": {
+        "dashboard": "Dashboard",
+        "accountSettings": "Account Settings",
+        "userProfile": "User Profile",
+        "companyProfile": "Company Profile",
+        "companyDocs": "Company Documents",
+        "changePass": "Change Password",
+        "securitySettings": "Security Settings",
+        "applications": "Applications",
+        "applyFresh": "Apply For Fresh Application",
+        "applyRenewal": "Apply For Renewal Application",
+        "viewAllApps": "View All Applications",
+        "trackStatus": "Track Application Status",
+        "queries": "Evaluation Officer Raised Query",
+        "issueReporting": "Issue Reporting",
+        "paymentDetails": "Payment Details",
+        "chargeRevision": "Charge Revision Report",
+        "reports": "Reports",
+        "appReports": "Application Reports",
+        "compReports": "Compliance Reports",
+        "payReports": "Payment Reports",
+        "utility": "Utility",
+        "eligibility": "Eligibility Checker",
+        "distFinder": "District Finder",
+        "assessmentUnit": "Assessment Unit Lookup",
+        "help": "Help",
+        "userManual": "User Manual",
+        "faq": "FAQ",
+        "videos": "Video Tutorials",
+        "contactSupport": "Contact Support",
+        "logout": "Log Out",
+        "needHelp": "Need Help?",
+        "supportSubtitle": "Contact support team",
+        "getSupport": "Get Support →"
+    },
+    "nocHeader": {
+        "govTitle": "Government of Rajasthan",
+        "authorityName": "RAJASTHAN GROUND WATER (CONSERVATION AND MANAGEMENT) AUTHORITY"
+    },
+    "nocFooter": {
+        "deptName": "Ground Water Department",
+        "deptDesc": "Rajasthan Ground Water Authority is responsible for the regulation and management of groundwater resources in the state of Rajasthan.",
+        "quickLinks": "Quick Links",
+        "statePortal": "State Portal",
+        "natPortal": "National Portal",
+        "sitemap": "Sitemap",
+        "disclaimer": "Disclaimer",
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Use",
+        "contactUs": "Contact Us",
+        "address": "Ground Water Department, Jhalana Doongri, Jaipur - 302004",
+        "totalVisitors": "TOTAL VISITORS",
+        "lastUpdated": "Last Updated",
+        "copyright": "© 2025 Ground Water Department, Government of Rajasthan. All Rights Reserved.",
+        "devCredit": "Designed & Developed by"
+    },
+    "register": {
+        "title": "Create Account",
+        "subtitle": "Join the Rajasthan Ground Water Authority portal",
+        "stepProfile": "Profile",
+        "stepAddress": "Address",
+        "stepAccess": "Access",
+        "personalDetails": "Personal Details",
+        "personalSubtitle": "Basic information for your applicant profile",
+        "titleLabel": "Title",
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "dob": "Date of Birth",
+        "gender": "Gender",
+        "idType": "ID Proof Type",
+        "idNumber": "ID Proof Number",
+        "idFile": "ID Proof Document",
+        "mobile": "Mobile Number",
+        "email": "Email Address",
+        "sendOtp": "Send OTP",
+        "verify": "Verify",
+        "otpPlaceholder": "OTP",
+        "mobileVerified": "Mobile Verified!",
+        "emailVerified": "Email Verified!",
+        "addressDetails": "Communication Address",
+        "addressSubtitle": "Where we can reach you",
+        "address1": "Address Line 1",
+        "address2": "Address Line 2 (Optional)",
+        "state": "State",
+        "district": "District",
+        "subDistrict": "Sub-District",
+        "pincode": "Pincode",
+        "pincodePlaceholder": "6-digit pincode",
+        "accessDetails": "Login & Access Info",
+        "accessSubtitle": "Secure your account credentials",
+        "username": "Preferred Username",
+        "checkAvailability": "Check Availability",
+        "password": "Password",
+        "confirmPassword": "Confirm Password",
+        "securityQ": "Security Question",
+        "securityA": "Security Answer",
+        "captcha": "Captcha Verification",
+        "captchaPlaceholder": "Enter code",
+        "declaration": "Declaration",
+        "declarationText": "I hereby declare that the information provided above is true to the best of my knowledge.",
+        "btnNext": "Next Step",
+        "btnPrev": "Previous",
+        "btnSubmit": "Complete Registration",
+        "uploading": "Uploading...",
+        "uploadSuccess": "Upload Success!",
+        "invalidFile": "Invalid file. Max 5MB PDF/JPG/PNG."
+    },
+    "processFlow": {
+        "title": "📊 NOC Application Process Flow",
+        "subtitle": "Complete step-by-step guide to obtaining your Groundwater NOC",
+        "breadcrumb": "Process Flow",
+        "quickOverview": "Quick Overview",
+        "sectionBadge": "Step 2",
+        "detailedTitle": "Detailed Application Timeline",
+        "detailedDesc": "A comprehensive breakdown of each stage, expected durations, and actions required.",
+        "stageBadge": "Stage",
+        "estDuration": "Est. Duration:",
+        "notesTitle": "📌 Important Notes",
+        "btnBackHome": "← Back to Home",
+        "btnRequiredDocs": "Required Documents →",
+        "quickSteps": {
+            "q1": {
+                "title": "Register",
+                "desc": "Create applicant account"
+            },
+            "q2": {
+                "title": "Prepare Docs",
+                "desc": "Gather requirements"
+            },
+            "q3": {
+                "title": "Submit",
+                "desc": "Fill & upload docs"
+            },
+            "q4": {
+                "title": "Verify",
+                "desc": "Authority check"
+            },
+            "q5": {
+                "title": "Inspect",
+                "desc": "On-site verification"
+            },
+            "q6": {
+                "title": "Pay & Approve",
+                "desc": "Fees & Final NOC"
+            },
+            "q7": {
+                "title": "Download",
+                "desc": "Get certificate"
+            }
+        },
+        "detailedSteps": {
+            "d1": {
+                "title": "Registration",
+                "desc": "Create account on the portal with mobile and email verification",
+                "duration": "5-10 minutes"
+            },
+            "d2": {
+                "title": "Document Preparation",
+                "desc": "Gather all required documents including land records, project details, and identity proofs",
+                "duration": "1-2 days"
+            },
+            "d3": {
+                "title": "Application Submission",
+                "desc": "Fill complete application form with project details and upload all required documents",
+                "duration": "30-45 minutes"
+            },
+            "d4": {
+                "title": "Document Verification",
+                "desc": "Authority verifies submitted documents for completeness and authenticity",
+                "duration": "3-5 working days"
+            },
+            "d5": {
+                "title": "Site Inspection",
+                "desc": "Physical verification of site and groundwater extraction setup (if required)",
+                "duration": "5-7 working days"
+            },
+            "d6": {
+                "title": "Payment",
+                "desc": "Pay processing fees online through secure payment gateway",
+                "duration": "15 minutes"
+            },
+            "d7": {
+                "title": "NOC Approval",
+                "desc": "Authority reviews complete application and approves NOC based on guidelines",
+                "duration": "10-15 working days"
+            },
+            "d8": {
+                "title": "Certificate Download",
+                "desc": "Download your digitally signed NOC certificate from the dashboard",
+                "duration": "Instant"
+            }
+        },
+        "notes": {
+            "n1": "Processing time may vary based on application complexity and completeness",
+            "n2": "Site inspection is required for extraction above certain limits",
+            "n3": "Incomplete applications will be returned for correction",
+            "n4": "You can track your application status at any time from the dashboard",
+            "n5": "All communications will be sent via email and SMS"
+        }
+    },
+    "contact": {
+        "title": "📞 Contact & Helpline",
+        "subtitle": "Get in touch with us for assistance and support",
+        "breadcrumb": "Contact & Helpline",
+        "officeTitle": "🏢 Office Locations",
+        "addrLabel": "📍 Address:",
+        "phoneLabel": "📞 Phone:",
+        "emailLabel": "✉️ Email:",
+        "hoursLabel": "🕐 Hours:",
+        "helplineTitle": "☎️ Helpline Numbers",
+        "emailTitle": "📧 Email Support",
+        "responseTitle": "⏰ Response Time",
+        "btnFaqs": "← FAQs",
+        "btnApply": "How to Apply →",
+        "offices": {
+            "o1": {
+                "name": "Head Office",
+                "address": "Rajasthan Ground Water Authority\nJalShakti Bhawan, Civil Lines\nJaipur - 302006, Rajasthan",
+                "hours": "Mon-Fri: 10:00 AM - 5:00 PM"
+            },
+            "o2": {
+                "name": "Regional Office - Jodhpur",
+                "address": "Regional Office\nPWD Campus, Paota\nJodhpur - 342001, Rajasthan",
+                "hours": "Mon-Fri: 10:00 AM - 5:00 PM"
+            },
+            "o3": {
+                "name": "Regional Office - Udaipur",
+                "address": "Regional Office\nSurajpole, Udaipur\nUdaipur - 313001, Rajasthan",
+                "hours": "Mon-Fri: 10:00 AM - 5:00 PM"
+            }
+        },
+        "helplines": {
+            "h1": {
+                "type": "Technical Support",
+                "hours": "24/7"
+            },
+            "h2": {
+                "type": "Grievance Cell",
+                "hours": "Mon-Sat: 9 AM - 6 PM"
+            },
+            "h3": {
+                "type": "NOC Application Help",
+                "hours": "Mon-Fri: 10 AM - 5 PM"
+            }
+        },
+        "emails": {
+            "e1": "General Inquiries:",
+            "e2": "Technical Support:",
+            "e3": "Complaints & Grievances:"
+        },
+        "responseTime": {
+            "r1": "Immediate assistance during working hours",
+            "r2": "Response within 24-48 working hours",
+            "r3": "Acknowledgment within 3 working days",
+            "r4": "Contact toll-free number for immediate help"
+        }
+    },
+    "faqs": {
+        "title": "❓ Frequently Asked Questions (FAQs)",
+        "subtitle": "Find quick answers to common questions about NOC applications",
+        "breadcrumb": "FAQs",
+        "stillHaveQuestions": "📞 Still have questions?",
+        "contactSupport": "If you couldn't find the answer you're looking for, please visit our Contact & Helpline page to get in touch with our support team.",
+        "btnDocs": "← Documents",
+        "btnContact": "Contact Us →",
+        "categories": {
+            "application": "Application Process",
+            "documents": "Documents",
+            "payment": "Payment",
+            "status": "Status & Tracking"
+        },
+        "q1": "How do I apply for a Groundwater NOC?",
+        "a1": "Register on the portal, complete your profile, fill the NOC application form, upload required documents, and submit. You will receive an Application ID for tracking.",
+        "q2": "Can I save my application as a draft?",
+        "a2": "Yes, you can save your application at any stage and complete it later. Your progress is automatically saved.",
+        "q3": "How long does the approval process take?",
+        "a3": "Typically 18-27 working days for new NOC applications, and 7-11 days for renewals. See the Timelines page for detailed breakdown.",
+        "q4": "Can I track my application status?",
+        "a4": "Yes, login to your dashboard to see real-time status updates and any pending actions required from your side.",
+        "q5": "What documents are required for NOC application?",
+        "a5": "Identity proof, address proof, land ownership documents, site map, and project proposal. Visit the 'Required Documents' page for the complete list.",
+        "q6": "What is the maximum file size for uploads?",
+        "a6": "Each file should not exceed 5MB. Compress larger files before uploading.",
+        "q7": "Can I submit scanned copies of documents?",
+        "a7": "Yes, clear scanned copies in PDF or JPG format are acceptable. Ensure all text is legible.",
+        "q8": "Do I need to submit original documents?",
+        "a8": "No, digital copies are sufficient for online application. Originals may be verified during site inspection.",
+        "q9": "What is the application fee?",
+        "a9": "The fee varies based on the type of application and extraction capacity. You will see the exact amount during application submission.",
+        "q10": "What payment methods are accepted?",
+        "a10": "Credit/Debit cards, Net Banking, UPI, and Government Payment Gateways are supported.",
+        "q11": "Is the fee refundable?",
+        "a11": "Application fees are generally non-refundable. However, in case of double payment, refunds are processed within 15 working days.",
+        "q12": "Do I have to pay before or after approval?",
+        "a12": "Payment is required after initial document verification to proceed with site inspection and final approval.",
+        "q13": "How do I check my application status?",
+        "a13": "Login to your dashboard to see detailed status updates, current stage, and any pending actions.",
+        "q14": "Will I receive email notifications?",
+        "a14": "Yes, you will receive email alerts for major status changes, document requests, and approvals.",
+        "q15": "What happens if my application is rejected?",
+        "a15": "You will receive detailed reasons for rejection. You can correct the issues and submit the application again.",
+        "q16": "Can I withdraw my application?",
+        "a16": "Yes, you can withdraw before approval. However, processing fees are non-refundable."
+    },
+    "howToApply": {
+        "title": "📖 Complete Application Guide",
+        "subtitle": "Step-by-step instructions on applying for a Groundwater NOC",
+        "breadcrumb": "How to Apply",
+        "stepText": "Step",
+        "whatToDo": "What to do:",
+        "proTips": "💡 Pro Tips:",
+        "quickReminders": "⚡ Quick Reminders",
+        "reminders": {
+            "r1": "Complete applications are processed faster",
+            "r2": "Save your Application ID for future reference",
+            "r3": "Check your email regularly for updates",
+            "r4": "Respond to clarifications within 7 days",
+            "r5": "Keep a digital copy of all submitted documents"
+        },
+        "btnContact": "← Contact Us",
+        "btnStart": "Start Application →",
+        "steps": {
+            "s1": {
+                "title": "Create an Account",
+                "desc": "Register on the portal with your email and mobile number",
+                "d1": "Visit the portal homepage",
+                "d2": "Click on 'Create New Account' button",
+                "d3": "Fill in your personal details (Name, Email, Mobile)",
+                "d4": "Verify your email and mobile via OTP",
+                "d5": "Set a strong password",
+                "d6": "Complete your profile with additional info",
+                "t1": "Use a valid email that you check regularly",
+                "t2": "Remember your credentials for future logins"
+            },
+            "s2": {
+                "title": "Prepare Documents",
+                "desc": "Gather all required documents before starting the application",
+                "d1": "Review the Required Documents page",
+                "d2": "Scan all physical documents in PDF format",
+                "d3": "Ensure scans are clear and legible",
+                "d4": "Check file sizes (Max 5MB per file)",
+                "d5": "Give descriptive names to files",
+                "d6": "Keep digital copies organized in one folder",
+                "t1": "Compress large files using online tools",
+                "t2": "Double-check that all documents are current"
+            },
+            "s3": {
+                "title": "Start Application",
+                "desc": "Login and begin filling your NOC application form",
+                "d1": "Login to your account",
+                "d2": "Navigate to NOC Dashboard",
+                "d3": "Click on 'Apply for New NOC'",
+                "d4": "Select Application Type (Groundwater/Rig/Vendor)",
+                "d5": "Choose appropriate sub-category",
+                "d6": "Application form will open in sections",
+                "t1": "Save your progress frequently",
+                "t2": "Application auto-saves every few minutes"
+            },
+            "s4": {
+                "title": "Fill Form Sections",
+                "desc": "Complete all form sections with accurate information",
+                "d1": "Section 1: Personal/Company Info",
+                "d2": "Section 2: Site/Project Details",
+                "d3": "Section 3: Water Requirement Details",
+                "d4": "Section 4: Hydrogeological Info",
+                "d5": "Review all entered info carefully",
+                "d6": "Fix any validation errors highlighted",
+                "t1": "All fields marked with * are mandatory",
+                "t2": "Provide accurate GPS coordinates for site location"
+            },
+            "s5": {
+                "title": "Upload Documents",
+                "desc": "Upload all required supporting documents",
+                "d1": "Navigate to Documents section",
+                "d2": "Upload each document type one by one",
+                "d3": "Verify uploaded files are correct",
+                "d4": "Delete and re-upload if necessary",
+                "d5": "Ensure all mandatory docs are uploaded",
+                "d6": "Add optional docs if applicable",
+                "t1": "Upload documents in the order listed",
+                "t2": "Preview uploaded files before submission"
+            },
+            "s6": {
+                "title": "Review & Submit",
+                "desc": "Final review and submission of your application",
+                "d1": "Review application summary",
+                "d2": "Verify all sections are complete",
+                "d3": "Read Terms and Conditions carefully",
+                "d4": "Check 'I Agree' checkbox",
+                "d5": "Click on 'Submit Application'",
+                "d6": "Note down your Application ID",
+                "t1": "Take a screenshot of the confirmation page",
+                "t2": "Check your email for acknowledgment"
+            },
+            "s7": {
+                "title": "Track Status",
+                "desc": "Monitor the progress of your application",
+                "d1": "Login to your dashboard",
+                "d2": "View real-time application status",
+                "d3": "Check for any pending actions",
+                "d4": "Reply to clarification requests promptly",
+                "d5": "Upload additional docs if requested",
+                "d6": "Receive notifications via Email/SMS",
+                "t1": "Check status daily during processing",
+                "t2": "Keep your contact details updated"
+            },
+            "s8": {
+                "title": "Make Payment",
+                "desc": "Pay the processing fees when requested",
+                "d1": "Wait for Payment Request notification",
+                "d2": "Login and go to Pending Payments",
+                "d3": "Review fee details",
+                "d4": "Select Payment Method",
+                "d5": "Complete payment securely",
+                "d6": "Download payment receipt",
+                "t1": "Payment gateway is secure (SSL encrypted)",
+                "t2": "Keep payment receipt for records"
+            },
+            "s9": {
+                "title": "Site Inspection",
+                "desc": "Cooperate during site verification (if required)",
+                "d1": "Inspection date will be notified to you",
+                "d2": "Ensure site is accessible",
+                "d3": "Keep required docs ready",
+                "d4": "Be available or designate a representative",
+                "d5": "Provide any additional info requested",
+                "d6": "Inspection report will be uploaded to your account",
+                "t1": "Coordinate with inspector for convenient time",
+                "t2": "Prepare site beforehand"
+            },
+            "s10": {
+                "title": "Receive NOC",
+                "desc": "Download your approved NOC Certificate",
+                "d1": "Receive Approval notification",
+                "d2": "Login to your dashboard",
+                "d3": "Go to Approved Applications",
+                "d4": "Download NOC Certificate (PDF)",
+                "d5": "Verify all details in certificate",
+                "d6": "Take printout for your records",
+                "t1": "Certificate is digitally signed and valid",
+                "t2": "Note the validity period and renewal date"
+            }
+        }
+    },
+    "documents": {
+        "title": "📄 Required Documents",
+        "subtitle": "Complete list of documents needed for your application",
+        "breadcrumb": "Required Documents",
+        "requiredBadge": "Required",
+        "guidelinesTitle": "📋 Document Guidelines",
+        "btnTimelines": "← Timelines",
+        "btnFaqs": "FAQs →",
+        "types": {
+            "groundwater": "Groundwater NOC",
+            "rig": "Rig Registration",
+            "vendor": "Vendor Registration"
+        },
+        "guidelines": {
+            "g1": "PDF documents should be searchable, scanned copies in JPG/PNG",
+            "g2": "Max 5MB per file, compress as needed",
+            "g3": "Clear, legible scans without shadows or cuts",
+            "g4": "Color scans preferred, Black & white acceptable",
+            "g5": "Use descriptive file names (e.g., 'Aadhaar_Card.pdf')",
+            "g6": "Documents must be current and valid"
+        },
+        "glabels": {
+            "l1": "Format:",
+            "l2": "Size:",
+            "l3": "Quality:",
+            "l4": "Color:",
+            "l5": "Naming:",
+            "l6": "Validity:"
+        },
+        "groundwater": {
+            "d1": {
+                "name": "Application Form",
+                "desc": "Filled and signed NOC application form"
+            },
+            "d2": {
+                "name": "Identity Proof",
+                "desc": "Aadhaar Card / PAN Card / Passport"
+            },
+            "d3": {
+                "name": "Address Proof",
+                "desc": "Electricity Bill / Property Tax Receipt"
+            },
+            "d4": {
+                "name": "Land Ownership Document",
+                "desc": "Sale Deed / Lease Agreement / Patta"
+            },
+            "d5": {
+                "name": "Site Map",
+                "desc": "Detailed site plan with coordinates"
+            },
+            "d6": {
+                "name": "Project Proposal",
+                "desc": "Purpose and water requirement details"
+            },
+            "d7": {
+                "name": "Hydrogeological Report",
+                "desc": "For extraction > 10,000 Ltr/day"
+            },
+            "d8": {
+                "name": "Environmental Clearance",
+                "desc": "For industrial projects"
+            }
+        },
+        "rig": {
+            "d1": {
+                "name": "Registration Form",
+                "desc": "Filled rig registration form"
+            },
+            "d2": {
+                "name": "Rig Ownership Proof",
+                "desc": "Purchase Invoice / Transfer Deed"
+            },
+            "d3": {
+                "name": "Operator License",
+                "desc": "Valid drilling operator license"
+            },
+            "d4": {
+                "name": "Equipment Specifications",
+                "desc": "Technical specs and capacity"
+            },
+            "d5": {
+                "name": "Insurance Certificate",
+                "desc": "Valid equipment insurance"
+            },
+            "d6": {
+                "name": "Safety Compliance",
+                "desc": "Safety standard certification"
+            }
+        },
+        "vendor": {
+            "d1": {
+                "name": "Vendor Registration Form",
+                "desc": "Filled vendor application form"
+            },
+            "d2": {
+                "name": "Company Registration",
+                "desc": "ROC Certificate / Partnership Deed"
+            },
+            "d3": {
+                "name": "GST Certificate",
+                "desc": "Valid GST Registration"
+            },
+            "d4": {
+                "name": "PAN Card",
+                "desc": "Company/Owner PAN"
+            },
+            "d5": {
+                "name": "Bank Account Details",
+                "desc": "Cancelled cheque / Bank statement"
+            },
+            "d6": {
+                "name": "Experience Certificates",
+                "desc": "Previous work completion certificates"
+            }
+        }
+    },
+    "timelines": {
+        "title": "⚡ Regulatory & Compliance Timelines",
+        "subtitle": "Clear expectations for processing durations at each stage of the NOC lifecycle.",
+        "breadcrumb": "Timelines",
+        "totalDuration": "Estimated Total:",
+        "factorsTitle": "Factors Affecting Processing Time",
+        "tipsTitle": "Pro Tips for Faster Processing",
+        "btnProcessFlow": "← View Process Flow",
+        "btnRequiredDocs": "Required Documents →",
+        "flabels": {
+            "l1": "Completeness",
+            "l2": "Complexity",
+            "l3": "Inspection",
+            "l4": "Payment",
+            "l5": "Queries",
+            "l6": "Public Holidays"
+        },
+        "factors": {
+            "f1": "Applications with all required documents are processed faster.",
+            "f2": "Large-scale extraction projects may require deeper technical analysis.",
+            "f3": "Scheduling site visits depends on officer availability and site accessibility.",
+            "f4": "Processing only continues after successful payment of applicable fees.",
+            "f5": "Timely responses to officer queries can save several days.",
+            "f6": "National and state holidays may extend the estimated processing time."
+        },
+        "tips": {
+            "t1": "Ensure all uploaded documents are clear and legible to avoid re-submissions.",
+            "t2": "Double-check the GPS coordinates of your site for accurate assessment.",
+            "t3": "Use Net Banking for faster fee reconciliation compared to offline methods.",
+            "t4": "Monitor your dashboard regularly for any queries raised by the Authority."
+        },
+        "t1": {
+            "type": "New Groundwater NOC",
+            "s1": {
+                "name": "Document Verification",
+                "duration": "3-5 Working Days"
+            },
+            "s2": {
+                "name": "Technical Evaluation",
+                "duration": "5-7 Working Days"
+            },
+            "s3": {
+                "name": "Site Inspection",
+                "duration": "5-7 Working Days"
+            },
+            "s4": {
+                "name": "SGWA Approval",
+                "duration": "5-8 Working Days"
+            },
+            "total": "18-27 Working Days"
+        },
+        "t2": {
+            "type": "NOC Renewal",
+            "s1": {
+                "name": "Submission Check",
+                "duration": "2-3 Working Days"
+            },
+            "s2": {
+                "name": "Compliance Review",
+                "duration": "3-5 Working Days"
+            },
+            "s3": {
+                "name": "Renewal Approval",
+                "duration": "2-3 Working Days"
+            },
+            "total": "7-11 Working Days"
+        },
+        "t3": {
+            "type": "Rig/Vendor Registration",
+            "s1": {
+                "name": "Auth Verification",
+                "duration": "2-3 Working Days"
+            },
+            "s2": {
+                "name": "Technical Review",
+                "duration": "3-5 Working Days"
+            },
+            "s3": {
+                "name": "Certificate Issue",
+                "duration": "2-3 Working Days"
+            },
+            "total": "7-11 Working Days"
+        }
+    },
+    "legacy": {
+        "department_name": "GROUND WATER DEPARTMENT",
+        "govt_rajasthan": "Government of Rajasthan",
+        "technical_helpline": "Technical Helpline Number",
+        "helpline_hours": "10.00 AM - 6.00 PM (On all working days)",
+        "search_placeholder": "Search here",
+        "about_department": "ABOUT DEPARTMENT",
+        "services": "SERVICES",
+        "guidelines": "GUIDELINES",
+        "downloads": "DOWNLOADS",
+        "contact_us": "CONTACT US"
+    },
+    "officer": {
+        "login": {
+            "title": "Officer Portal Login",
+            "subtitle": "State Groundwater Authority, Rajasthan",
+            "roleLabel": "Officer Role",
+            "roles": {
+                "DGO": "DGO (District Groundwater Officer)",
+                "SGWA": "SGWA (State Groundwater Authority)",
+                "ENFORCEMENT": "Enforcement Wing",
+                "INSPECTION": "Inspection Officer"
+            },
+            "usernameLabel": "Username",
+            "usernamePlaceholder": "Enter your username",
+            "passwordLabel": "Password",
+            "passwordPlaceholder": "Enter your password",
+            "btnLogin": "Login to Portal",
+            "loggingIn": "Logging in...",
+            "forgotPassword": "Forgot Password?",
+            "applicantLink": "For applicants, please click here"
+        },
+        "header": {
+            "portalSuffix": "Portal",
+            "govTitle": "State Groundwater Authority, Rajasthan"
+        },
+        "sidebar": {
+            "dashboard": "Dashboard",
+            "applications": "Applications",
+            "inspections": "Site Inspections",
+            "queries": "Queries",
+            "reports": "Reports",
+            "pendingReview": "Pending Review",
+            "technicalReview": "Technical Review",
+            "approvalQueue": "Approval Queue",
+            "approvedNocs": "Approved NOCs",
+            "rejected": "Rejected",
+            "compliance": "Compliance",
+            "myAssignments": "My Assignments",
+            "history": "History"
+        },
+        "dashboard": {
+            "title": "Dashboard",
+            "subtitle": "Overview of NOC applications and pending tasks",
+            "dgoTitle": "DGO Dashboard",
+            "sgwaTitle": "SGWA Dashboard",
+            "sgwaSubtitle": "State Groundwater Authority - Rajasthan",
+            "loading": "Loading dashboard...",
+            "stats": {
+                "total": "Total Applications",
+                "pendingVerification": "Pending Verification",
+                "pendingApproval": "Pending Approval",
+                "underReview": "Under Review",
+                "queriesRaised": "Queries Raised",
+                "inspectionPending": "Inspection Pending",
+                "dgoRecommended": "DGO Recommended",
+                "approved": "Approved & NOC Issued",
+                "rejected": "Rejected",
+                "allTime": "All time",
+                "requiresAttention": "Requires attention",
+                "inProgress": "In progress",
+                "awaitingResponse": "Awaiting response",
+                "siteVisitsRequired": "Site visits required",
+                "readyForReview": "Ready for review",
+                "completed": "Completed",
+                "notApproved": "Not approved"
+            },
+            "inspections": {
+                "title": "Pending Inspections",
+                "scheduled": "Scheduled",
+                "submitReport": "Submit Report"
+            },
+            "recent": {
+                "title": "Recent Applications",
+                "viewAll": "View All →",
+                "none": "No recent applications"
+            },
+            "fields": {
+                "applicant": "Applicant",
+                "district": "District",
+                "location": "Location",
+                "waterRequirement": "Water Requirement",
+                "daysInQueue": "Days in Queue",
+                "daysSuffix": "days",
+                "appNo": "Application No",
+                "projectType": "Project Type",
+                "submitted": "Submitted",
+                "inQueue": "in queue"
+            }
+        }
+    }
+}

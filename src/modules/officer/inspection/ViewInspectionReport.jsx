@@ -5,22 +5,25 @@ import OfficerSidebar from '../shared/components/OfficerSidebar';
 import officerService from '../services/officerService';
 import '../shared/styles/officer-portal.css';
 
+import { getOfficerData } from '../shared/utils/officerAuth';
+
 const ViewInspectionReport = () => {
     const { inspectionId } = useParams();
     const navigate = useNavigate();
     const [report, setReport] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [officerData, setOfficerData] = useState(null);
 
     useEffect(() => {
+        const userData = getOfficerData();
+        setOfficerData(userData);
+
         const fetchReport = async () => {
             setLoading(true);
             try {
-                // Fetch report from mock service
                 const response = await officerService.getInspectionReport(inspectionId);
-
                 if (response.success && response.data) {
                     const data = response.data;
-                    // Robust Mapping
                     setReport({
                         inspectionId: data.inspectionId,
                         appId: data.applicationNumber || 'N/A',
@@ -36,7 +39,7 @@ const ViewInspectionReport = () => {
                         rainwaterHarvesting: data.rainwaterHarvesting || 'Not Checked',
                         remarks: data.reportRemarks || data.remarks || 'No remarks',
                         recommendation: data.reportResult || data.recommendation || 'PENDING',
-                        officerName: 'Vikram Singh',
+                        officerName: data.officerName || userData?.name || 'Officer',
                         geoLocation: data.geoLocation || { lat: 0, lng: 0, accuracy: 0 },
                         photos: []
                     });
@@ -53,7 +56,7 @@ const ViewInspectionReport = () => {
 
     if (loading) return (
         <div className="officer-portal">
-            <OfficerHeader officerName="Vikram Singh" officerRole="INSPECTION" />
+            <OfficerHeader officerName={officerData?.name || "Officer"} officerRole="INSPECTION" />
             <div className="officer-layout">
                 <OfficerSidebar role="INSPECTION" />
                 <main className="officer-content">
@@ -67,7 +70,7 @@ const ViewInspectionReport = () => {
 
     if (!report) return (
         <div className="officer-portal">
-            <OfficerHeader officerName="Vikram Singh" officerRole="INSPECTION" />
+            <OfficerHeader officerName={officerData?.name || "Officer"} officerRole="INSPECTION" />
             <div className="officer-layout">
                 <OfficerSidebar role="INSPECTION" />
                 <main className="officer-content">
@@ -82,10 +85,10 @@ const ViewInspectionReport = () => {
     return (
         <div className="officer-portal">
             <OfficerHeader
-                officerName="Vikram Singh"
+                officerName={officerData?.name || officerData?.username || "Officer"}
                 officerRole="INSPECTION"
-                officerDesignation="Field Inspector"
-                district="Jaipur"
+                officerDesignation={officerData?.designation || "Field Inspector"}
+                district={officerData?.district || "Jaipur"}
             />
 
             <div className="officer-layout">

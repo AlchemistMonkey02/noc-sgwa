@@ -95,7 +95,7 @@ Content-Type: application/json
       "name": "Rajesh Kumar",
       "designation": "Chief Engineer",
       "department": "SGWA",
-      "userType": "RSGWA",
+      "userType": "SGWA",
       "permissions": [
         "VIEW_ALL_APPLICATIONS",
         "APPROVE_NOC",

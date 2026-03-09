@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import OfficerHeader from '../shared/components/OfficerHeader';
 import OfficerSidebar from '../shared/components/OfficerSidebar';
 import ApplicationCard from '../shared/components/ApplicationCard';
@@ -8,6 +9,7 @@ import { getOfficerData } from '../shared/utils/officerAuth';
 import '../shared/styles/officer-portal.css';
 
 const DGODashboard = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [statistics, setStatistics] = useState({
         total: 0,
@@ -44,11 +46,11 @@ const DGODashboard = () => {
 
                 // Update statistics
                 setStatistics({
-                    total: data.stats?.assignedApplications || 0,
-                    pendingVerification: data.stats?.pendingInspection || 0,
+                    total: data.stats?.totalApplications || 0,
+                    pendingVerification: data.stats?.pendingVerification || 0,
                     underReview: data.stats?.underReview || 0,
                     queriesRaised: data.stats?.queriesRaised || 0,
-                    inspectionPending: data.stats?.pendingInspection || 0
+                    inspectionPending: data.stats?.inspectionPending || 0
                 });
 
                 // Set district
@@ -59,88 +61,24 @@ const DGODashboard = () => {
                 // Update recent applications
                 if (data.recentApplications && data.recentApplications.length > 0) {
                     const formattedApps = data.recentApplications.map(app => ({
-                        applicationId: app.id || app._id,
+                        applicationId: app.applicationId || app._id,
                         applicationNumber: app.applicationNumber,
-                        applicantName: app.applicantName,
-                        projectName: app.projectName,
-                        projectType: app.projectType || app.sector,
-                        district: app.district,
-                        block: app.block,
-                        waterRequirement: `${app.waterRequirement || 0} m³/day`,
-                        submittedDate: app.submittedDate,
+                        applicantName: app.projectDetails?.applicantName || 'N/A',
+                        projectName: app.projectDetails?.projectName || 'N/A',
+                        projectType: app.sectorType || app.applicationSubType || 'N/A',
+                        district: app.location?.districtId || 'N/A',
+                        block: app.location?.blockId || 'N/A',
+                        waterRequirement: `${app.waterRequirement?.totalDailyExtraction || 0} m³/day`,
+                        submittedDate: app.submittedAt,
                         status: app.status,
-                        daysInQueue: app.daysInQueue || 0
+                        daysInQueue: Math.floor((new Date() - new Date(app.submittedAt)) / (1000 * 60 * 60 * 24)) || 0
                     }));
                     setRecentApplications(formattedApps);
                 }
             }
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
-
-            // Use mock data as fallback for demonstration
-            console.log('Using mock data - backend API not available');
-
-            setStatistics({
-                total: 45,
-                pendingVerification: 15,
-                underReview: 20,
-                queriesRaised: 5,
-                inspectionPending: 5
-            });
-
-            setDistrict('Jaipur');
-
-            setPendingInspections([
-                {
-                    id: 'app-insp-001',
-                    applicationNumber: 'RJ/CGWA/NOC/2026/009988',
-                    projectName: 'City Mall Complex',
-                    scheduledDate: '2026-01-21',
-                    officer: 'Current User'
-                }
-            ]);
-
-            setRecentApplications([
-                {
-                    applicationId: 'app-mock-001',
-                    applicationNumber: 'RJ/CGWA/NOC/2026/001234',
-                    applicantName: 'Rajesh Kumar Sharma',
-                    projectName: 'ABC Textile Manufacturing Unit',
-                    projectType: 'Industrial',
-                    district: 'Jaipur',
-                    block: 'Sanganer',
-                    waterRequirement: '150.25 m³/day',
-                    submittedDate: '2026-01-09T08:00:00Z',
-                    status: 'PENDING_VERIFICATION',
-                    daysInQueue: 2
-                },
-                {
-                    applicationId: 'app-mock-002',
-                    applicationNumber: 'RJ/CGWA/NOC/2026/001235',
-                    applicantName: 'Sunita Devi',
-                    projectName: 'XYZ Food Processing Plant',
-                    projectType: 'Industrial',
-                    district: 'Jaipur',
-                    block: 'Sanganer',
-                    waterRequirement: '85.50 m³/day',
-                    submittedDate: '2026-01-08T10:30:00Z',
-                    status: 'UNDER_REVIEW',
-                    daysInQueue: 3
-                },
-                {
-                    applicationId: 'app-mock-003',
-                    applicationNumber: 'RJ/CGWA/NOC/2026/001236',
-                    applicantName: 'Green Valley Hotels Pvt Ltd',
-                    projectName: 'Luxury Resort Development',
-                    projectType: 'Commercial',
-                    district: 'Jaipur',
-                    block: 'Amber',
-                    waterRequirement: '200.00 m³/day',
-                    submittedDate: '2026-01-07T09:15:00Z',
-                    status: 'PENDING_VERIFICATION',
-                    daysInQueue: 4
-                }
-            ]);
+            // Error state handled by showing 0s as per initial state
         } finally {
             setLoading(false);
         }
@@ -159,8 +97,8 @@ const DGODashboard = () => {
             <OfficerHeader
                 officerName={officerInfo?.name || officerInfo?.username || 'DGO Officer'}
                 officerRole="DGO"
-                officerDesignation={officerInfo?.designation || 'District Groundwater Officer'}
-                district={district || officerInfo?.district || 'Jaipur'}
+                officerDesignation={officerInfo?.designation || t('officer.login.roles.DGO')}
+                district={district || officerInfo?.communicationAddress?.district || officerInfo?.district || 'Jaipur'}
             />
 
             <div className="officer-layout">
@@ -170,9 +108,9 @@ const DGODashboard = () => {
                     <div className="officer-container">
                         {/* Page Header */}
                         <div className="officer-page-header">
-                            <h1 className="officer-page-title">📊 Dashboard</h1>
+                            <h1 className="officer-page-title">📊 {t('officer.dashboard.title')}</h1>
                             <p className="officer-page-subtitle">
-                                Overview of NOC applications and pending tasks
+                                {t('officer.dashboard.subtitle')}
                             </p>
                         </div>
 
@@ -181,70 +119,70 @@ const DGODashboard = () => {
                             {/* Total Applications */}
                             <div className="officer-stat-card">
                                 <div className="officer-stat-header">
-                                    <span className="officer-stat-label">Total Applications</span>
+                                    <span className="officer-stat-label">{t('officer.dashboard.stats.total')}</span>
                                     <div className="officer-stat-icon primary">
                                         📋
                                     </div>
                                 </div>
-                                <h2 className="officer-stat-value">{statistics.total}</h2>
+                                <h2 className="officer-stat-value notranslate">{statistics.total}</h2>
                                 <div className="officer-stat-footer">
-                                    <span>All time</span>
+                                    <span>{t('officer.dashboard.stats.allTime')}</span>
                                 </div>
                             </div>
 
                             {/* Pending Verification */}
                             <div className="officer-stat-card">
                                 <div className="officer-stat-header">
-                                    <span className="officer-stat-label">Pending Verification</span>
+                                    <span className="officer-stat-label">{t('officer.dashboard.stats.pendingVerification')}</span>
                                     <div className="officer-stat-icon warning">
                                         ⏳
                                     </div>
                                 </div>
-                                <h2 className="officer-stat-value">{statistics.pendingVerification}</h2>
+                                <h2 className="officer-stat-value notranslate">{statistics.pendingVerification}</h2>
                                 <div className="officer-stat-footer">
-                                    <span style={{ color: 'var(--officer-warning)' }}>⚠️ Requires attention</span>
+                                    <span style={{ color: 'var(--officer-warning)' }}>⚠️ {t('officer.dashboard.stats.requiresAttention')}</span>
                                 </div>
                             </div>
 
                             {/* Under Review */}
                             <div className="officer-stat-card">
                                 <div className="officer-stat-header">
-                                    <span className="officer-stat-label">Under Review</span>
+                                    <span className="officer-stat-label">{t('officer.dashboard.stats.underReview')}</span>
                                     <div className="officer-stat-icon primary">
                                         🔍
                                     </div>
                                 </div>
-                                <h2 className="officer-stat-value">{statistics.underReview}</h2>
+                                <h2 className="officer-stat-value notranslate">{statistics.underReview}</h2>
                                 <div className="officer-stat-footer">
-                                    <span>In progress</span>
+                                    <span>{t('officer.dashboard.stats.inProgress')}</span>
                                 </div>
                             </div>
 
                             {/* Queries Raised */}
                             <div className="officer-stat-card">
                                 <div className="officer-stat-header">
-                                    <span className="officer-stat-label">Queries Raised</span>
+                                    <span className="officer-stat-label">{t('officer.dashboard.stats.queriesRaised')}</span>
                                     <div className="officer-stat-icon danger">
                                         ❓
                                     </div>
                                 </div>
-                                <h2 className="officer-stat-value">{statistics.queriesRaised}</h2>
+                                <h2 className="officer-stat-value notranslate">{statistics.queriesRaised}</h2>
                                 <div className="officer-stat-footer">
-                                    <span>Awaiting response</span>
+                                    <span>{t('officer.dashboard.stats.awaitingResponse')}</span>
                                 </div>
                             </div>
 
                             {/* Inspection Pending */}
                             <div className="officer-stat-card">
                                 <div className="officer-stat-header">
-                                    <span className="officer-stat-label">Inspection Pending</span>
+                                    <span className="officer-stat-label">{t('officer.dashboard.stats.inspectionPending')}</span>
                                     <div className="officer-stat-icon warning">
                                         🔍
                                     </div>
                                 </div>
-                                <h2 className="officer-stat-value">{statistics.inspectionPending}</h2>
+                                <h2 className="officer-stat-value notranslate">{statistics.inspectionPending}</h2>
                                 <div className="officer-stat-footer">
-                                    <span>Site visits required</span>
+                                    <span>{t('officer.dashboard.stats.siteVisitsRequired')}</span>
                                 </div>
                             </div>
                         </div>
@@ -254,23 +192,23 @@ const DGODashboard = () => {
                         {pendingInspections.length > 0 && (
                             <div className="officer-mt-4">
                                 <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--officer-warning)', margin: '0 0 1rem 0' }}>
-                                    🔍 Pending Inspections
+                                    🔍 {t('officer.dashboard.inspections.title')}
                                 </h2>
                                 <div className="inspection-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
                                     {pendingInspections.map(item => (
                                         <div key={item.id} className="officer-card" style={{ padding: '1.5rem', borderLeft: '4px solid var(--officer-warning)' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                                <span className="status-badge status-inspection-scheduled">Scheduled</span>
-                                                <span style={{ fontSize: '0.875rem', color: '#666' }}>{new Date(item.scheduledDate).toLocaleDateString()}</span>
+                                                <span className="status-badge status-inspection-scheduled">{t('officer.dashboard.inspections.scheduled')}</span>
+                                                <span className="notranslate" style={{ fontSize: '0.875rem', color: '#666' }}>{new Date(item.scheduledDate).toLocaleDateString()}</span>
                                             </div>
-                                            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.125rem' }}>{item.projectName}</h3>
-                                            <p style={{ margin: '0 0 1rem 0', color: '#666', fontSize: '0.9rem' }}>{item.applicationNumber}</p>
+                                            <h3 className="notranslate" style={{ margin: '0 0 0.5rem 0', fontSize: '1.125rem' }}>{item.projectName}</h3>
+                                            <p className="notranslate" style={{ margin: '0 0 1rem 0', color: '#666', fontSize: '0.9rem' }}>{item.applicationNumber}</p>
                                             <button
                                                 className="officer-btn officer-btn-primary"
                                                 style={{ width: '100%' }}
                                                 onClick={() => navigate(`/officer/dgo/applications/${item.id}/inspection-report`)}
                                             >
-                                                📝 Submit Report
+                                                📝 {t('officer.dashboard.inspections.submitReport')}
                                             </button>
                                         </div>
                                     ))}
@@ -282,13 +220,13 @@ const DGODashboard = () => {
                         <div className="officer-mt-4">
                             <div className="officer-flex-between officer-mb-3">
                                 <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--officer-primary)', margin: 0 }}>
-                                    Recent Applications
+                                    {t('officer.dashboard.recent.title')}
                                 </h2>
                                 <button
                                     className="officer-btn officer-btn-primary"
                                     onClick={handleViewAll}
                                 >
-                                    View All →
+                                    {t('officer.dashboard.recent.viewAll')}
                                 </button>
                             </div>
 
@@ -298,6 +236,8 @@ const DGODashboard = () => {
                                         key={application.applicationId}
                                         application={application}
                                         onClick={handleApplicationClick}
+                                        showCallButton={true}
+                                        officerType="DGO"
                                     />
                                 ))
                             ) : (
@@ -306,7 +246,7 @@ const DGODashboard = () => {
                                     padding: '3rem',
                                     color: 'var(--officer-text-light)'
                                 }}>
-                                    <p style={{ fontSize: '1.125rem' }}>No recent applications</p>
+                                    <p style={{ fontSize: '1.125rem' }}>{t('officer.dashboard.recent.none')}</p>
                                 </div>
                             )}
                         </div>

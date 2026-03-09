@@ -261,7 +261,7 @@ const RigRegistrationPermit = () => {
                         }}>
                             Login to Apply
                         </Link>
-                        <Link to="/noc/register" style={{
+                        <Link to="?register=true" style={{
                             display: 'inline-block',
                             padding: '12px 30px',
                             background: 'white',

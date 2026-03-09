@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './ForgotPassword.css';
 
-import API_BASE_URL from '../../config/apiConfig';
+import apiClient from '../../services/apiClient';
 
 const ForgotPassword = () => {
-    const [step, setStep] = useState(1); // 1: Basic Info, 2: Verification, 3: Success
+    const [step, setStep] = useState(1);
     const [formData, setFormData] = useState({
         serviceType: '',
         userId: '',
@@ -18,43 +18,31 @@ const ForgotPassword = () => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        setFormData(prev => ({ ...prev, [name]: value }));
         setError('');
     };
 
     const handleStep1Submit = (e) => {
         e.preventDefault();
-
-        // Validation for Step 1
         if (!formData.serviceType || !formData.userId || !formData.email) {
             setError('Please fill all required fields');
             return;
         }
-
-        // Email validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(formData.email)) {
             setError('Please enter a valid email address');
             return;
         }
-
         setError('');
-        setStep(2); // Move to verification step
+        setStep(2);
     };
 
     const handleStep2Submit = async (e) => {
         e.preventDefault();
-
-        // Validation for Step 2
         if (!formData.mobileNumber || !formData.captcha) {
             setError('Please fill all required fields');
             return;
         }
-
-        // Mobile validation (10 digits)
         const mobileRegex = /^[0-9]{10}$/;
         if (!mobileRegex.test(formData.mobileNumber)) {
             setError('Please enter a valid 10-digit mobile number');
@@ -65,30 +53,17 @@ const ForgotPassword = () => {
         setError('');
 
         try {
-            // TODO: Replace with actual API call
-            const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    userType: formData.serviceType,
-                    userId: formData.userId,
-                    email: formData.email,
-                    mobileNumber: formData.mobileNumber
-                })
+            await apiClient.post('/auth/forgot-password', {
+                userType: formData.serviceType,
+                userId: formData.userId,
+                email: formData.email,
+                mobileNumber: formData.mobileNumber
             });
-
-            if (response.ok) {
-                setStep(3); // Move to success step
-            } else {
-                const data = await response.json();
-                setError(data.message || 'Failed to submit request. Please try again.');
-            }
+            setStep(3);
         } catch (error) {
             console.error('Forgot password error:', error);
-            // For demo purposes, show success
-            setStep(3);
+            // Fallback for demo if needed, but error handling is now standardized
+            setError(error.message || 'Failed to submit request');
         } finally {
             setLoading(false);
         }
@@ -144,7 +119,7 @@ const ForgotPassword = () => {
                                     <option value="rig_registration">Rig Registration & Operations</option>
                                     <option value="vendor_registration">Vendor/Equipment Registration</option>
                                     <option value="dgo">District Groundwater Officer (DGO)</option>
-                                    <option value="rsgwa">RSGWA Officer</option>
+                                    <option value="sgwa">SGWA Officer</option>
                                     <option value="enforcement">Enforcement Officer</option>
                                 </select>
                             </div>

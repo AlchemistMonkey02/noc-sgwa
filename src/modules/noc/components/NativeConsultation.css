@@ -1,0 +1,1493 @@
+/* ============================================================
+   NATIVE CONSULTATION — PREMIUM REDESIGN
+   Dark glassmorphism + smooth animations + professional layout
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@keyframes _ss_pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+    }
+
+    50% {
+        opacity: 0.8;
+        box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+    }
+}
+
+/* ─── Root outer container (Dedicated Page) ──────────────── */
+.nc-outer {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    /* Dedicated page layout */
+    background: #080e1a;
+    font-family: 'Inter', system-ui, sans-serif;
+    color: #fff;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    z-index: 9999;
+}
+
+.nc-outer.minimized {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 320px;
+    height: 60px;
+    border-radius: 30px;
+    z-index: 10000;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
+    transform-origin: bottom right;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.nc-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    position: relative;
+}
+
+/* Ambient gradient orbs */
+.nc-shell::before,
+.nc-shell::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.nc-shell::before {
+    width: 520px;
+    height: 520px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.18) 0%, transparent 70%);
+    top: -120px;
+    left: -120px;
+}
+
+.nc-shell::after {
+    width: 420px;
+    height: 420px;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.14) 0%, transparent 70%);
+    bottom: -80px;
+    right: -60px;
+}
+
+/* ─── Top Nav Bar ────────────────────────────────────────── */
+.nc-topbar {
+    position: relative;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 20px;
+    background: rgba(8, 14, 26, 0.92);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    flex-shrink: 0;
+    min-height: 52px;
+}
+
+.nc-topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.nc-logo-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 32px;
+    padding: 6px 14px 6px 10px;
+}
+
+.nc-logo-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #22d3ee;
+    box-shadow: 0 0 8px #22d3ee;
+    animation: livePulse 2s ease-in-out infinite;
+}
+
+.nc-logo-pill span {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: rgba(255, 255, 255, 0.85);
+    text-transform: uppercase;
+}
+
+.nc-room-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.nc-room-info .room-label {
+    font-size: 0.68rem;
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.nc-room-info .room-id {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    font-family: 'Courier New', monospace;
+}
+
+.nc-topbar-center {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nc-timer {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 16px;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    font-size: 0.95rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 1.5px;
+    transition: background 0.3s;
+}
+
+.nc-timer.urgent {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+    animation: urgentPulse 1s ease-in-out infinite;
+}
+
+.nc-timer svg {
+    opacity: 0.7;
+}
+
+.nc-recording-badge {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 14px;
+    border-radius: 24px;
+    background: rgba(220, 38, 38, 0.22);
+    border: 1px solid rgba(220, 38, 38, 0.45);
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #fca5a5;
+    animation: fadeIn 0.3s ease;
+}
+
+.nc-rec-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ef4444;
+    box-shadow: 0 0 6px #ef4444;
+    animation: recPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes speakerPulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+        transform: scale(1);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+        transform: scale(1.05);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+        transform: scale(1);
+    }
+}
+
+/* ─── Recording Banner ─────────────────────────────────── */
+.nc-recording-banner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: linear-gradient(to bottom, rgba(239, 68, 68, 0.95), rgba(239, 68, 68, 0.7));
+    backdrop-filter: blur(8px);
+    color: #fff;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    animation: slideDown 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.nc-recording-banner .nc-rec-dot {
+    background: #fff;
+    box-shadow: 0 0 10px #fff;
+}
+
+.nc-recording-banner-mini {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+    font-size: 0.75rem;
+    font-weight: 700;
+    animation: fadeIn 0.3s ease;
+}
+
+/* ─── Muted Indicator ──────────────────────────────────── */
+.muted-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    color: #fca5a5;
+    font-weight: 600;
+    margin-right: 8px;
+}
+
+.nc-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nc-mode-pill {
+    display: flex;
+    align-items: center;
+    border-radius: 28px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    padding: 3px;
+    gap: 3px;
+}
+
+.nc-mode-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 24px;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.nc-mode-btn.active {
+    background: rgba(59, 130, 246, 0.9);
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(59, 130, 246, 0.4);
+}
+
+.nc-mode-btn:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.85);
+}
+
+/* ─── Main Content Area ──────────────────────────────────── */
+.nc-body {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+}
+
+/* ─── Video Stage ────────────────────────────────────────── */
+.nc-stage {
+    flex: 1;
+    position: relative;
+    background: #0b1120;
+    overflow: hidden;
+}
+
+/* Waiting screen */
+.nc-waiting {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    z-index: 2;
+}
+
+.nc-waiting-ring {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    border: 3px solid rgba(59, 130, 246, 0.2);
+    border-top-color: #3b82f6;
+    animation: spin 1.4s linear infinite;
+}
+
+.nc-waiting h3 {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.nc-waiting p {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.82rem;
+    margin: 0;
+}
+
+/* Video items — absolute inside stage */
+.nc-video-item {
+    position: absolute;
+    background: #111827;
+    overflow: hidden;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: box-shadow 0.3s, border-color 0.3s;
+}
+
+.nc-video-item.main {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+}
+
+.nc-video-item.pip {
+    bottom: 76px;
+    right: 18px;
+    width: 200px;
+    height: 134px;
+    z-index: 8;
+    border: 2.5px solid rgba(255, 255, 255, 0.65);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    cursor: move;
+    transition: border-color 0.2s, transform 0.2s;
+}
+
+.nc-video-item.pip:hover {
+    border-color: #60a5fa;
+    transform: scale(1.02);
+}
+
+.nc-video-item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Avatar placeholder (camera off) */
+.nc-avatar-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);
+    z-index: 1;
+}
+
+.nc-avatar-overlay.connecting {
+    background: rgba(8, 14, 26, 0.85);
+    backdrop-filter: blur(10px);
+}
+
+.nc-waiting-ring.sm {
+    width: 48px;
+    height: 48px;
+    border-width: 2px;
+}
+
+.nc-avatar {
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.nc-avatar.lg {
+    width: 96px;
+    height: 96px;
+    font-size: 2.2rem;
+    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.4);
+}
+
+.nc-avatar.lg.green {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 8px 32px rgba(16, 185, 129, 0.4);
+}
+
+.nc-avatar.sm {
+    width: 52px;
+    height: 52px;
+    font-size: 1.1rem;
+    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+}
+
+.nc-avatar-name {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.95);
+    margin: 0;
+    text-align: center;
+}
+
+.nc-avatar-role {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.45);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.nc-avatar-role .cam-off-icon {
+    display: inline-flex;
+}
+
+/* Name tag overlay */
+.nc-name-tag {
+    position: absolute;
+    bottom: 14px;
+    left: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.64);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    padding: 5px 12px 5px 7px;
+    z-index: 5;
+    animation: fadeIn 0.3s ease;
+    transition: all 0.3s;
+}
+
+.nc-name-tag.speaking {
+    border-color: #22c55e;
+    background: rgba(34, 197, 94, 0.25);
+    animation: speakerPulse 1.5s infinite;
+}
+
+.nc-name-tag .nt-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 5px #22c55e;
+    flex-shrink: 0;
+}
+
+.nc-name-tag.muted .nt-dot {
+    background: #ef4444;
+    box-shadow: 0 0 5px #ef4444;
+}
+
+.nc-name-tag span {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* ─── Controls Bar ───────────────────────────────────────── */
+.nc-controls {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(8, 14, 26, 0.88);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    padding: 8px 14px;
+    border-radius: 48px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+    animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nc-ctrl-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nc-ctrl-divider {
+    width: 1px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 0 4px;
+}
+
+/* Generic control button */
+.nc-btn {
+    position: relative;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s, background 0.18s;
+    outline: none;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.10);
+    color: #fff;
+}
+
+.nc-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+    transform: translateY(-2px) scale(1.07);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.nc-btn:active {
+    transform: scale(0.95);
+}
+
+/* State variants */
+.nc-btn.off {
+    background: rgba(239, 68, 68, 0.85);
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.35);
+}
+
+.nc-btn.off:hover {
+    background: #dc2626;
+}
+
+.nc-btn.active-blue {
+    background: rgba(59, 130, 246, 0.85);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.35);
+}
+
+.nc-btn.active-blue:hover {
+    background: #2563eb;
+}
+
+.nc-btn.recording-btn {
+    background: rgba(239, 68, 68, 0.85);
+    gap: 6px;
+    width: auto;
+    padding: 0 14px;
+    border-radius: 24px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.nc-btn.recording-btn:hover {
+    background: #dc2626;
+}
+
+/* End call */
+.nc-btn-end {
+    width: auto;
+    padding: 0 18px;
+    border-radius: 24px;
+    height: 42px;
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.45);
+    flex-shrink: 0;
+}
+
+.nc-btn-end:hover {
+    background: linear-gradient(135deg, #dc2626, #991b1b);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 28px rgba(239, 68, 68, 0.55);
+}
+
+.nc-btn-end:active {
+    transform: scale(0.96);
+}
+
+/* Tooltip */
+.nc-btn[data-tip]:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.73rem;
+    font-weight: 500;
+    pointer-events: none;
+    animation: fadeIn 0.15s;
+}
+
+/* ─── Voice Call (audio-only) Overlay ────────────────────── */
+.nc-voice-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    background: linear-gradient(160deg, #0b1120 0%, #111827 100%);
+    z-index: 6;
+    animation: fadeIn 0.4s ease;
+}
+
+.nc-voice-ripple-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 168px;
+    height: 168px;
+}
+
+.nc-voice-ripple {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid rgba(99, 102, 241, 0.35);
+    animation: ripple 2.4s ease-out infinite;
+}
+
+.nc-voice-ripple:nth-child(1) {
+    width: 168px;
+    height: 168px;
+    animation-delay: 0s;
+}
+
+.nc-voice-ripple:nth-child(2) {
+    width: 168px;
+    height: 168px;
+    animation-delay: 0.6s;
+}
+
+.nc-voice-ripple:nth-child(3) {
+    width: 168px;
+    height: 168px;
+    animation-delay: 1.2s;
+}
+
+.nc-voice-avatar {
+    width: 112px;
+    height: 112px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.8rem;
+    font-weight: 700;
+    color: #fff;
+    z-index: 1;
+    box-shadow: 0 12px 48px rgba(99, 102, 241, 0.5);
+}
+
+.nc-voice-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+    text-align: center;
+}
+
+.nc-voice-role {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.45);
+    margin: 0;
+}
+
+.nc-voice-status {
+    font-size: 0.85rem;
+    color: #22d3ee;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.nc-voice-status .pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #22d3ee;
+    animation: livePulse 1.4s ease-in-out infinite;
+}
+
+/* ─── Chat Sidebar ───────────────────────────────────────── */
+.nc-sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: rgba(12, 18, 30, 0.92);
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    position: relative;
+    z-index: 2;
+    transition: width 0.3s ease, opacity 0.3s;
+}
+
+.nc-sidebar.collapsed {
+    width: 0;
+    opacity: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.nc-sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+}
+
+.nc-sidebar-header h3 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nc-sidebar-header h3 svg {
+    color: #60a5fa;
+}
+
+.nc-close-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.07);
+    color: rgba(255, 255, 255, 0.55);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.nc-close-btn:hover {
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+}
+
+.nc-msgs {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+}
+
+.nc-msgs::-webkit-scrollbar {
+    width: 4px;
+}
+
+.nc-msgs::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.nc-msgs::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+}
+
+.nc-bubble {
+    max-width: 86%;
+    padding: 9px 13px;
+    border-radius: 14px;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    word-break: break-word;
+    animation: fadeIn 0.25s ease;
+}
+
+.nc-bubble.local {
+    align-self: flex-end;
+    background: linear-gradient(135deg, #1d4ed8, #2563eb);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+}
+
+.nc-bubble.remote {
+    align-self: flex-start;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.88);
+    border-bottom-left-radius: 4px;
+}
+
+.nc-bubble .bubble-sender {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-bottom: 3px;
+    opacity: 0.65;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.nc-bubble p {
+    margin: 0;
+}
+
+.nc-no-msgs {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.25);
+    font-size: 0.82rem;
+    margin-top: 40px;
+    line-height: 1.6;
+}
+
+.nc-chat-form {
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+    background: rgba(8, 14, 26, 0.5);
+}
+
+.nc-chat-input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    padding: 9px 16px;
+    color: #fff;
+    font-size: 0.88rem;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+    font-family: inherit;
+}
+
+.nc-chat-input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.nc-chat-input:focus {
+    border-color: rgba(59, 130, 246, 0.6);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.nc-chat-send {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: #2563eb;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.4);
+}
+
+.nc-chat-send:hover {
+    background: #1d4ed8;
+    transform: scale(1.1);
+}
+
+.nc-chat-send:active {
+    transform: scale(0.95);
+}
+
+/* ─── State Screens (ended / waiting / unauthorized) ─────── */
+.nc-state-screen {
+    position: fixed;
+    top: 80px;
+    /* below the global site header */
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    background: linear-gradient(160deg, #060b14 0%, #0f172a 100%);
+    z-index: 100;
+    animation: fadeIn 0.4s ease;
+    padding: 24px;
+    text-align: center;
+}
+
+.nc-state-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+}
+
+.nc-state-icon.red {
+    background: rgba(239, 68, 68, 0.18);
+    color: #ef4444;
+}
+
+.nc-state-icon.yellow {
+    background: rgba(234, 179, 8, 0.18);
+    color: #eab308;
+}
+
+.nc-state-icon.blue {
+    background: rgba(59, 130, 246, 0.18);
+    color: #3b82f6;
+}
+
+.nc-state-screen h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+}
+
+.nc-state-screen p {
+    font-size: 0.92rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin: 0;
+    max-width: 340px;
+}
+
+.nc-state-btn {
+    margin-top: 8px;
+    padding: 12px 32px;
+    border-radius: 32px;
+    border: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.nc-state-btn.primary {
+    background: #2563eb;
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(37, 99, 235, 0.4);
+}
+
+.nc-state-btn.primary:hover {
+    background: #1d4ed8;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 28px rgba(37, 99, 235, 0.5);
+}
+
+.nc-state-btn.secondary {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.nc-state-btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+/* ─── Participants Panel (slide-in) ──────────────────────── */
+.nc-participants {
+    position: absolute;
+    top: 0;
+    right: 320px;
+    width: 240px;
+    height: 100%;
+    background: rgba(8, 14, 26, 0.92);
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    animation: slideInLeft 0.3s ease;
+}
+
+.nc-participants-header {
+    padding: 16px 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nc-participant-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.nc-participant-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.88rem;
+    flex-shrink: 0;
+}
+
+.nc-participant-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.nc-participant-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nc-participant-role {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* ─── Animations ─────────────────────────────────────────── */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(24px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+@keyframes livePulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.5;
+        transform: scale(0.8);
+    }
+}
+
+@keyframes urgentPulse {
+
+    0%,
+    100% {
+        border-color: rgba(239, 68, 68, 0.4);
+    }
+
+    50% {
+        border-color: rgba(239, 68, 68, 0.9);
+    }
+}
+
+@keyframes recPulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+        box-shadow: 0 0 6px #ef4444;
+    }
+
+    50% {
+        opacity: 0.3;
+        transform: scale(0.7);
+        box-shadow: none;
+    }
+}
+
+@keyframes ripple {
+    0% {
+        transform: scale(0.6);
+        opacity: 0.7;
+    }
+
+    100% {
+        transform: scale(1.8);
+        opacity: 0;
+    }
+}
+
+/* ─── Responsive ─────────────────────────────────────────── */
+@media (max-width: 900px) {
+    .nc-body {
+        flex-direction: column;
+    }
+
+    .nc-sidebar {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        height: 260px;
+    }
+
+    .nc-sidebar.collapsed {
+        width: 100%;
+        height: 0;
+    }
+
+    .nc-video-item.pip {
+        width: 140px !important;
+        height: 96px !important;
+        bottom: 96px !important;
+        right: 12px !important;
+    }
+
+    .nc-controls {
+        gap: 7px;
+        padding: 8px 12px;
+    }
+
+    .nc-topbar {
+        padding: 10px 14px;
+    }
+
+    .nc-btn {
+        width: 42px;
+        height: 42px;
+    }
+
+    .nc-btn-end {
+        padding: 0 16px;
+        font-size: 0.82rem;
+    }
+
+    .nc-room-info {
+        display: none;
+    }
+}
+
+/* ─── Professional Presenting Overlay ────────────────────── */
+.nc-presenting-overlay {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, #111827 0%, #080e1a 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    animation: nc-fade-in 0.5s ease;
+}
+
+.nc-presenting-card {
+    text-align: center;
+    max-width: 440px;
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+.nc-presenting-icon-wrap {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 24px;
+    background: rgba(16, 185, 129, 0.1);
+    border: 2px solid rgba(16, 185, 129, 0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #10b981;
+}
+
+.nc-presenting-card h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: #fff;
+}
+
+.nc-presenting-card p {
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 32px;
+    line-height: 1.5;
+}
+
+.nc-stop-presenting-btn {
+    padding: 12px 32px;
+    background: #ef4444;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+
+.nc-stop-presenting-btn:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+}
+
+.nc-mini-preview {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    width: 240px;
+    aspect-ratio: 16/9;
+    background: #000;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    z-index: 20;
+}
+
+.nc-mini-preview video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.9;
+}
+
+.nc-mini-preview .nc-label {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.nc-presenting-participants {
+    position: absolute;
+    bottom: 40px;
+    display: flex;
+    gap: -10px;
+}
+
+.nc-avatar-sm {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #3b82f6;
+    border: 2px solid #080e1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    margin-right: -8px;
+}
+
+.nc-avatar-sm.green {
+    background: #10b981;
+}
+
+@keyframes nc-fade-in {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+
+@media (max-width: 600px) {
+    .nc-topbar-center {
+        gap: 6px;
+    }
+
+    .nc-timer {
+        padding: 5px 12px;
+        font-size: 0.85rem;
+    }
+
+    .nc-btn {
+        width: 38px;
+        height: 38px;
+    }
+
+    .nc-voice-avatar {
+        width: 88px;
+        height: 88px;
+        font-size: 2.2rem;
+    }
+}
+
+/* ─── Presenting Overlay Thumbs ────────────────────────── */
+.nc-mini-remote-thumb {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid #22c55e;
+    background: #000;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    transition: transform 0.3s;
+}
+
+.nc-mini-remote-thumb:hover {
+    transform: scale(1.1);
+    z-index: 10;
+}
+
+.nc-thumb-label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    font-size: 0.55rem;
+    text-align: center;
+    padding: 1px 0;
+}
+
+.nc-retry-btn:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+    transform: scale(1.05);
+}
+
+.nc-retry-btn:active {
+    transform: scale(0.95);
+}
+
+.nc-presenting-participants {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+}

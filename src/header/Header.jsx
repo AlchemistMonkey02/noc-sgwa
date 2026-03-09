@@ -60,7 +60,7 @@ const Header = () => {
                 {!isAuthenticated && (
                     <div className="auth-nav-items">
                         <Link to="/noc/login" className="auth-btn login-btn">LOGIN</Link>
-                        <Link to="/noc/register" className="auth-btn register-btn">REGISTER</Link>
+                        <Link to="?register=true" className="auth-btn register-btn">REGISTER</Link>
                     </div>
                 )}
             </nav>

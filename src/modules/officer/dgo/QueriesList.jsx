@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import officerService from '../services/officerService';
 import OfficerHeader from '../shared/components/OfficerHeader';
 import OfficerSidebar from '../shared/components/OfficerSidebar';
+import { useNotifications } from '../../../context/NotificationContext';
 import '../shared/styles/officer-portal.css';
 
 const QueriesList = () => {
     const navigate = useNavigate();
+    const notifCtx = useNotifications();
     const [applications, setApplications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({
@@ -42,6 +44,13 @@ const QueriesList = () => {
     const handleViewApplication = (applicationId) => {
         // Navigate to application viewer, defaults to general or can implement query tab default
         navigate(`/officer/dgo/applications/${applicationId}`);
+    };
+
+    const handleJoinCall = (app) => {
+        const roomName = officerService.getConsultationRoomId(app.applicationNumber);
+        if (roomName) {
+            notifCtx?.startCall?.(roomName);
+        }
     };
 
     const getNestedValue = (obj, path) => {
@@ -129,12 +138,21 @@ const QueriesList = () => {
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        <button
-                                                            className="officer-btn officer-btn-primary"
-                                                            onClick={() => handleViewApplication(app._id || app.applicationId)}
-                                                        >
-                                                            View Details
-                                                        </button>
+                                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                            <button
+                                                                className="officer-btn officer-btn-primary"
+                                                                onClick={() => handleViewApplication(app._id || app.applicationId)}
+                                                            >
+                                                                View Details
+                                                            </button>
+                                                            <button
+                                                                className="officer-btn"
+                                                                style={{ background: '#10b981', color: 'white', border: 'none' }}
+                                                                onClick={() => handleJoinCall(app)}
+                                                            >
+                                                                📞 Join Call
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))

@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import API_BASE_URL from '../../config/apiConfig';
 import PublicHeader from '../../modules/public/components/PublicHeader';
 import NOCFooter from './components/NOCFooter';
@@ -11,6 +13,8 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const { selectUserType } = useAuth();
+    const { t } = useTranslation();
+    const { success: toastSuccess, error: toastError, info: toastInfo, warning: toastWarning } = useToast();
 
     // Auto-select service type from URL parameter
     useEffect(() => {
@@ -277,15 +281,15 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                 setOTPSent(prev => ({ ...prev, [type]: true }));
 
                 const expiresIn = result.data?.expiresIn || 300;
-                alert(`OTP sent successfully to your ${type}. It will expire in ${expiresIn} seconds.`);
+                toastSuccess(`OTP sent successfully to your ${type}. It will expire in ${expiresIn} seconds.`);
             } else {
                 const errorData = await response.json();
                 // Show specific error from API
-                alert(errorData.message || `Failed to send OTP to ${type}. Please try again.`);
+                toastError(errorData.message || `Failed to send OTP to ${type}. Please try again.`);
             }
         } catch (error) {
             console.error(`Error sending OTP to ${type}:`, error);
-            alert(`Network error while sending OTP. Please check your connection and try again.`);
+            toastError(`Network error while sending OTP. Please check your connection and try again.`);
         }
     };
 
@@ -318,16 +322,16 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                 if (type === 'mobile') setMobileVerified(true);
                 if (type === 'email') setEmailVerified(true);
 
-                alert(`${type.charAt(0).toUpperCase() + type.slice(1)} verified successfully!`);
+                toastSuccess(`${type.charAt(0).toUpperCase() + type.slice(1)} verified successfully!`);
             } else {
                 const errorData = await response.json();
                 const errorMessage = errorData.message || 'Invalid OTP';
                 setErrors(prev => ({ ...prev, [`applicantInfo.${type}OTP`]: errorMessage }));
-                alert(errorMessage);
+                toastError(errorMessage);
             }
         } catch (error) {
             console.error(`Error verifying ${type} OTP:`, error);
-            alert('Network error during OTP verification. Please try again.');
+            toastError('Network error during OTP verification. Please try again.');
         }
     };
 
@@ -345,7 +349,7 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
 
                 if (data.available) {
                     setFormData(prev => ({ ...prev, usernameAvailable: true }));
-                    alert(data.message || 'Username is available!');
+                    toastSuccess(data.message || 'Username is available!');
                 } else {
                     setFormData(prev => ({ ...prev, usernameAvailable: false }));
                     setErrors(prev => ({ ...prev, 'loginCredentials.preferredUsername': data.message || 'Username is already taken' }));
@@ -414,7 +418,7 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
             // Show all validation errors to the user
             const errorMessages = Object.values(errors).filter(msg => msg);
             if (errorMessages.length > 0) {
-                alert(`Please fix the following errors:\n\n${errorMessages.map((msg, i) => `${i + 1}. ${msg}`).join('\n')}`);
+                toastWarning(`Please fix the following errors:\n${errorMessages.map((msg, i) => `${i + 1}. ${msg}`).join('\n')}`);
             }
             window.scrollTo(0, 0);
         }
@@ -542,8 +546,8 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                     }
 
                     // Show success message with username
-                    const successMessage = `🎉 Registration Successful!\n\nYour account has been created successfully.\n\nUsername: ${formData.loginCredentials.preferredUsername}\n\nPlease login with your credentials.`;
-                    alert(successMessage);
+                    const successMessage = `ðŸŽ‰ Registration Successful!\n\nYour account has been created successfully.\n\nUsername: ${formData.loginCredentials.preferredUsername}\n\nPlease login with your credentials.`;
+                    toastSuccess(successMessage, 6000); // Longer duration for the big message
 
                     // Close modal and return to login panel, or navigate to login page
                     if (isModal && onClose) {
@@ -559,15 +563,15 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                     const msg = errorData.message || 'Registration failed. Please checking your details.';
 
                     if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('duplicate')) {
-                        alert(`⚠️ Registration Error:\n\n${msg}`);
+                        toastWarning(`âš ï¸  Registration Error:\n\n${msg}`);
                     } else {
-                        alert(msg);
+                        toastError(msg);
                     }
                 }
 
             } catch (error) {
                 console.error('Network error during registration:', error);
-                alert('Network error. Please check if the server is running and try again.');
+                toastError('Network error. Please check if the server is running and try again.');
             }
         }
     };
@@ -733,33 +737,37 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
         'What was the name of your first school?'
     ];
 
+    const getStepIcon = (step) => {
+        if (currentStep > step) return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>;
+        return step;
+    };
+
     return (
         <div className="noc-portal">
             {!isModal && <PublicHeader />}
 
-            <div className={`noc-auth-page ${isModal ? 'modal-view' : ''}`} style={{ background: isModal ? 'transparent' : '#f8fafc', minHeight: isModal ? 'auto' : 'calc(100vh - 120px)' }}>
-                <div className={`noc-auth-card ${isModal ? 'no-shadow' : ''}`} style={{ maxWidth: '900px', margin: isModal ? '0' : '30px auto', background: isModal ? 'transparent' : 'white' }}>
+            <div className={`auth-page-container ${isModal ? 'p-0 min-h-0 bg-transparent' : ''}`}>
+                <div className={`auth-card auth-card-wide ${isModal ? 'border-0 shadow-none m-0' : ''}`}>
+                    {isModal && (
+                        <button type="button" onClick={onClose} className="modal-close-btn" aria-label="Close">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    )}
 
-                    {/* New Premium Header */}
-                    <div className="reg-modal-header">
-                        {isModal && <button onClick={onClose} className="modal-close-icon">✕</button>}
-                        <h2 className="reg-modal-title">User Registration</h2>
-                        <div className="reg-dept-name">Ground Water Department</div>
-                        <div className="reg-govt-name">Government of Rajasthan</div>
-                        <p className="reg-instruction">
-                            Please fill in the details below to create your new user account for the NOC portal
-                        </p>
+                    <div className="auth-header">
+                        <div className="auth-icon-wrapper">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                        </div>
+                        <h2 className="auth-title">{t('register.title')}</h2>
+                        <p className="auth-subtitle">{t('register.subtitle')}</p>
                     </div>
 
-                    {/* Premium Stepper */}
                     <div className="reg-stepper">
                         {[1, 2, 3].map((step) => (
-                            <div key={step} className={`reg-step ${currentStep >= step ? 'active' : ''}`}>
-                                <div className="reg-step-circle">
-                                    {step}
-                                </div>
-                                <div className="reg-step-label">
-                                    {step === 1 ? 'Applicant Info' : step === 2 ? 'Address' : 'Credentials'}
+                            <div key={step} className={`reg-step ${currentStep === step ? 'active' : ''} ${currentStep > step ? 'completed' : ''}`}>
+                                <div className="step-dot">{getStepIcon(step)}</div>
+                                <div className="step-text">
+                                    {step === 1 ? t('register.stepProfile') : step === 2 ? t('register.stepAddress') : t('register.stepAccess')}
                                 </div>
                             </div>
                         ))}
@@ -768,21 +776,18 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                     <form onSubmit={handleSubmit} className="reg-form-body">
                         {/* Step 1: Applicant Information */}
                         {currentStep === 1 && (
-                            <div>
-                                <div className="reg-section-header">
-                                    <span className="reg-section-icon">👤</span>
-                                    <div>
-                                        <h3 className="reg-section-title">Applicant Information</h3>
-                                        <span className="reg-section-desc">Please provide your personal details for registration</span>
-                                    </div>
+                            <div className="card-body p-0">
+                                <div className="form-section-header mb-6">
+                                    <h3 className="card-title text-primary">{t('register.personalDetails')}</h3>
+                                    <p className="card-subtitle">{t('register.personalSubtitle')}</p>
                                 </div>
 
-                                <div className="reg-row">
-                                    <div>
-                                        <label className="reg-label">Title <span className="required">*</span></label>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                    <div className="form-group">
+                                        <label className="form-label">{t('register.titleLabel')} <span className="text-error">*</span></label>
                                         <select
                                             name="applicantInfo.title"
-                                            className="reg-input"
+                                            className="form-select"
                                             value={formData.applicantInfo.title}
                                             onChange={handleChange}
                                         >
@@ -793,51 +798,51 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                                         </select>
                                     </div>
 
-                                    <div className="form-group">
-                                        <label className="reg-label">First Name <span className="required">*</span></label>
+                                    <div className="form-group col-span-1">
+                                        <label className="form-label">{t('register.firstName')} <span className="text-error">*</span></label>
                                         <input
                                             type="text"
                                             name="applicantInfo.firstName"
-                                            className="reg-input"
+                                            className="form-input"
                                             value={formData.applicantInfo.firstName || formData.applicantInfo.applicantName}
                                             onChange={handleChange}
-                                            placeholder="First Name"
+                                            placeholder={t('register.firstName')}
                                         />
-                                        {errors['applicantInfo.firstName'] && <span className="error-message" style={{ color: 'red', fontSize: '0.875rem' }}>{errors['applicantInfo.firstName']}</span>}
+                                        {errors['applicantInfo.firstName'] && <span className="form-error">{errors['applicantInfo.firstName']}</span>}
                                     </div>
 
-                                    <div className="form-group">
-                                        <label className="reg-label">Last Name <span className="required">*</span></label>
+                                    <div className="form-group col-span-1">
+                                        <label className="form-label">{t('register.lastName')} <span className="text-error">*</span></label>
                                         <input
                                             type="text"
                                             name="applicantInfo.lastName"
-                                            className="reg-input"
+                                            className="form-input"
                                             value={formData.applicantInfo.lastName}
                                             onChange={handleChange}
-                                            placeholder="Last Name"
+                                            placeholder={t('register.lastName')}
                                         />
-                                        {errors['applicantInfo.lastName'] && <span className="error-message" style={{ color: 'red', fontSize: '0.875rem' }}>{errors['applicantInfo.lastName']}</span>}
+                                        {errors['applicantInfo.lastName'] && <span className="form-error">{errors['applicantInfo.lastName']}</span>}
                                     </div>
                                 </div>
 
-                                <div className="reg-row reg-grid-2">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                     <div className="form-group">
-                                        <label className="reg-label">Date of Birth <span className="required">*</span></label>
+                                        <label className="form-label">{t('register.dob')} <span className="text-error">*</span></label>
                                         <input
                                             type="date"
                                             name="applicantInfo.dateOfBirth"
-                                            className="reg-input"
+                                            className="form-input"
                                             value={formData.applicantInfo.dateOfBirth}
                                             onChange={handleChange}
                                         />
-                                        {errors['applicantInfo.dateOfBirth'] && <span className="error-message" style={{ color: 'red', fontSize: '0.875rem' }}>{errors['applicantInfo.dateOfBirth']}</span>}
+                                        {errors['applicantInfo.dateOfBirth'] && <span className="form-error">{errors['applicantInfo.dateOfBirth']}</span>}
                                     </div>
 
                                     <div className="form-group">
-                                        <label className="reg-label">Gender <span className="required">*</span></label>
+                                        <label className="form-label">{t('register.gender')} <span className="text-error">*</span></label>
                                         <select
                                             name="applicantInfo.gender"
-                                            className="reg-input"
+                                            className="form-select"
                                             value={formData.applicantInfo.gender}
                                             onChange={handleChange}
                                         >
@@ -850,107 +855,108 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                                     </div>
                                 </div>
 
-                                <div className="reg-row" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                                     <div className="form-group">
-                                        <label className="reg-label">Mobile Number <span className="required">*</span></label>
-                                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                        <label className="form-label">{t('register.mobile')} <span className="text-error">*</span></label>
+                                        <div className="input-with-action">
                                             <input
                                                 type="text"
                                                 name="applicantInfo.mobileNumber"
-                                                className="reg-input"
-                                                style={{ flex: 1 }}
+                                                className={`form-input ${mobileVerified ? 'is-valid' : ''}`}
                                                 value={formData.applicantInfo.mobileNumber}
                                                 onChange={handleChange}
-                                                placeholder="10-digit Mobile Number"
+                                                placeholder="10-digit number"
                                                 maxLength="10"
                                                 readOnly={mobileVerified}
                                             />
                                             {!mobileVerified && (
-                                                <button type="button" onClick={() => sendOTP('mobile')} className="btn-primary" style={{ padding: '0 15px', whiteSpace: 'nowrap', height: '45px', flexShrink: 0 }}>
-                                                    {sendingMobileOTP ? 'Sending...' : 'Send OTP'}
+                                                <button type="button" onClick={() => sendOTP('mobile')} className="btn btn-secondary btn-sm" disabled={sendingMobileOTP}>
+                                                    {sendingMobileOTP ? '...' : t('register.sendOtp')}
                                                 </button>
                                             )}
-                                            {mobileVerified && <span style={{ color: 'green', display: 'flex', alignItems: 'center' }}>✓ Verified</span>}
                                         </div>
-                                        {errors['applicantInfo.mobileNumber'] && <span className="error-message" style={{ color: 'red', fontSize: '0.875rem', display: 'block', marginTop: '5px' }}>{errors['applicantInfo.mobileNumber']}</span>}
+                                        {errors['applicantInfo.mobileNumber'] && <span className="form-error">{errors['applicantInfo.mobileNumber']}</span>}
+                                        {mobileVerified && <div className="verification-badge mt-1">✓ {t('register.mobileVerified')}</div>}
+
                                         {!mobileVerified && sendingMobileOTP && (
-                                            <div style={{ marginTop: '10px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                            <div className="input-with-action mt-2">
                                                 <input
                                                     type="text"
                                                     name="applicantInfo.mobileOTP"
                                                     value={formData.applicantInfo.mobileOTP}
                                                     onChange={handleChange}
                                                     placeholder="Enter OTP"
-                                                    className="reg-input"
-                                                    style={{ flex: 1 }}
+                                                    className="form-input"
                                                 />
-                                                <button type="button" onClick={() => verifyOTP('mobile')} className="btn-primary" style={{ padding: '0 15px', whiteSpace: 'nowrap', height: '45px', flexShrink: 0 }}>Verify</button>
+                                                <button type="button" onClick={() => verifyOTP('mobile')} className="btn btn-primary btn-sm">Verify</button>
                                             </div>
                                         )}
                                     </div>
 
                                     <div className="form-group">
-                                        <label className="reg-label">Email ID <span className="required">*</span></label>
-                                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                        <label className="form-label">{t('register.email')} <span className="text-error">*</span></label>
+                                        <div className="input-with-action">
                                             <input
                                                 type="email"
                                                 name="applicantInfo.emailId"
-                                                className="reg-input"
-                                                style={{ flex: 1 }}
+                                                className={`form-input ${emailVerified ? 'is-valid' : ''}`}
                                                 value={formData.applicantInfo.emailId}
                                                 onChange={handleChange}
-                                                placeholder="Email Address"
+                                                placeholder="email@example.com"
                                                 readOnly={emailVerified}
                                             />
                                             {!emailVerified && (
-                                                <button type="button" onClick={() => sendOTP('email')} className="btn-primary" style={{ padding: '0 15px', whiteSpace: 'nowrap', height: '45px', flexShrink: 0 }}>
-                                                    {sendingEmailOTP ? 'Sending...' : 'Send OTP'}
+                                                <button type="button" onClick={() => sendOTP('email')} className="btn btn-secondary btn-sm" disabled={sendingEmailOTP}>
+                                                    {sendingEmailOTP ? '...' : t('register.sendOtp')}
                                                 </button>
                                             )}
-                                            {emailVerified && <span style={{ color: 'green', display: 'flex', alignItems: 'center' }}>✓ Verified</span>}
                                         </div>
-                                        {errors['applicantInfo.emailId'] && <span className="error-message" style={{ color: 'red', fontSize: '0.875rem', display: 'block', marginTop: '5px' }}>{errors['applicantInfo.emailId']}</span>}
+                                        {errors['applicantInfo.emailId'] && <span className="form-error">{errors['applicantInfo.emailId']}</span>}
+                                        {emailVerified && <div className="verification-badge mt-1">✓ {t('register.emailVerified')}</div>}
+
                                         {!emailVerified && sendingEmailOTP && (
-                                            <div style={{ marginTop: '10px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                            <div className="input-with-action mt-2">
                                                 <input
                                                     type="text"
                                                     name="applicantInfo.emailOTP"
                                                     value={formData.applicantInfo.emailOTP}
                                                     onChange={handleChange}
                                                     placeholder="Enter OTP"
-                                                    className="reg-input"
-                                                    style={{ flex: 1 }}
+                                                    className="form-input"
                                                 />
-                                                <button type="button" onClick={() => verifyOTP('email')} className="btn-primary" style={{ padding: '0 15px', whiteSpace: 'nowrap', height: '45px', flexShrink: 0 }}>Verify</button>
+                                                <button type="button" onClick={() => verifyOTP('email')} className="btn btn-primary btn-sm">Verify</button>
                                             </div>
                                         )}
                                     </div>
                                 </div>
 
                                 <div className="form-group">
-                                    <label className="reg-label">ID Proof (Aadhaar/PAN/Voter ID) <span className="required">*</span></label>
-                                    <div className="reg-row" style={{ gridTemplateColumns: '1fr 2fr', marginBottom: '10px' }}>
-                                        <select name="applicantInfo.idProofType" value={formData.applicantInfo.idProofType} onChange={handleChange} className="reg-input">
-                                            <option value="Aadhaar">Aadhaar Card</option>
+                                    <label className="form-label">{t('register.idType')} & {t('register.idNumber')} <span className="text-error">*</span></label>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                                        <select name="applicantInfo.idProofType" value={formData.applicantInfo.idProofType} onChange={handleChange} className="form-select">
+                                            <option value="Aadhaar">{t('register.idType')}</option>
                                             <option value="PAN">PAN Card</option>
                                             <option value="VoterID">Voter ID</option>
                                         </select>
-                                        <input type="text" name="applicantInfo.idProofNumber" value={formData.applicantInfo.idProofNumber} onChange={handleChange} placeholder="ID Number" className="reg-input" />
+                                        <input type="text" name="applicantInfo.idProofNumber" value={formData.applicantInfo.idProofNumber} onChange={handleChange} placeholder={t('register.idNumber')} className="form-input" />
                                     </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <input
-                                                type="file"
-                                                name="applicantInfo.idProofFile"
-                                                onChange={handleFileUpload}
-                                                className="reg-input"
-                                                accept=".pdf,.jpg,.jpeg,.png"
-                                                disabled={isUploading}
-                                            />
-                                            {isUploading && <span style={{ color: '#3b82f6', fontSize: '0.9rem' }}>Uploading...</span>}
-                                            {uploadSuccess && <span style={{ color: 'green', fontSize: '1.2rem' }}>✓</span>}
+                                    <div className="card p-4 bg-gray-50 border-dashed">
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex-1">
+                                                <input
+                                                    type="file"
+                                                    name="applicantInfo.idProofFile"
+                                                    onChange={handleFileUpload}
+                                                    className="form-input border-0 bg-transparent p-0"
+                                                    accept=".pdf,.jpg,.jpeg,.png"
+                                                    disabled={isUploading}
+                                                />
+                                                <p className="form-hint m-0">PDF, JPG, PNG (Max 5MB)</p>
+                                            </div>
+                                            {isUploading && <span className="text-primary font-medium">{t('register.uploading')}</span>}
+                                            {uploadSuccess && <span className="text-success text-xl">✓</span>}
                                         </div>
-                                        {uploadError && <span className="error-message" style={{ color: 'red', fontSize: '0.875rem' }}>{uploadError}</span>}
+                                        {uploadError && <span className="form-error">{uploadError}</span>}
                                     </div>
                                 </div>
                             </div>
@@ -958,94 +964,89 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
 
                         {/* Step 2: Communication Address */}
                         {currentStep === 2 && (
-                            <div>
-                                <div className="reg-section-header">
-                                    <span className="reg-section-icon">📍</span>
-                                    <div>
-                                        <h3 className="reg-section-title">Communication Address</h3>
-                                        <span className="reg-section-desc">Please provide your current address details</span>
-                                    </div>
+                            <div className="card-body p-0">
+                                <div className="form-section-header mb-6">
+                                    <h3 className="card-title text-primary">{t('register.addressDetails')}</h3>
+                                    <p className="card-subtitle">{t('register.addressSubtitle')}</p>
                                 </div>
 
-                                <div className="reg-row">
-                                    <div style={{ gridColumn: 'span 3' }}>
-                                        <label className="reg-label">Address Line 1 <span className="required">*</span></label>
+                                <div className="grid grid-cols-1 gap-4 mb-4">
+                                    <div className="form-group">
+                                        <label className="form-label">{t('register.address1')} <span className="text-error">*</span></label>
                                         <input
                                             type="text"
                                             name="communicationAddress.addressLine1"
-                                            className="reg-input"
+                                            className="form-input"
                                             value={formData.communicationAddress.addressLine1}
                                             onChange={handleChange}
-                                            placeholder="House No, Building, Street"
+                                            placeholder={t('register.address1')}
                                         />
-                                        {errors['communicationAddress.addressLine1'] && <span className="error-message" style={{ color: 'red', fontSize: '0.875rem' }}>{errors['communicationAddress.addressLine1']}</span>}
+                                        {errors['communicationAddress.addressLine1'] && <span className="form-error">{errors['communicationAddress.addressLine1']}</span>}
                                     </div>
-                                </div>
 
-                                <div className="reg-row">
-                                    <div style={{ gridColumn: 'span 3' }}>
-                                        <label className="reg-label">Address Line 2</label>
+                                    <div className="form-group">
+                                        <label className="form-label">{t('register.address2')}</label>
                                         <input
                                             type="text"
                                             name="communicationAddress.addressLine2"
-                                            className="reg-input"
+                                            className="form-input"
                                             value={formData.communicationAddress.addressLine2}
                                             onChange={handleChange}
-                                            placeholder="Area, Locality (Optional)"
+                                            placeholder={t('register.address2')}
                                         />
                                     </div>
                                 </div>
 
-                                <div className="reg-row" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                     <div className="form-group">
-                                        <label className="reg-label">State <span className="required">*</span></label>
+                                        <label className="form-label">{t('register.state')} <span className="text-error">*</span></label>
                                         <select
                                             name="communicationAddress.state"
-                                            className="reg-input"
+                                            className="form-select"
                                             value={formData.communicationAddress.state}
                                             onChange={handleChange}
                                         >
-                                            <option value="">Select State</option>
+                                            <option value="">{t('register.state')}</option>
                                             {stateOptions.map((state, index) => {
                                                 const label = typeof state === 'string' ? state : (state.stateName || state.name || state.label || state.id);
                                                 const value = typeof state === 'string' ? state : (state.stateId || state.id || state.code || state.name);
                                                 return <option key={index} value={value}>{label}</option>;
                                             })}
                                         </select>
-                                        {errors['communicationAddress.state'] && <span className="error-message" style={{ color: 'red', fontSize: '0.875rem' }}>{errors['communicationAddress.state']}</span>}
+                                        {errors['communicationAddress.state'] && <span className="form-error">{errors['communicationAddress.state']}</span>}
                                     </div>
 
                                     <div className="form-group">
-                                        <label className="reg-label">District <span className="required">*</span></label>
+                                        <label className="form-label">{t('register.district')} <span className="text-error">*</span></label>
                                         <select
                                             name="communicationAddress.district"
-                                            className="reg-input"
+                                            className="form-select"
                                             value={formData.communicationAddress.district}
                                             onChange={handleChange}
                                             disabled={!formData.communicationAddress.state}
                                         >
-                                            <option value="">Select District</option>
+                                            <option value="">{t('register.district')}</option>
                                             {districtOptions.map((dist, index) => {
                                                 const label = typeof dist === 'string' ? dist : (dist.districtName || dist.name || dist.label || dist.id);
                                                 const value = typeof dist === 'string' ? dist : (dist.districtId || dist.id || dist.code || dist.name);
                                                 return <option key={index} value={value}>{label}</option>;
                                             })}
                                         </select>
-                                        {errors['communicationAddress.district'] && <span className="error-message" style={{ color: 'red', fontSize: '0.875rem' }}>{errors['communicationAddress.district']}</span>}
+                                        {errors['communicationAddress.district'] && <span className="form-error">{errors['communicationAddress.district']}</span>}
                                     </div>
                                 </div>
 
-                                <div className="reg-row" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="form-group">
-                                        <label className="reg-label">Sub-District/Block <span className="required">*</span></label>
+                                        <label className="form-label">{t('register.subDistrict')} <span className="text-error">*</span></label>
                                         <select
                                             name="communicationAddress.subDistrict"
-                                            className="reg-input"
+                                            className="form-select"
                                             value={formData.communicationAddress.subDistrict}
                                             onChange={handleChange}
                                             disabled={!formData.communicationAddress.district}
                                         >
-                                            <option value="">Select Block</option>
+                                            <option value="">{t('register.subDistrict')}</option>
                                             {blockOptions.length > 0 ? (
                                                 blockOptions.map((block, index) => {
                                                     const label = typeof block === 'string' ? block : (block.blockName || block.name || block.label || block.id);
@@ -1058,207 +1059,205 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                                                 ))
                                             )}
                                         </select>
-                                        {errors['communicationAddress.subDistrict'] && <span className="error-message" style={{ color: 'red', fontSize: '0.875rem' }}>{errors['communicationAddress.subDistrict']}</span>}
+                                        {errors['communicationAddress.subDistrict'] && <span className="form-error">{errors['communicationAddress.subDistrict']}</span>}
                                     </div>
 
                                     <div className="form-group">
-                                        <label className="reg-label">Pincode <span className="required">*</span></label>
+                                        <label className="form-label">{t('register.pincode')} <span className="text-error">*</span></label>
                                         <input
                                             type="text"
                                             name="communicationAddress.pincode"
-                                            className="reg-input"
+                                            className="form-input"
                                             value={formData.communicationAddress.pincode}
                                             onChange={handleChange}
-                                            placeholder="6-digit Pincode"
+                                            placeholder={t('register.pincodePlaceholder')}
                                             maxLength="6"
                                         />
-                                        {errors['communicationAddress.pincode'] && <span className="error-message" style={{ color: 'red', fontSize: '0.875rem' }}>{errors['communicationAddress.pincode']}</span>}
+                                        {errors['communicationAddress.pincode'] && <span className="form-error">{errors['communicationAddress.pincode']}</span>}
                                     </div>
                                 </div>
                             </div>
                         )}
 
                         {currentStep === 3 && (
-                            <div>
-                                <div className="reg-section-header">
-                                    <span className="reg-section-icon">🔐</span>
-                                    <div>
-                                        <h3 className="reg-section-title">Login Credentials</h3>
-                                        <span className="reg-section-desc">Create your username and password for portal access</span>
-                                    </div>
+                            <div className="card-body p-0">
+                                <div className="form-section-header mb-6">
+                                    <h3 className="card-title text-primary">{t('register.accessDetails')}</h3>
+                                    <p className="card-subtitle">{t('register.accessSubtitle')}</p>
                                 </div>
 
-                                <div className="reg-row" style={{ gridTemplateColumns: '1fr' }}>
-                                    <div className="form-group">
-                                        <label className="reg-label">Preferred Username <span className="required">*</span></label>
-                                        <div style={{ display: 'flex', gap: '10px' }}>
-                                            <input
-                                                type="text"
-                                                name="loginCredentials.preferredUsername"
-                                                className="reg-input"
-                                                value={formData.loginCredentials.preferredUsername}
-                                                onChange={handleChange}
-                                                placeholder="Enter desired username"
-                                            />
-                                            <button type="button" onClick={checkUsernameAvailability} className="btn-secondary" style={{ whiteSpace: 'nowrap' }}>
-                                                Check Availability
-                                            </button>
+                                <div className="form-group mb-6">
+                                    <label className="form-label">{t('register.username')} <span className="text-error">*</span></label>
+                                    <div className="input-with-action">
+                                        <input
+                                            type="text"
+                                            name="loginCredentials.preferredUsername"
+                                            className={`form-input ${formData.usernameAvailable === true ? 'is-valid' : formData.usernameAvailable === false ? 'is-invalid' : ''}`}
+                                            value={formData.loginCredentials.preferredUsername}
+                                            onChange={handleChange}
+                                            placeholder={t('register.username')}
+                                        />
+                                        <button type="button" onClick={checkUsernameAvailability} className="btn btn-secondary btn-sm">
+                                            {t('register.checkAvailability')}
+                                        </button>
+                                    </div>
+                                    {formData.usernameAvailable !== undefined && (
+                                        <div className={`mt-1 text-xs font-medium ${formData.usernameAvailable ? 'text-success' : 'text-error'}`}>
+                                            {formData.usernameAvailable ? '✓ Available' : '✕ Taken'}
                                         </div>
-                                        {formData.usernameAvailable !== undefined && (
-                                            <span style={{ fontSize: '0.875rem', color: formData.usernameAvailable ? 'green' : 'red', marginTop: '5px', display: 'block' }}>
-                                                {formData.usernameAvailable ? '✓ Username available' : '✕ Username taken'}
-                                            </span>
-                                        )}
-                                        {errors['loginCredentials.preferredUsername'] && <span className="error-message" style={{ color: 'red', fontSize: '0.875rem' }}>{errors['loginCredentials.preferredUsername']}</span>}
-                                    </div>
+                                    )}
+                                    {errors['loginCredentials.preferredUsername'] && <span className="form-error">{errors['loginCredentials.preferredUsername']}</span>}
                                 </div>
 
-                                <div className="reg-row" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                     <div className="form-group">
-                                        <label className="reg-label">Password <span className="required">*</span></label>
+                                        <label className="form-label">{t('register.password')} <span className="text-error">*</span></label>
                                         <input
                                             type="password"
                                             name="loginCredentials.password"
-                                            className="reg-input"
+                                            className="form-input"
                                             value={formData.loginCredentials.password}
                                             onChange={handleChange}
-                                            placeholder="Create Password"
+                                            placeholder="••••••••"
                                         />
-                                        {errors['loginCredentials.password'] && <span className="error-message" style={{ color: 'red', fontSize: '0.875rem' }}>{errors['loginCredentials.password']}</span>}
+                                        {errors['loginCredentials.password'] && <span className="form-error">{errors['loginCredentials.password']}</span>}
                                     </div>
 
                                     <div className="form-group">
-                                        <label className="reg-label">Confirm Password <span className="required">*</span></label>
+                                        <label className="form-label">{t('register.confirmPassword')} <span className="text-error">*</span></label>
                                         <input
                                             type="password"
                                             name="loginCredentials.confirmPassword"
-                                            className="reg-input"
+                                            className="form-input"
                                             value={formData.loginCredentials.confirmPassword}
                                             onChange={handleChange}
-                                            placeholder="Retype Password"
+                                            placeholder="••••••••"
                                         />
-                                        {errors['loginCredentials.confirmPassword'] && <span className="error-message" style={{ color: 'red', fontSize: '0.875rem' }}>{errors['loginCredentials.confirmPassword']}</span>}
+                                        {errors['loginCredentials.confirmPassword'] && <span className="form-error">{errors['loginCredentials.confirmPassword']}</span>}
                                     </div>
                                 </div>
 
-                                <div className="reg-row" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                                     <div className="form-group">
-                                        <label className="reg-label">Security Question <span className="required">*</span></label>
+                                        <label className="form-label">{t('register.securityQ')} <span className="text-error">*</span></label>
                                         <select
                                             name="loginCredentials.securityQuestion"
-                                            className="reg-input"
+                                            className="form-select"
                                             value={formData.loginCredentials.securityQuestion}
                                             onChange={handleChange}
                                         >
-                                            <option value="">Select Question</option>
+                                            <option value="">{t('register.securityQ')}</option>
                                             {securityQuestions.map((q, i) => (
                                                 <option key={i} value={q}>{q}</option>
                                             ))}
                                         </select>
-                                        {errors['loginCredentials.securityQuestion'] && <span className="error-message" style={{ color: 'red', fontSize: '0.875rem' }}>{errors['loginCredentials.securityQuestion']}</span>}
+                                        {errors['loginCredentials.securityQuestion'] && <span className="form-error">{errors['loginCredentials.securityQuestion']}</span>}
                                     </div>
 
                                     <div className="form-group">
-                                        <label className="reg-label">Security Answer <span className="required">*</span></label>
+                                        <label className="form-label">{t('register.securityA')} <span className="text-error">*</span></label>
                                         <input
                                             type="text"
                                             name="loginCredentials.securityAnswer"
-                                            className="reg-input"
+                                            className="form-input"
                                             value={formData.loginCredentials.securityAnswer}
                                             onChange={handleChange}
-                                            placeholder="Your Answer"
+                                            placeholder={t('register.securityA')}
                                         />
-                                        {errors['loginCredentials.securityAnswer'] && <span className="error-message" style={{ color: 'red', fontSize: '0.875rem' }}>{errors['loginCredentials.securityAnswer']}</span>}
+                                        {errors['loginCredentials.securityAnswer'] && <span className="form-error">{errors['loginCredentials.securityAnswer']}</span>}
                                     </div>
                                 </div>
 
-                                <div className="reg-row" style={{ alignItems: 'center', background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                                    <div className="form-group" style={{ marginBottom: 0 }}>
-                                        <label className="reg-label">Captcha <span className="required">*</span></label>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                            <div style={{ background: '#e2e8f0', padding: '10px 20px', borderRadius: '6px', fontSize: '1.25rem', letterSpacing: '5px', fontWeight: 'bold', fontFamily: 'monospace', color: '#1e3a8a' }}>
-                                                {captchaCode}
-                                            </div>
-                                            <button type="button" onClick={generateCaptcha} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '0.9rem' }}>
-                                                ↻ Refresh
-                                            </button>
-                                            <input
-                                                type="text"
-                                                name="loginCredentials.captchaInput"
-                                                className="reg-input"
-                                                value={formData.loginCredentials.captchaInput || ''}
-                                                onChange={handleChange}
-                                                placeholder="Enter Code"
-                                                style={{ width: '150px' }}
-                                            />
+                                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 mb-6">
+                                    <label className="form-label">{t('register.captcha')} <span className="text-error">*</span></label>
+                                    <div className="flex flex-wrap items-center gap-4">
+                                        <div className="bg-white px-6 py-3 rounded-lg border-2 border-primary-100 text-2xl tracking-[8px] font-mono font-bold text-primary-900 shadow-sm">
+                                            {captchaCode}
                                         </div>
-                                        {errors['loginCredentials.captchaInput'] && <span className="error-message" style={{ color: 'red', fontSize: '0.875rem' }}>{errors['loginCredentials.captchaInput']}</span>}
+                                        <button type="button" onClick={generateCaptcha} className="btn-icon text-primary-600 hover:bg-primary-50 rounded-full p-2 transition-colors">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
+                                        </button>
+                                        <input
+                                            type="text"
+                                            name="loginCredentials.captchaInput"
+                                            className="form-input w-36"
+                                            value={formData.loginCredentials.captchaInput || ''}
+                                            onChange={handleChange}
+                                            placeholder={t('register.captchaPlaceholder')}
+                                        />
                                     </div>
+                                    {errors['loginCredentials.captchaInput'] && <span className="form-error block mt-1">{errors['loginCredentials.captchaInput']}</span>}
                                 </div>
 
-                                <div style={{ marginTop: '20px' }}>
-                                    <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
+                                <div className="form-group mb-4">
+                                    <label className="flex items-start gap-3 cursor-pointer group">
                                         <input
                                             type="checkbox"
                                             name="declaration"
                                             checked={formData.declaration}
                                             onChange={handleChange}
-                                            style={{ marginTop: '4px' }}
+                                            className="w-5 h-5 mt-0.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
                                         />
-                                        <span style={{ fontSize: '0.9rem', color: '#475569', lineHeight: '1.5' }}>
-                                            I hereby declare that the information provided above is true and correct to the best of my knowledge and belief. I understand that any false information may lead to rejection of my application.
+                                        <span className="text-sm text-gray-600 leading-relaxed group-hover:text-gray-900 transition-colors">
+                                            {t('register.declarationText')}
                                         </span>
                                     </label>
-                                    {errors.declaration && <p style={{ color: 'red', fontSize: '0.875rem', marginTop: '5px' }}>{errors.declaration}</p>}
+                                    {errors.declaration && <p className="form-error mt-2">{errors.declaration}</p>}
                                 </div>
                             </div>
                         )}
 
                         {/* Navigation Buttons */}
                         <div className="reg-actions">
-                            {currentStep > 1 && (
+                            {currentStep > 1 ? (
                                 <button
                                     type="button"
                                     onClick={handlePrevious}
-                                    className="btn-secondary"
+                                    className="btn btn-secondary"
                                 >
-                                    ← Previous
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                                    {t('register.btnPrev')}
                                 </button>
-                            )}
+                            ) : <div></div>}
 
                             {currentStep < 3 ? (
                                 <button
                                     type="button"
                                     onClick={handleNext}
-                                    className="btn-next"
+                                    className="btn btn-primary"
                                 >
-                                    Next →
+                                    {t('register.btnNext')}
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                                 </button>
                             ) : (
                                 <button
                                     type="submit"
-                                    className="btn-success"
+                                    className="btn btn-primary btn-lg"
                                 >
-                                    Submit Registration
+                                    {t('register.btnSubmit')}
                                 </button>
                             )}
                         </div>
                     </form>
 
-                    <div style={{ textAlign: 'center', padding: '20px', borderTop: '1px solid #e2e8f0', marginTop: '20px' }}>
-                        <p style={{ margin: 0, color: '#64748b' }}>
+                    <div className="mt-8 pt-8 border-t border-gray-100 text-center">
+                        <p className="text-gray-500 m-0">
                             Already have an account?{' '}
-                            <Link to="/noc/login" style={{ color: '#1e3a8a', textDecoration: 'none', fontWeight: '600' }}>
-                                Login here
+                            <Link to="/noc/login" className="text-primary-700 font-semibold hover:text-primary-800 transition-colors no-underline">
+                                Sign In
                             </Link>
                         </p>
                     </div>
-                </div >
-            </div >
+                </div>
+            </div>
 
             {!isModal && <NOCFooter />}
-        </div >
+        </div>
     );
 };
 
 export default NOCRegister;
+
+
+
+

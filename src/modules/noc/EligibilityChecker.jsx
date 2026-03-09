@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '../../context/ToastContext';
 import LayoutWithSidebar from './components/LayoutWithSidebar';
 import { nocApplicationService } from './services/nocApplicationService';
 import './styles/noc-portal.css';
 
 const EligibilityChecker = () => {
+    const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const { warning: toastWarning } = useToast();
     const [formData, setFormData] = useState({
         state: 'Rajasthan',
         stateId: '', // Will be set when states load
@@ -171,7 +175,7 @@ const EligibilityChecker = () => {
     const handleCheck = async () => {
         // Validation
         if (!formData.district || !formData.block || !formData.sector || !formData.groundWaterRequirement) {
-            alert("Please fill all mandatory fields marked with *");
+            toastWarning("Please fill all mandatory fields marked with *");
             return;
         }
 
@@ -194,6 +198,38 @@ const EligibilityChecker = () => {
             const response = await nocApplicationService.checkEligibility(eligibilityData);
 
             if (response.success) {
+                // Map the backend structure to the UI expected structure for display
+                let rData = response.data || {};
+
+                if (rData.isExempt) {
+                    toastWarning("Activity is exempt from NOC. Redirecting to Exemption Form...");
+                    const redirectData = {
+                        state: formData.state,
+                        district: formData.district,
+                        block: formData.block,
+                        sector: formData.sector,
+                        projectType: formData.projectType,
+                        applicationType: rData.exemptionResult?.exemptionType || formData.sector,
+                        groundWaterUtilizationFor: rData.exemptionResult?.exemptionType || formData.sector,
+                        waterQualityType: "Fresh Water"
+                    };
+                    // Delay slightly to let the toast show
+                    setTimeout(() => {
+                        navigate('/noc/exempt-application', { state: { formData: redirectData } });
+                    }, 1500);
+                    return; // Stop further processing as we are redirecting
+                } else if (rData.isEligible !== undefined && rData.isEligible) {
+                    rData.status = 'ELIGIBLE';
+                    rData.title = rData.displayConfig?.title || 'Eligible for NOC';
+                    rData.message = rData.displayConfig?.message || 'You can apply for NOC.';
+                    rData.details = rData.displayConfig?.details || [];
+                } else if (rData.isEligible === false) {
+                    rData.status = 'NOT_ELIGIBLE';
+                    rData.title = rData.displayConfig?.title || 'Not Eligible';
+                    rData.message = rData.displayConfig?.message || 'Not eligible for NOC.';
+                    rData.details = rData.displayConfig?.details || [];
+                }
+                response.data = rData;
                 // API returned success with eligibility result
                 setResult(response);
             } else {
@@ -569,11 +605,32 @@ const EligibilityChecker = () => {
                             <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                                 {resultData.status === 'ELIGIBLE' && (
                                     <button
-                                        onClick={() => window.location.href = '/noc/application'}
+                                        onClick={() => navigate('/noc/application')}
                                         className="bhuneer-submit-btn"
                                         style={{ padding: '0.75rem 2rem', fontSize: '1.1rem' }}
                                     >
                                         🚀 Proceed to Apply for NOC
+                                    </button>
+                                )}
+                                {resultData.status === 'EXEMPT' && (
+                                    <button
+                                        onClick={() => {
+                                            const redirectData = {
+                                                state: formData.state,
+                                                district: formData.district,
+                                                block: formData.block,
+                                                sector: formData.sector,
+                                                projectType: formData.projectType,
+                                                applicationType: resultData.exemptionResult?.exemptionType || formData.sector,
+                                                groundWaterUtilizationFor: resultData.exemptionResult?.exemptionType || formData.sector,
+                                                waterQualityType: "Fresh Water"
+                                            };
+                                            navigate('/noc/exempt-application', { state: { formData: redirectData } });
+                                        }}
+                                        className="bhuneer-submit-btn"
+                                        style={{ padding: '0.75rem 2rem', fontSize: '1.1rem', background: '#059669', borderColor: '#059669' }}
+                                    >
+                                        ✅ Apply for Exempted NOC
                                     </button>
                                 )}
                                 <button

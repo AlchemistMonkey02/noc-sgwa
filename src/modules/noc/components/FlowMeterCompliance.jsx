@@ -143,18 +143,13 @@ const FlowMeterCompliance = ({ formData, onUpdate, manufacturers = [], meterMode
 
                         <div className="noc-form-group">
                             <label className="noc-form-label">Serial Number</label>
-                            <select
+                            <input
+                                type="text"
                                 className="noc-form-control"
+                                placeholder="Enter Serial Number"
                                 value={flowMeterDetails.serialNumber}
                                 onChange={(e) => handleChange('serialNumber', e.target.value)}
-                            >
-                                <option value="">Select Serial Number</option>
-                                {(meterSerialNumbers || []).map((s, idx) => (
-                                    <option key={idx} value={s.code || s}>
-                                        {getOptionLabel(s)}
-                                    </option>
-                                ))}
-                            </select>
+                            />
                             <span className="noc-form-help">Can be updated after installation</span>
                         </div>
                     </div>

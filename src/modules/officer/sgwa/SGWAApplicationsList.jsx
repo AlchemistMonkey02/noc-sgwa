@@ -10,6 +10,7 @@ const SGWAApplicationsList = () => {
     const [allApplications, setAllApplications] = useState([]);
     const [filteredApplications, setFilteredApplications] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [officerInfo, setOfficerInfo] = useState(null);
     const [filters, setFilters] = useState({
         status: 'APPROVED_DGO', // Default to pending view as requested
         district: '',
@@ -17,49 +18,30 @@ const SGWAApplicationsList = () => {
         dgoRecommendation: ''
     });
 
-    // Mock data - State-level applications (all districts)
-    const mockApplications = [
-        { id: 'sgwa-001', applicationNumber: 'RJ/CGWA/NOC/2026/001250', applicantName: 'Mahindra Textiles Ltd', projectName: 'Industrial Dyeing Unit', projectType: 'Industrial', district: 'Jaipur', waterRequirement: 250.00, submittedDate: '2026-01-10T08:00:00Z', status: 'DGO_RECOMMENDED', dgoRecommendation: 'APPROVED', daysInQueue: 1 },
-        { id: 'sgwa-002', applicationNumber: 'RJ/CGWA/NOC/2026/001251', applicantName: 'Rajasthan Hotels Pvt Ltd', projectName: '5-Star Resort Complex', projectType: 'Commercial', district: 'Udaipur', waterRequirement: 350.00, submittedDate: '2026-01-09T11:30:00Z', status: 'DGO_RECOMMENDED', dgoRecommendation: 'APPROVED', daysInQueue: 2 },
-        { id: 'sgwa-003', applicationNumber: 'RJ/CGWA/NOC/2026/001252', applicantName: 'Aditya Power Generation', projectName: 'Thermal Power Plant', projectType: 'Industrial', district: 'Jodhpur', waterRequirement: 500.00, submittedDate: '2026-01-08T09:15:00Z', status: 'PENDING_SGWA_APPROVAL', dgoRecommendation: 'APPROVED', daysInQueue: 3 },
-        { id: 'sgwa-004', applicationNumber: 'RJ/CGWA/NOC/2026/001253', applicantName: 'Golden Harvest Agro', projectName: 'Food Processing Unit', projectType: 'Industrial', district: 'Kota', waterRequirement: 180.00, submittedDate: '2026-01-07T10:00:00Z', status: 'DGO_RECOMMENDED', dgoRecommendation: 'APPROVED', daysInQueue: 4 },
-        { id: 'sgwa-005', applicationNumber: 'RJ/CGWA/NOC/2026/001254', applicantName: 'Cement Corporation Ltd', projectName: 'Cement Manufacturing Plant', projectType: 'Industrial', district: 'Chittorgarh', waterRequirement: 400.00, submittedDate: '2026-01-06T14:30:00Z', status: 'PENDING_SGWA_APPROVAL', dgoRecommendation: 'APPROVED', daysInQueue: 5 },
-        { id: 'sgwa-006', applicationNumber: 'RJ/CGWA/NOC/2026/001255', applicantName: 'Tech City Developers', projectName: 'IT Park Phase 3', projectType: 'Commercial', district: 'Jaipur', waterRequirement: 220.00, submittedDate: '2026-01-05T09:45:00Z', status: 'SGWA_APPROVED', dgoRecommendation: 'APPROVED', daysInQueue: 6 },
-        { id: 'sgwa-007', applicationNumber: 'RJ/CGWA/NOC/2026/001256', applicantName: 'Marble Industries', projectName: 'Marble Processing Unit', projectType: 'Industrial', district: 'Udaipur', waterRequirement: 150.00, submittedDate: '2026-01-04T11:00:00Z', status: 'DGO_RECOMMENDED', dgoRecommendation: 'CONDITIONAL', daysInQueue: 7 },
-        { id: 'sgwa-008', applicationNumber: 'RJ/CGWA/NOC/2026/001257', applicantName: 'Royal Breweries', projectName: 'Beverage Manufacturing', projectType: 'Industrial', district: 'Jodhpur', waterRequirement: 300.00, submittedDate: '2026-01-03T13:20:00Z', status: 'PENDING_SGWA_APPROVAL', dgoRecommendation: 'APPROVED', daysInQueue: 8 },
-        { id: 'sgwa-009', applicationNumber: 'RJ/CGWA/NOC/2026/001258', applicantName: 'Green Paradise Resorts', projectName: 'Eco-Tourism Complex', projectType: 'Commercial', district: 'Jaisalmer', waterRequirement: 120.00, submittedDate: '2026-01-02T08:30:00Z', status: 'SGWA_QUERY_RAISED', dgoRecommendation: 'APPROVED', daysInQueue: 9 },
-        { id: 'sgwa-010', applicationNumber: 'RJ/CGWA/NOC/2026/001259', applicantName: 'Pharma Solutions Ltd', projectName: 'Pharmaceutical Unit', projectType: 'Industrial', district: 'Ajmer', waterRequirement: 190.00, submittedDate: '2025-12-30T15:00:00Z', status: 'SGWA_APPROVED', dgoRecommendation: 'APPROVED', daysInQueue: 12 },
-        { id: 'sgwa-011', applicationNumber: 'RJ/CGWA/NOC/2026/001260', applicantName: 'Sunrise Chemicals', projectName: 'Chemical Manufacturing', projectType: 'Industrial', district: 'Kota', waterRequirement: 280.00, submittedDate: '2025-12-29T10:15:00Z', status: 'SGWA_REJECTED', dgoRecommendation: 'REJECTED', daysInQueue: 13 },
-        { id: 'sgwa-012', applicationNumber: 'RJ/CGWA/NOC/2026/001261', applicantName: 'Heritage Homes', projectName: 'Residential Township', projectType: 'Construction', district: 'Jaipur', waterRequirement: 350.00, submittedDate: '2025-12-28T12:00:00Z', status: 'DGO_RECOMMENDED', dgoRecommendation: 'APPROVED', daysInQueue: 14 },
-        { id: 'sgwa-013', applicationNumber: 'RJ/CGWA/NOC/2026/001262', applicantName: 'Solar Power Ltd', projectName: 'Solar Farm with Storage', projectType: 'Industrial', district: 'Bikaner', waterRequirement: 80.00, submittedDate: '2025-12-27T09:30:00Z', status: 'PENDING_SGWA_APPROVAL', dgoRecommendation: 'APPROVED', daysInQueue: 15 },
-        { id: 'sgwa-014', applicationNumber: 'RJ/CGWA/NOC/2026/001263', applicantName: 'Luxury Living Pvt Ltd', projectName: 'Mall & Entertainment Complex', projectType: 'Commercial', district: 'Udaipur', waterRequirement: 420.00, submittedDate: '2025-12-26T14:45:00Z', status: 'SGWA_QUERY_RAISED', dgoRecommendation: 'APPROVED', daysInQueue: 16 },
-        { id: 'sgwa-015', applicationNumber: 'RJ/CGWA/NOC/2026/001264', applicantName: 'Steel Industries', projectName: 'Steel Rolling Mill', projectType: 'Industrial', district: 'Alwar', waterRequirement: 380.00, submittedDate: '2025-12-25T11:20:00Z', status: 'SGWA_APPROVED', dgoRecommendation: 'APPROVED', daysInQueue: 17 },
-        { id: 'sgwa-016', applicationNumber: 'RJ/CGWA/NOC/2026/001265', applicantName: 'Food Park Developers', projectName: 'Food Processing Park', projectType: 'Industrial', district: 'Bharatpur', waterRequirement: 450.00, submittedDate: '2025-12-24T08:00:00Z', status: 'DGO_RECOMMENDED', dgoRecommendation: 'CONDITIONAL', daysInQueue: 18 },
-        { id: 'sgwa-017', applicationNumber: 'RJ/CGWA/NOC/2026/001266', applicantName: 'Textile Park Ltd', projectName: 'Integrated Textile Park', projectType: 'Industrial', district: 'Bhilwara', waterRequirement: 520.00, submittedDate: '2025-12-23T10:30:00Z', status: 'PENDING_SGWA_APPROVAL', dgoRecommendation: 'APPROVED', daysInQueue: 19 },
-        { id: 'sgwa-018', applicationNumber: 'RJ/CGWA/NOC/2026/001267', applicantName: 'Premium Hotels Chain', projectName: 'Luxury Hotel Chain', projectType: 'Commercial', district: 'Jaisalmer', waterRequirement: 280.00, submittedDate: '2025-12-22T13:15:00Z', status: 'SGWA_REJECTED', dgoRecommendation: 'REJECTED', daysInQueue: 20 }
-    ];
+    const getOfficerData = () => {
+        try {
+            const data = localStorage.getItem('officerData');
+            return data ? JSON.parse(data) : null;
+        } catch (e) {
+            return null;
+        }
+    };
 
     useEffect(() => {
+        const userData = getOfficerData();
+        setOfficerInfo(userData);
         fetchApplications();
     }, []);
 
     useEffect(() => {
         fetchApplications();
-    }, [filters]); // Refetch when filters change (server-side filtering)
-
-    // Removed applyFilters client-side logic as we are now doing server-side filtering via fetchApplications
-    /*
-    useEffect(() => {
-        applyFilters();
-    }, [filters, allApplications]);
-    */
+    }, [filters]);
 
     const fetchApplications = async () => {
         try {
             setLoading(true);
             let response;
 
-            // If status is 'APPROVED_DGO' (Pending SGWA Review), use the specific /pending endpoint
             if (filters.status === 'APPROVED_DGO') {
                 response = await officerService.getSGWAPendingApplications(filters);
             } else {
@@ -68,8 +50,6 @@ const SGWAApplicationsList = () => {
 
             if (response.success && response.data) {
                 const rawData = response.data.applications || response.data || [];
-
-                // Helper to calculate days in queue
                 const calculateDays = (dateString) => {
                     if (!dateString) return 0;
                     const submitted = new Date(dateString);
@@ -78,14 +58,12 @@ const SGWAApplicationsList = () => {
                     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                 };
 
-                // Map API data to component structure
                 const mappedApps = rawData.map(app => ({
                     id: app.id || app._id || app.applicationId,
                     applicationNumber: app.applicationNumber || 'N/A',
                     applicantName: app.applicantDetails?.name || app.projectDetails?.applicantName || 'N/A',
                     projectName: app.projectDetails?.projectName || 'N/A',
-                    district: app.locationDetails?.district || app.locationDetails?.state || 'N/A', // Fallback to state if district is coded/missing
-                    // Handle waterRequirement - check root or nested, default to 'N/A' to avoid showing 0 if just missing
+                    district: app.locationDetails?.district || app.locationDetails?.state || 'N/A',
                     waterRequirement: (app.waterRequirement?.total || app.waterRequirement?.dailyRequirement || app.waterRequirement) || 'N/A',
                     status: app.status,
                     dgoRecommendation: app.dgoRecommendation?.status || app.dgoRecommendation || 'N/A',
@@ -93,7 +71,6 @@ const SGWAApplicationsList = () => {
                     submittedDate: app.submittedDate
                 }));
 
-                // Update both states since filters are applied server-side
                 setAllApplications(mappedApps);
                 setFilteredApplications(mappedApps);
             } else {
@@ -102,7 +79,6 @@ const SGWAApplicationsList = () => {
             }
         } catch (error) {
             console.error('Error fetching applications:', error);
-            // Strict API Usage: No mock data
             setAllApplications([]);
             setFilteredApplications([]);
         } finally {
@@ -110,37 +86,10 @@ const SGWAApplicationsList = () => {
         }
     };
 
-    const applyFilters = () => {
-        let filtered = [...allApplications];
-
-        if (filters.search.trim()) {
-            const searchLower = filters.search.toLowerCase();
-            filtered = filtered.filter(app =>
-                app.applicationNumber.toLowerCase().includes(searchLower) ||
-                app.applicantName.toLowerCase().includes(searchLower) ||
-                app.projectName.toLowerCase().includes(searchLower)
-            );
-        }
-
-        if (filters.status) {
-            filtered = filtered.filter(app => app.status === filters.status);
-        }
-
-        if (filters.district) {
-            filtered = filtered.filter(app => app.district === filters.district);
-        }
-
-        if (filters.dgoRecommendation) {
-            filtered = filtered.filter(app => app.dgoRecommendation === filters.dgoRecommendation);
-        }
-
-        setFilteredApplications(filtered);
-    };
-
     const getStatusBadge = (status) => {
         const statusMap = {
             'DGO_RECOMMENDED': { label: 'DGO Recommended', class: 'primary' },
-            'APPROVED_DGO': { label: 'DGO Approved', class: 'primary' }, // Added match for API
+            'APPROVED_DGO': { label: 'DGO Approved', class: 'primary' },
             'PENDING_SGWA_APPROVAL': { label: 'Pending Approval', class: 'warning' },
             'SGWA_APPROVED': { label: 'SGWA Approved', class: 'success' },
             'SGWA_REJECTED': { label: 'SGWA Rejected', class: 'danger' },
@@ -170,9 +119,9 @@ const SGWAApplicationsList = () => {
     return (
         <div className="officer-portal">
             <OfficerHeader
-                officerName="Dr. Priya Sharma"
+                officerName={officerInfo?.name || officerInfo?.username || 'Officer'}
                 officerRole="SGWA"
-                officerDesignation="Technical Officer"
+                officerDesignation={officerInfo?.designation || 'Technical Officer'}
                 district="State Level"
             />
 

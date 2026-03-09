@@ -52,7 +52,7 @@ http://localhost:5173/officer/dgo/applications/app-uuid-12345
 
 ## 🏛️ SGWA Officer Routes (Protected)
 
-**Required Role:** `RSGWA` (Rajasthan State Groundwater Authority)
+**Required Role:** `SGWA` (Rajasthan State Groundwater Authority)
 
 | Route | Component | Description |
 |-------|-----------|-------------|
@@ -131,7 +131,7 @@ All officer routes use `ProtectedRoute` component:
 | User Type | Can Access |
 |-----------|-----------|
 | `DGO` | `/officer/dgo/*` |
-| `RSGWA` | `/officer/sgwa/*` |
+| `SGWA` | `/officer/sgwa/*` |
 | `ENFORCEMENT` | `/officer/enforcement/*` |
 | `APPLICANT` | `/noc/*` |
 

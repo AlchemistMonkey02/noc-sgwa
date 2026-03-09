@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import './styles/noc-portal.css';
 import {
@@ -12,6 +13,7 @@ import {
 
 const WaterBudgetCalculator = () => {
     const navigate = useNavigate();
+    const { warning: toastWarning } = useToast();
 
     const [formData, setFormData] = useState({
         applicationType: '',
@@ -75,12 +77,12 @@ const WaterBudgetCalculator = () => {
         if (!formData.applicationType || !formData.applicationCategory ||
             !formData.waterQuality || !formData.areaType ||
             !formData.dailyRequirement || !formData.operatingDays) {
-            alert('Please fill in all required fields');
+            toastWarning('Please fill in all required fields');
             return;
         }
 
         if (formData.operatingMode === 'hours' && !formData.operatingHours) {
-            alert('Please enter operating hours per day');
+            toastWarning('Please enter operating hours per day');
             return;
         }
 
@@ -166,7 +168,7 @@ const WaterBudgetCalculator = () => {
                                 margin: 0,
                                 letterSpacing: '0.3px'
                             }}>
-                                
+
                             </p>
                         </div>
                     </div>

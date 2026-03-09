@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../../context/ToastContext';
 import { Link } from 'react-router-dom';
 import NOCHeader from './components/NOCHeader';
 import NOCFooter from './components/NOCFooter';
@@ -9,6 +10,7 @@ import './styles/noc-portal.css';
 const SelfCompliance = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [applicationId, setApplicationId] = useState('');
+    const { success: toastSuccess } = useToast();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -200,7 +202,7 @@ const SelfCompliance = () => {
 
             if (response.success) {
                 setUploadedDocs(prev => [...prev, response.data]);
-                alert(`Document uploaded successfully: ${response.data.fileName}`);
+                toastSuccess(`Document uploaded successfully: ${response.data.fileName}`);
             } else {
                 setError(response.error?.message || 'Failed to upload document');
             }

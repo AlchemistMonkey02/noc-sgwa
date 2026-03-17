@@ -13,6 +13,7 @@ const ApplicationList = () => {
     const [activeTab, setActiveTab] = useState('all');
     const [searchId, setSearchId] = useState('');
     const [applications, setApplications] = useState([]);
+    const [stats, setStats] = useState({ totalApplications: 0, inProcess: 0, approved: 0 }); // Added stats state
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -25,28 +26,32 @@ const ApplicationList = () => {
             }
 
             try {
-                const response = await nocApplicationService.getUserApplications();
-                console.log('Application List API Response:', response);
+                // Fetch both list and dashboard stats for accurate counters
+                const [listResponse, statsResponse] = await Promise.all([
+                    nocApplicationService.getUserApplications(),
+                    nocApplicationService.getDashboardData()
+                ]);
 
-                // Handle various response structures
+                console.log('Application List API Response:', listResponse);
+
+                // Handle List Response
                 let apps = [];
-                if (Array.isArray(response)) {
-                    apps = response;
-                } else if (response.success && Array.isArray(response.applications)) {
-                    apps = response.applications;
-                } else if (response.data && Array.isArray(response.data.applications)) {
-                    apps = response.data.applications;
-                } else if (response.data && Array.isArray(response.data)) {
-                    apps = response.data;
-                } else if (response.applications && Array.isArray(response.applications)) {
-                    // Fallback if success flag is missing but applications exist
-                    apps = response.applications;
+                if (Array.isArray(listResponse)) {
+                    apps = listResponse;
+                } else if (listResponse.success && Array.isArray(listResponse.applications)) {
+                    apps = listResponse.applications;
+                } else if (listResponse.data && Array.isArray(listResponse.data.applications)) {
+                    apps = listResponse.data.applications;
+                } else if (listResponse.data && Array.isArray(listResponse.data)) {
+                    apps = listResponse.data;
+                } else if (listResponse.applications && Array.isArray(listResponse.applications)) {
+                    apps = listResponse.applications;
                 }
-
                 setApplications(apps);
 
-                if (apps.length === 0 && response.success === false) {
-                    console.warn('API might have returned an specific error or just empty list');
+                // Handle Stats Response
+                if (statsResponse.success && statsResponse.data?.stats) {
+                    setStats(statsResponse.data.stats);
                 }
 
             } catch (err) {
@@ -73,19 +78,24 @@ const ApplicationList = () => {
 
     const getStatusColor = (status) => {
         const s = status?.toUpperCase();
-        if (s === 'APPROVED' || s === 'EXEMPT') return 'success';
+        if (s === 'APPROVED' || s === 'EXEMPT' || s === 'NOC_ISSUED' || s === 'COMPLETED') return 'success';
         if (s === 'REJECTED') return 'danger';
-        if (s === 'SUBMITTED' || s === 'PENDING') return 'info';
+        if (s === 'SUBMITTED' || s === 'PENDING' || s === 'UNDER_REVIEW' || s === 'UNDER_SCRUTINY') return 'info';
+        if (s === 'QUERY_RAISED' || s === 'ACTION_REQUIRED') return 'warning';
         return 'warning';
     };
 
     const filteredApplications = activeTab === 'all'
         ? applications
-        : applications.filter(app =>
-            activeTab === 'active'
-                ? ['SUBMITTED', 'PENDING', 'UNDER_REVIEW', 'UNDER_SCRUTINY', 'QUERY_RAISED'].includes(app.status?.toUpperCase())
-                : ['APPROVED', 'REJECTED', 'WITHDRAWN', 'EXEMPT'].includes(app.status?.toUpperCase())
-        );
+        : applications.filter(app => {
+            const status = app.status?.toUpperCase() || "";
+            if (activeTab === 'active') {
+                return ['SUBMITTED', 'PENDING', 'UNDER_REVIEW', 'UNDER_SCRUTINY', 'QUERY_RAISED', 'ACTION_REQUIRED'].includes(status);
+            } else if (activeTab === 'history') {
+                return ['APPROVED', 'NOC_ISSUED', 'REJECTED', 'WITHDRAWN', 'EXEMPT', 'COMPLETED'].includes(status);
+            }
+            return true;
+        });
 
     return (
         <LayoutWithSidebar>
@@ -204,7 +214,7 @@ const ApplicationList = () => {
                             <div className="dashboard-stat-card blue">
                                 <div className="stat-card-content">
                                     <div className="stat-info">
-                                        <div className="stat-number">{applications.length}</div>
+                                        <div className="stat-number">{stats.totalApplications || applications.length}</div>
                                         <div className="stat-label-text">Total Applications</div>
                                     </div>
                                 </div>
@@ -213,7 +223,7 @@ const ApplicationList = () => {
                                 <div className="stat-card-content">
                                     <div className="stat-info">
                                         <div className="stat-number">
-                                            {applications.filter(a => ['SUBMITTED', 'PENDING', 'UNDER_REVIEW', 'query_raised'].includes(a.status?.toLowerCase())).length}
+                                            {stats.inProcess || (stats.inProcess === 0 ? 0 : applications.filter(a => ['SUBMITTED', 'PENDING', 'UNDER_REVIEW', 'UNDER_SCRUTINY', 'QUERY_RAISED'].includes(a.status?.toUpperCase())).length)}
                                         </div>
                                         <div className="stat-label-text">In Progress</div>
                                     </div>
@@ -223,7 +233,7 @@ const ApplicationList = () => {
                                 <div className="stat-card-content">
                                     <div className="stat-info">
                                         <div className="stat-number">
-                                            {applications.filter(a => a.status?.toUpperCase() === 'APPROVED').length}
+                                            {stats.approved || (stats.approved === 0 ? 0 : applications.filter(a => ['APPROVED', 'NOC_ISSUED', 'EXEMPT'].includes(a.status?.toUpperCase())).length)}
                                         </div>
                                         <div className="stat-label-text">Approved</div>
                                     </div>

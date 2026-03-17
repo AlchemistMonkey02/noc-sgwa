@@ -15,7 +15,7 @@ import React, {
 } from 'react';
 import { useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
-import { API_BASE_URL } from '../config/apiConfig';
+import { API_BASE_URL, SOCKET_URL } from '../config/apiConfig';
 import { useAuth } from './AuthContext';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -89,7 +89,7 @@ export const NotificationProvider = ({ children }) => {
         // Backend registers WebRTC socket on the /stream namespace:
         //   io.of('/stream').on('connection', webrtcStream)
         // Must connect to <host>/stream — NOT the root with a custom path.
-        const socketBase = API_BASE_URL.replace('/api', '');
+        const socketBase = SOCKET_URL;
         const sock = io(`${socketBase}/stream`, {
             transports: ['websocket', 'polling'],
             reconnection: true,

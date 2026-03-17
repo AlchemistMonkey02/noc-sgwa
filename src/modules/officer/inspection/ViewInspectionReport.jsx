@@ -26,22 +26,23 @@ const ViewInspectionReport = () => {
                     const data = response.data;
                     setReport({
                         inspectionId: data.inspectionId,
-                        appId: data.applicationNumber || 'N/A',
+                        appId: data.applicationNumber || data.appId || 'N/A',
                         applicantName: data.holderName || data.applicantName || 'N/A',
                         address: data.address || data.location || 'N/A',
                         projectType: data.projectType || 'N/A',
-                        inspectionDate: data.submittedAt || new Date().toISOString(),
+                        inspectionDate: data.inspectionDate || data.submittedAt || new Date().toISOString(),
                         submittedAt: data.submittedAt || new Date().toISOString(),
-                        locationMatch: data.locationMatch !== false,
-                        landUseMatch: data.landUseMatch !== false,
+                        locationMatch: data.locationMatch === true,
+                        landUseMatch: data.landUseMatch === true,
                         existingSources: data.existingSources || 0,
-                        meterInstalled: data.meterInstalled === true,
-                        rainwaterHarvesting: data.rainwaterHarvesting || 'Not Checked',
-                        remarks: data.reportRemarks || data.remarks || 'No remarks',
-                        recommendation: data.reportResult || data.recommendation || 'PENDING',
+                        meterInstalled: data.meterInstalled || 'NO',
+                        rainwaterHarvesting: data.rainwaterHarvesting || 'NOT_STARTED',
+                        plantationStatus: data.plantationStatus || 'NOT_STARTED',
+                        remarks: data.remarks || 'No remarks',
+                        recommendation: data.recommendation || 'PENDING',
                         officerName: data.officerName || userData?.name || 'Officer',
                         geoLocation: data.geoLocation || { lat: 0, lng: 0, accuracy: 0 },
-                        photos: []
+                        photos: data.photos || []
                     });
                 } else {
                     throw new Error(response.message || 'Failed to load report');
@@ -169,7 +170,13 @@ const ViewInspectionReport = () => {
                                     <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
                                         <td style={{ padding: '0.75rem 0', color: '#4b5563' }}>Rainwater Harvesting</td>
                                         <td style={{ padding: '0.75rem 0', fontWeight: '600' }}>
-                                            {report.rainwaterHarvesting.replace('_', ' ').toUpperCase()}
+                                            {report.rainwaterHarvesting.replace(/_/g, ' ').toUpperCase()}
+                                        </td>
+                                    </tr>
+                                    <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
+                                        <td style={{ padding: '0.75rem 0', color: '#4b5563' }}>Plantation Status</td>
+                                        <td style={{ padding: '0.75rem 0', fontWeight: '600' }}>
+                                            {report.plantationStatus.replace(/_/g, ' ').toUpperCase()}
                                         </td>
                                     </tr>
                                 </tbody>
@@ -195,10 +202,14 @@ const ViewInspectionReport = () => {
                                 <label className="officer-label" style={{ marginBottom: '0.5rem' }}>Site Photographs</label>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
                                     {report.photos && report.photos.length > 0 ? (
-                                        report.photos.map((photo, i) => (
-                                            <div key={i} style={{ aspectRatio: '4/3', background: '#f1f5f9', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e2e8f0' }}>
-                                                {/* Real implementation would use <img src={photo.url} /> */}
-                                                <span style={{ color: '#64748b', fontSize: '0.8rem' }}>Photo {i + 1}</span>
+                                        report.photos.map((photoId, i) => (
+                                            <div key={i} style={{ aspectRatio: '4/3', background: '#f1f5f9', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                                                <img 
+                                                    src={officerService.getDocumentUrl(photoId)} 
+                                                    alt={`Site Photo ${i + 1}`} 
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                    onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=No+Image'; }}
+                                                />
                                             </div>
                                         ))
                                     ) : (

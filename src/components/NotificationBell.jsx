@@ -57,9 +57,9 @@ const NotificationBell = ({ theme = 'light' }) => {
                 onClick={() => { setOpen(o => !o); if (!open) { } }}
                 style={{
                     position: 'relative',
-                    background: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)',
-                    border: isDark ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.1)',
-                    borderRadius: '10px',
+                    background: isDark ? 'rgba(255,255,255,0.12)' : 'var(--gray-50)',
+                    border: isDark ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--gray-200)',
+                    borderRadius: '12px',
                     padding: '8px 10px',
                     cursor: 'pointer',
                     display: 'flex',

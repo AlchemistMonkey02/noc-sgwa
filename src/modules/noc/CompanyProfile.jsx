@@ -347,18 +347,45 @@ const CompanyProfile = () => {
                 // Reload profile to show saved details (and documents if they exist)
                 await fetchAndPopulateProfile();
             } else {
-                toastError(`Failed to save company profile: ${result.message || 'Unknown error'}`);
+                let errorMsg = result.message || 'Unknown error';
+                
+                // Handle specific validation errors from Joi
+                if (result.error && result.error.code === 'VALIDATION_ERROR' && Array.isArray(result.error.details)) {
+                    // Check for dateOfIncorporation specific error
+                    const dateError = result.error.details.find(d => d.includes('dateOfIncorporation'));
+                    if (dateError) {
+                        errorMsg = 'Invalid incorporation date. Date must be before from now.';
+                    } else {
+                        // Join all details and remove technical quotes
+                        errorMsg = result.error.details.map(d => d.replace(/"/g, '')).join('. ');
+                    }
+                }
+                
+                toastError(`Registration failed: ${errorMsg}`);
             }
 
         } catch (error) {
             console.error('Registration failed:', error);
+            
+            let errorMsg = error.message;
+            
+            // Check if error is an object with validation details
+            if (error.error && error.error.code === 'VALIDATION_ERROR' && Array.isArray(error.error.details)) {
+                const dateError = error.error.details.find(d => d.includes('dateOfIncorporation'));
+                if (dateError) {
+                    errorMsg = 'Invalid incorporation date. Date must be before from now.';
+                } else {
+                    errorMsg = error.error.details.map(d => d.replace(/"/g, '')).join('. ');
+                }
+            }
+
             // Check if error is due to auth failure that couldn't be refreshed
-            if (error.message && (error.message.includes('Session expired') || error.message.includes('401'))) {
+            if (errorMsg && (errorMsg.includes('Session expired') || errorMsg.includes('401'))) {
                 toastError('Session expired. Please login again.');
                 logout();
                 navigate('/noc/login');
             } else {
-                toastError(`Failed to save company profile: ${error.message}`);
+                toastError(`Registration failed: ${errorMsg}`);
             }
         }
     };

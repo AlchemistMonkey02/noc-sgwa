@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 // import { setOfficerToken, setOfficerRole, setOfficerData, setOfficerRefreshToken } from './shared/utils/officerAuth'; // Now handled by context
@@ -177,9 +177,9 @@ const OfficerLogin = () => {
                     color: 'var(--officer-text-light)'
                 }}>
                     <p style={{ margin: 0 }}>
-                        <a href="#" style={{ color: 'var(--officer-primary)', textDecoration: 'none' }}>
+                        <Link to="?forgot-password=true" style={{ color: 'var(--officer-primary)', textDecoration: 'none' }}>
                             {t('officer.login.forgotPassword')}
-                        </a>
+                        </Link>
                     </p>
                     <p style={{ margin: '0.5rem 0 0 0' }}>
                         {t('officer.login.applicantLink').split('please')[0]}

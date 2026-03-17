@@ -24,15 +24,16 @@ const NOCDashboard = () => {
     // Fetch dashboard data
     useEffect(() => {
         const fetchDashboardData = async () => {
+            if (!user) return; // Prevent fetching without user
+            
             try {
                 setDashboardLoading(true);
                 const response = await nocApplicationService.getDashboardData();
                 if (response.success) {
                     console.log("Dashboard Data received:", response.data);
-                    if (response.data?.recentApplications?.length > 0) {
-                        console.log("First Application Structure:", response.data.recentApplications[0]);
-                    }
                     setDashboardData(response.data);
+                } else {
+                    console.error('API returned failure for dashboard data:', response);
                 }
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
@@ -41,10 +42,11 @@ const NOCDashboard = () => {
             }
         };
 
-        if (user) {
+        // Only fetch if we are NOT loading auth AND we have a user
+        if (!loading && user) {
             fetchDashboardData();
         }
-    }, [user]);
+    }, [user, loading]);
 
     // Redirect if not authenticated
     useEffect(() => {
@@ -170,21 +172,34 @@ const NOCDashboard = () => {
             .join(' ');
     };
 
-    const formatDate = (dateString) => {
+    const formatDate = (dateString, fallback = 'N/A') => {
+        if (!dateString) return fallback;
         const date = new Date(dateString);
+        if (isNaN(date.getTime())) return fallback;
         return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     };
 
+    const getValidityFallback = (baseDate) => {
+        const date = baseDate ? new Date(baseDate) : new Date();
+        const validDate = isNaN(date.getTime()) ? new Date() : date;
+        validDate.setFullYear(validDate.getFullYear() + 2);
+        return formatDate(validDate);
+    };
+
     const recentApplications = (dashboardData?.recentApplications || []).map(app => ({
-        id: app.applicationNumber || app.trackingId,
-        type: app.applicationTypeName || (app.applicationType === 'NEW' ? 'Fresh NOC' : app.applicationType === 'RENEWAL' ? 'NOC Renewal' : app.applicationType),
-        purpose: app.projectDetails?.projectName || 'N/A',
-        submittedDate: formatDate(app.updatedAt),
-        status: formatStatus(app.status),
-        statusClass: getStatusClass(app.status),
-        uuid: app.uuid,
+        id: app.applicationNumber || app.trackingId || app.applicationId || app.id || 'N/A',
+        type: app.applicationTypeName || (app.applicationType === 'NEW' ? 'Fresh NOC' : app.applicationType === 'RENEWAL' ? 'NOC Renewal' : app.applicationType) || 'N/A',
+        purpose: app.projectName || 
+                 app.projectDetails?.projectName || 
+                 app.projectDetails?.name || 
+                 app.id || 
+                 'N/A',
+        submittedDate: formatDate(app.updatedAt || app.submittedAt || app.submittedDate),
+        status: formatStatus(app.status || 'PENDING'),
+        statusClass: getStatusClass(app.status || 'PENDING'),
+        uuid: app.uuid || app._id,
         applicationId: app.applicationId || app.id || app.trackingId,
-        _id: app._id
+        _id: app._id || app.id
     }));
 
     const upcomingDeadlines = (dashboardData?.deadlines || []).map(d => ({
@@ -197,16 +212,23 @@ const NOCDashboard = () => {
 
     // Filter approved NOCs from dashboard data
     const approvedNOCs = (dashboardData?.recentApplications || [])
-        .filter(app => app.status === 'NOC_ISSUED' || app.status === 'APPROVED')
-        .map(app => ({
-            uuid: app.uuid || app._id, // Use UUID for API calls
-            nocNumber: app.applicationNumber || 'N/A',
-            refId: app.trackingId || app.applicationId || app.id, // Capture Reference ID
-            projectName: app.projectDetails?.projectName || 'N/A',
-            issueDate: app.nocIssuedDate ? formatDate(app.nocIssuedDate) : formatDate(app.updatedAt),
-            validUpto: app.nocValidityDate ? formatDate(app.nocValidityDate) : 'N/A',
-            status: t('dashboard.active')
-        }));
+        .filter(app => app.status === 'NOC_ISSUED' || app.status === 'APPROVED' || app.status === 'SGWA_APPROVED' || app.status === 'ACTIVE')
+        .map(app => {
+            const issueDateRaw = app.nocIssuedDate || app.updatedAt || app.submittedAt;
+            return {
+                uuid: app.uuid || app._id,
+                nocNumber: app.applicationNumber || app.trackingId || 'N/A',
+                refId: app.trackingId || app.applicationId || app.id,
+                projectName: app.projectName || 
+                           app.projectDetails?.projectName || 
+                           app.projectDetails?.name || 
+                           app.id || 
+                           'N/A',
+                issueDate: formatDate(issueDateRaw),
+                validUpto: app.nocValidityDate ? formatDate(app.nocValidityDate) : getValidityFallback(issueDateRaw),
+                status: t('dashboard.active')
+            };
+        });
 
     // Handle View Certificate
     const handleViewCertificate = async (uuid, nocNumber) => {
@@ -261,7 +283,12 @@ const NOCDashboard = () => {
                 <div className="page-title-section">
                     <h1 className="page-main-title">{t('dashboard.title')}</h1>
                     <p className="page-subtitle">
-                        {t('dashboard.welcome')}, <span className="notranslate">{typeof user?.username === 'object' ? (user?.username?.name || user?.name || 'User') : (user?.username || user?.name || 'User')}</span>! {t('dashboard.overview')}
+                        {t('dashboard.welcome')}, <span className="notranslate">
+                            {user?.firstName ? `${user.firstName}${user.lastName ? ' ' + user.lastName : ''}` : 
+                             user?.name || 
+                             user?.username || 
+                             'User'}
+                        </span>! {t('dashboard.overview')}
                     </p>
                 </div>
 
@@ -396,24 +423,24 @@ const NOCDashboard = () => {
                         </div>
                         <div className="card-content-area">
                             <p style={{ fontSize: '0.875rem', color: 'var(--gray-600)', marginBottom: '1rem' }}>
-                                Start a live consultation with your assigned officer for your application{' '}
-                                <strong className="notranslate">{recentApplications[0]?.id}</strong>.
+                                Start a live consultation with your assigned officer for your most recent application:{' '}
+                                <strong className="notranslate">{recentApplications[0]?.applicationNumber || recentApplications[0]?.id}</strong>.
                             </p>
                             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                                 <ConsultationCallButton
-                                    applicationNumber={recentApplications[0]?.id}
+                                    applicationNumber={recentApplications[0]?.applicationNumber || recentApplications[0]?.id}
                                     officerType="DGO"
                                     label="📞 Call DGO"
                                     variant="primary"
                                 />
                                 <ConsultationCallButton
-                                    applicationNumber={recentApplications[0]?.id}
+                                    applicationNumber={recentApplications[0]?.applicationNumber || recentApplications[0]?.id}
                                     officerType="SGWA"
                                     label="📞 Call SGWA"
                                     variant="primary"
                                 />
                                 <ConsultationCallButton
-                                    applicationNumber={recentApplications[0]?.id}
+                                    applicationNumber={recentApplications[0]?.applicationNumber || recentApplications[0]?.id}
                                     officerType="ENFORCEMENT"
                                     label="📞 Call Enforcement"
                                     variant="primary"
@@ -459,16 +486,39 @@ const NOCDashboard = () => {
                                                 </span>
                                             </td>
                                             <td data-label={t('dashboard.actions')}>
-                                                <button
-                                                    className="table-action-btn"
-                                                    onClick={() => {
-                                                        // Use MongoDB _id as that's what the /summary endpoint expects
-                                                        const targetId = app._id;
-                                                        navigate(`/noc/application/${targetId}`);
-                                                    }}
-                                                >
-                                                    {t('dashboard.view')}
-                                                </button>
+                                                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', minWidth: '150px' }}>
+                                                    <button
+                                                        className="table-action-btn"
+                                                        onClick={() => {
+                                                            const targetId = app._id;
+                                                            navigate(`/noc/application/${targetId}`);
+                                                        }}
+                                                        style={{ height: '28px', display: 'flex', alignItems: 'center' }}
+                                                    >
+                                                        {t('dashboard.view')}
+                                                    </button>
+                                                    <ConsultationCallButton
+                                                        applicationNumber={app.id}
+                                                        officerType="DGO"
+                                                        label="📞 DGO"
+                                                        variant="mini"
+                                                        style={{ padding: '4px 8px' }}
+                                                    />
+                                                    <ConsultationCallButton
+                                                        applicationNumber={app.id}
+                                                        officerType="SGWA"
+                                                        label="📞 SGWA"
+                                                        variant="mini"
+                                                        style={{ padding: '4px 8px' }}
+                                                    />
+                                                    <ConsultationCallButton
+                                                        applicationNumber={app.id}
+                                                        officerType="ENFORCEMENT"
+                                                        label="📞 Enf."
+                                                        variant="mini"
+                                                        style={{ padding: '4px 8px' }}
+                                                    />
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}

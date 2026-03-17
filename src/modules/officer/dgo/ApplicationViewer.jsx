@@ -1,9 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import officerService from '../services/officerService';
+import nocApplicationService from '../../noc/services/nocApplicationService';
+import OfficerHeader from '../shared/components/OfficerHeader';
 import OfficerSidebar from '../shared/components/OfficerSidebar';
+import ScheduleInspectionModal from '../shared/components/ScheduleInspectionModal';
 import '../shared/styles/officer-portal.css';
 import './ApplicationViewer.css';
+
+// Helper to resolve IDs to names from options
+const resolveIdToName = (id, options, defaultVal = 'N/A') => {
+    if (!id || !options || options.length === 0) return id || defaultVal;
+    const match = options.find(opt =>
+        String(opt.id || opt.appTypeCode || opt.appSubTypeCode || opt.projectTypeCode || opt.appTypeCatCode || opt.industryTypeId || opt.code || opt._id) === String(id)
+    );
+    return match ? (match.name || match.label || match.industryName) : id;
+};
 
 const ApplicationViewer = () => {
     const { applicationId } = useParams();
@@ -17,11 +29,30 @@ const ApplicationViewer = () => {
     const [showQueryModal, setShowQueryModal] = useState(false);
     const [showInspectionModal, setShowInspectionModal] = useState(false);
     const [inspectionOfficers, setInspectionOfficers] = useState([]);
+    const [officerData, setOfficerData] = useState(null);
+
+    // Master Data for Mapping
+    const [appTypeOptions, setAppTypeOptions] = useState([]);
+    const [appSubTypeOptions, setAppSubTypeOptions] = useState([]);
+    const [orgTypeOptions, setOrgTypeOptions] = useState([]);
+    const [projectTypeOptions, setProjectTypeOptions] = useState([]);
+    const [districtOptions, setDistrictOptions] = useState([]);
+    const [blockOptions, setBlockOptions] = useState([]);
+    const [industryTypeOptions, setIndustryTypeOptions] = useState([]);
+
+    useEffect(() => {
+        const storedOfficer = localStorage.getItem('officerData');
+        if (storedOfficer) {
+            setOfficerData(JSON.parse(storedOfficer));
+        }
+    }, []);
 
     useEffect(() => {
         const fetchOfficers = async () => {
             try {
-                const response = await officerService.getOfficers('INSPECTION_OFFICER');
+                console.log('ApplicationViewer: Fetching all eligible officers...');
+                const response = await officerService.getOfficers(); 
+                console.log('ApplicationViewer: Officers Response:', response);
                 if (response.success) {
                     setInspectionOfficers(response.data);
                 }
@@ -30,7 +61,50 @@ const ApplicationViewer = () => {
             }
         };
         fetchOfficers();
+        fetchMasterData();
     }, []);
+
+    const fetchMasterData = async () => {
+        try {
+            const [types, subTypes, orgs, projects, districts, industries] = await Promise.all([
+                nocApplicationService.getApplicationTypes(),
+                nocApplicationService.getApplicationSubTypes(),
+                nocApplicationService.getOrganizationTypes(),
+                nocApplicationService.getProjectTypes(),
+                nocApplicationService.getDistricts('RAJ'), // Rajasthan is default
+                nocApplicationService.getIndustryTypes()
+            ]);
+
+            if (types.success) setAppTypeOptions(types.data);
+            if (subTypes.success) setAppSubTypeOptions(subTypes.data);
+            if (orgs.success) setOrgTypeOptions(orgs.data);
+            if (projects.success) setProjectTypeOptions(projects.data);
+            if (districts.success) setDistrictOptions(districts.data);
+            if (industries?.success) setIndustryTypeOptions(industries.data);
+
+            // Blocks will be fetched when application data is available
+        } catch (error) {
+            console.error("Error fetching master data:", error);
+        }
+    };
+
+
+    // Store raw data for re-transformation
+    const [rawApplication, setRawApplication] = useState(null);
+
+    // Re-run transformation as master data loads
+    useEffect(() => {
+        if (rawApplication) {
+            setApplication(transformApplicationData(rawApplication, {
+                appTypes: appTypeOptions,
+                subTypes: appSubTypeOptions,
+                orgs: orgTypeOptions,
+                projects: projectTypeOptions,
+                districts: districtOptions,
+                blocks: blockOptions
+            }));
+        }
+    }, [rawApplication, appTypeOptions, appSubTypeOptions, orgTypeOptions, projectTypeOptions, districtOptions, blockOptions]);
 
     useEffect(() => {
         fetchApplicationDetails();
@@ -41,27 +115,39 @@ const ApplicationViewer = () => {
             setLoading(true);
             const response = await officerService.getApplicationDetails(applicationId);
             if (response.success) {
-                const apiData = response.data; // Depending on if it's response.data or response.data.application.
-                // Based on previous list response, it might be response.data directly if getApplicationDetails returns the object. 
-                // Let's assume response.data is the application object based on common patterns, or check structure.
-                // Use a helper to transform to the shape this component expects
-                setApplication(transformApplicationData(apiData));
-            } else {
-                console.error('Failed to fetch:', response);
+                setRawApplication(response.data);
+
+                // Fetch blocks if district is available
+                if (response.data.location?.districtId) {
+                    nocApplicationService.getBlocks(response.data.location.districtId)
+                        .then(res => { if (res.success) setBlockOptions(res.data); });
+                }
             }
         } catch (error) {
             console.error('Error fetching application:', error);
-            // No mock fallback anymore
+            alert('Error fetching application details: ' + (error.message || 'Unknown error'));
         } finally {
             setLoading(false);
         }
     };
 
     // Helper to transform API data to component state structure
-    const transformApplicationData = (data) => {
-        // Calculate total water requirement
-        const waterBreakup = data.waterRequirement?.purposeWiseBreakup || {};
-        const totalWater = Object.values(waterBreakup).reduce((sum, val) => sum + (Number(val) || 0), 0);
+    // Helper to transform API data to component state structure
+    const transformApplicationData = (data, options = {}) => {
+        const { appTypes = [], subTypes = [], orgs = [], projects = [], districts = [], blocks = [] } = options;
+        
+        // Calculate total water requirement correctly
+        const waterRequirement = data.waterRequirement || {};
+        const waterBreakup = waterRequirement.purposeWiseBreakup || {};
+        const sumOfBreakup = Object.values(waterBreakup).reduce((sum, val) => sum + (Number(val) || 0), 0);
+        const totalWater = waterRequirement.totalRequirement || waterRequirement.dailyRequirement || sumOfBreakup || 0;
+
+        // Resolve names for labels
+        const resolvedAppType = resolveIdToName(data.applicationType, appTypes);
+        const resolvedAppSubType = resolveIdToName(data.applicationSubType, subTypes);
+        const resolvedOrgType = resolveIdToName(data.projectDetails?.organizationType, orgs);
+        const resolvedDistrict = resolveIdToName(data.location?.districtId, districts);
+        const resolvedBlock = resolveIdToName(data.location?.blockId, blocks);
 
         // Synthesize timeline if empty
         let timeline = data.progressTracking?.timeline || [];
@@ -78,7 +164,7 @@ const ApplicationViewer = () => {
                 timeline.push({
                     stage: 'APPLICATION_SUBMITTED',
                     date: data.submittedAt,
-                    actor: data.projectDetails?.applicantName || 'Applicant',
+                    actor: data.userId?.fullName || data.projectDetails?.applicantName || 'Applicant',
                     remarks: 'Application submitted for review'
                 });
             }
@@ -91,43 +177,111 @@ const ApplicationViewer = () => {
                 });
             }
             if (data.status === 'INSPECTION_SCHEDULED') {
-                // We don't have a date for when it *was* scheduled in the root object usually, 
+                // We don't have a date for when it *was* scheduled in the root object usually,
                 // but we can show it as a pending item or just rely on status.
+                // For now, let's just stick to past events.
                 // For now, let's just stick to past events.
             }
             // Sort by date descending
             timeline.sort((a, b) => new Date(b.date) - new Date(a.date));
         }
 
-        return {
+        try {
+            return {
             id: data._id || data.applicationId,
             applicationNumber: data.applicationNumber,
             status: data.status,
             applicantDetails: {
-                name: data.projectDetails?.applicantName || 'N/A',
-                type: data.applicationSubType || 'N/A',
-                email: 'N/A',
-                phone: 'N/A',
-                contactPerson: data.projectDetails?.applicantName || 'N/A',
-                panNumber: 'N/A'
+                name: data.applicantDetails?.name || 
+                      data.ownerDetails?.ownerName || 
+                      data.projectDetails?.applicantName || 
+                      data.projectDetails?.name || 
+                      data.applicantName || 
+                      'N/A',
+                type: data.applicantDetails?.type || 
+                      data.projectDetails?.organizationType || 
+                      data.organizationType || 
+                      'N/A',
+                organizationName: data.projectDetails?.organizationName || 
+                                 data.projectDetails?.companyName || 
+                                 'N/A',
+                email: data.projectDetails?.email || 
+                       data.ownerDetails?.ownerEmail || 
+                       data.userId?.email ||
+                       'N/A',
+                phone: data.projectDetails?.mobile || 
+                       data.ownerDetails?.ownerPhone || 
+                       'N/A',
+                contactPerson: data.applicantDetails?.contactPerson || 
+                              data.companyId?.contactPerson || 
+                              data.ownerDetails?.ownerName || 
+                              'N/A',
+                panNumber: data.projectDetails?.panNumber || 
+                          data.applicantDetails?.panNumber || 
+                          data.panNumber ||
+                          'N/A'
             },
             projectDetails: {
-                projectName: data.projectDetails?.projectName || 'N/A',
-                projectType: data.projectType || data.sectorType || 'N/A',
-                sector: data.sectorType || 'N/A',
-                industryType: data.applicationCategory || 'N/A'
+                ...data.projectDetails,
+                projectName: data.projectDetails?.projectName || data.projectName || 'N/A',
+                projectType: (() => {
+                    const typeLabel = resolvedAppType !== '3' && resolvedAppType !== 'N/A' ? resolvedAppType : null;
+                    const subTypeLabel = resolvedAppSubType !== '6' && resolvedAppSubType !== 'N/A' ? resolvedAppSubType : null;
+                    
+                    if (typeLabel && subTypeLabel) return `${typeLabel} (${subTypeLabel})`;
+                    if (typeLabel) return typeLabel;
+                    if (subTypeLabel) return subTypeLabel;
+                    
+                    // Fallback to numeric or generic if still resolving
+                    if (data.applicationType && data.applicationSubType) return `${data.applicationType} (${data.applicationSubType})`;
+                    return data.applicationType || 'NOC';
+                })(),
+                sector: (() => {
+                    const isValidSector = (val) => {
+                        if (!val || val === 'N/A' || val === '' || typeof val !== 'string') return false;
+                        const invalid = ['WITHDRAWAL', 'NEW', 'RENEWAL', 'SUBMITTED', 'PENDING', 'NOC', 'PVT_LTD', 'PVT', 'LIMITED', 'LTD'];
+                        return !invalid.includes(val.toUpperCase()) && isNaN(val);
+                    };
+
+                    // Priority: 1. sectorType resolved, 2. subType label, 3. category, 4. industryType
+                    if (data.sectorType && isValidSector(data.sectorType)) return data.sectorType;
+                    
+                    // IF categorical field is generic, use the resolved sub-type (e.g. Infrastructure)
+                    if (resolvedAppSubType && resolvedAppSubType !== '6' && isValidSector(resolvedAppSubType)) return resolvedAppSubType;
+                    if (resolvedAppType && resolvedAppType !== '3' && isValidSector(resolvedAppType)) return resolvedAppType;
+
+                    if (data.applicationCategory && isValidSector(data.applicationCategory)) return data.applicationCategory;
+                    if (data.projectDetails?.industryType && isValidSector(data.projectDetails.industryType)) return data.projectDetails.industryType;
+                    
+                    return 'Industry'; // Standard fallback
+                })()
             },
             locationDetails: {
-                district: data.location?.districtId || 'N/A',
-                block: data.location?.blockId || 'N/A',
+                ...data.locationDetails,
+                district: resolvedDistrict,
+                block: resolvedBlock,
                 village: data.location?.village || 'N/A',
-                plotNumber: 'N/A'
+                address: data.location?.address || 'N/A'
             },
             waterRequirement: {
-                dailyRequirement: totalWater,
-                annualRequirement: totalWater * 365,
-                sourceType: 'Groundwater',
-                numberOfBorewells: data.waterRequirement?.proposedExtraction?.numberOfBorewells || 0
+                ...data.waterRequirement,
+                dailyRequirement: totalWater || 
+                                 data.waterRequirement?.dailyRequirement || 
+                                 data.exemptionDetails?.agriculturalDetails?.waterRequirementKLD || 
+                                 data.waterRequirementKLD || 
+                                 0,
+                annualRequirement: data.waterRequirement?.annualRequirement || 
+                                  data.drinkingDomesticUse?.totalAnnualDomestic || 
+                                  (totalWater ? (totalWater * 365).toFixed(2) : 'N/A'),
+                sourceType: data.waterRequirement?.sourceType || 
+                           data.hydrogeologicalData?.aquiferType ||
+                           data.hydrogeology?.aquiferType ||
+                           data.waterQualityType || 
+                           data.groundWaterUtilizationFor ||
+                           (data.pumpingDetails?.pumpType ? 'Groundwater (' + data.pumpingDetails.pumpType + ')' : 'Groundwater'),
+                numberOfBorewells: data.waterRequirement?.proposedExtraction?.numberOfBorewells || 
+                                  data.waterRequirement?.numberOfBorewells || 
+                                  (data.groundWaterStructures?.length || 0)
             },
             isExempted: data.isExempted || false,
             exemptionDetails: data.exemptionDetails || null,
@@ -135,12 +289,17 @@ const ApplicationViewer = () => {
             timeline: timeline,
             workflow: {
                 currentStage: data.approvalFlow?.dgo?.status || 'PENDING',
-                inspectionReport: data.inspection ? {
+                inspection: data.approvalFlow?.dgo?.inspectionAssignedTo ? {
+                    status: data.status,
+                    officer: data.approvalFlow.dgo.inspectionAssignedTo,
+                    scheduledDate: data.approvalFlow.dgo.inspectionScheduledAt,
+                    inspectionId: data.approvalFlow.dgo.inspectionId
+                } : (data.inspection ? {
                     status: data.inspection.status,
                     officerId: data.inspection.officerId,
                     scheduledDate: data.inspection.scheduledDate,
                     report: data.inspection.report
-                } : null,
+                } : null),
                 query: data.query ? {
                     queryId: data.query.queryId,
                     subject: data.query.subject,
@@ -151,6 +310,10 @@ const ApplicationViewer = () => {
                 } : null
             }
         };
+        } catch (error) {
+            console.error('CRITICAL ERROR transforming application data:', error, { data, options });
+            return null; // Force error screen via !application
+        }
     };
 
     const handleViewDocument = (document) => {
@@ -186,23 +349,20 @@ const ApplicationViewer = () => {
     };
 
     const handleVerifyDocument = async (doc, status) => {
+        console.log('DGO - Individual Verification triggered for:', doc, status);
         try {
-            // Check for valid ID
             const docId = doc.documentId || doc.id || doc._id;
             if (!docId) {
                 alert('Document ID missing');
                 return;
             }
 
-            const payload = [{
-                documentId: docId,
-                status: status,
-                remarks: status === 'ACCEPTED' ? 'Verified by Officer' : 'Rejected by Officer'
-            }];
-
-            const response = await officerService.verifyDocuments(applicationId, payload);
+            console.log('Calling officerService.verifyDocument with ID:', docId);
+            const response = await officerService.verifyDocument(docId, {
+                status: status || 'APPROVED',
+                remarks: status === 'ACCEPTED' ? 'Verified by Officer' : 'Status: ' + status
+            });
             if (response.success) {
-                // Optimistic update or refresh
                 fetchApplicationDetails();
             } else {
                 alert('Failed to verify document');
@@ -216,27 +376,15 @@ const ApplicationViewer = () => {
     const handleBulkVerify = async () => {
         if (!application.documents || application.documents.length === 0) return;
 
-        // Filter valid docs that aren't already accepted
-        const docsToVerify = application.documents
-            .filter(d => d.status !== 'ACCEPTED')
-            .map(d => ({
-                documentId: d.documentId || d.id || d._id,
-                status: 'ACCEPTED',
-                remarks: 'Bulk Verified'
-            }))
-            .filter(d => d.documentId); // Ensure ID exists
-
-        if (docsToVerify.length === 0) {
-            alert('No pending documents to verify.');
-            return;
-        }
-
-        if (!window.confirm(`Are you sure you want to verify all ${docsToVerify.length} pending documents?`)) {
+        if (!window.confirm(`Are you sure you want to verify all documents?`)) {
             return;
         }
 
         try {
-            const response = await officerService.verifyDocuments(applicationId, docsToVerify);
+            const response = await officerService.verifyAllDocuments(applicationId, {
+                status: 'APPROVED',
+                remarks: 'Verified by DGO'
+            });
             if (response.success) {
                 alert('All documents verified successfully!');
                 fetchApplicationDetails();
@@ -345,720 +493,502 @@ const ApplicationViewer = () => {
 
     return (
         <div className="officer-portal">
-            <OfficerSidebar userType="DGO" />
+            <OfficerHeader
+                officerName={officerData?.name || "Officer"}
+                officerRole="DGO"
+                officerDesignation={officerData?.designation || "District Ground Water Officer"}
+                district={officerData?.district || ""}
+            />
 
-            <div className="officer-main-content">
-                {/* Header */}
-                <div className="application-viewer-header">
-                    <button
-                        className="btn-back"
-                        onClick={() => navigate('/officer/dgo/applications')}
-                    >
-                        ← Back
-                    </button>
-                    <div className="header-details">
-                        <h1>{application.applicationNumber}</h1>
+            <div className="officer-layout">
+                <OfficerSidebar userType="DGO" />
+
+                <main className="officer-main-content">
+                    {/* Page Title Section with Gradient - Matching Applicant Detail */}
+                    <div className="application-viewer-header">
+                        <div className="header-details">
+                            <button
+                                className="btn-back"
+                                onClick={() => navigate('/officer/dgo/applications')}
+                                style={{ marginBottom: '1.5rem' }}
+                            >
+                                <span>←</span> Back to Dashboard
+                            </button>
+                            <h1>📋 Application Summary</h1>
+                            <p style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '1.1rem', margin: 0, fontWeight: '500' }}>
+                                Application ID: <span className="application-id-tag">{application.applicationNumber}</span>
+                            </p>
+                        </div>
                         <span className={`status-badge status-${application.status?.toLowerCase().replace(/_/g, '-')}`}>
-                            {application.status?.replace(/_/g, ' ')}
+                            {application.status === 'SUBMITTED' ? '✅ SUBMITTED' : application.status?.replace(/_/g, ' ')}
                         </span>
                     </div>
-                </div>
 
-                {/* Application Summary Card */}
-                <div className="application-summary-card">
-                    <div className="summary-row">
-                        <div className="summary-item">
-                            <label>Applicant Name</label>
-                            <p>{application.applicantDetails?.name}</p>
-                        </div>
-                        <div className="summary-item">
-                            <label>Project Name</label>
-                            <p>{application.projectDetails?.projectName}</p>
-                        </div>
-                        <div className="summary-item">
-                            <label>District</label>
-                            <p>{application.locationDetails?.district}</p>
-                        </div>
-                        <div className="summary-item">
-                            <label>Water Requirement</label>
-                            <p>{application.waterRequirement?.dailyRequirement} m³/day</p>
+                    {/* Summary Row */}
+                    <div className="application-summary-card">
+                        <div className="summary-row">
+                            <div className="summary-item">
+                                <label>🏭 Project Name</label>
+                                <p>{application.projectDetails?.projectName}</p>
+                            </div>
+                            <div className="summary-item">
+                                <label>👤 Applicant</label>
+                                <p>{application.applicantDetails?.name}</p>
+                            </div>
+                             <div className="summary-item">
+                                 <label>📍 District</label>
+                                 <p>{resolveIdToName(application.locationDetails?.district, districtOptions)}</p>
+                             </div>
+                            <div className="summary-item">
+                                <label>💧 Daily Requirement</label>
+                                <p>{application.waterRequirement?.dailyRequirement} m³/day</p>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Tabs */}
-                <div className="application-tabs">
-                    <button
-                        className={`tab ${activeTab === 'details' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('details')}
-                    >
-                        Application Details
-                    </button>
-                    <button
-                        className={`tab ${activeTab === 'documents' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('documents')}
-                    >
-                        Documents ({application.documents?.length || 0})
-                    </button>
-                    <button
-                        className={`tab ${activeTab === 'timeline' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('timeline')}
-                    >
-                        Timeline
-                    </button>
-                    <button
-                        className={`tab ${activeTab === 'inspection' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('inspection')}
-                    >
-                        Inspection
-                    </button>
-                    <button
-                        className={`tab ${activeTab === 'queries' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('queries')}
-                    >
-                        Queries
-                    </button>
-                </div>
+                    {/* Tabs */}
+                    <div className="application-tabs">
+                        <button
+                            className={`tab ${activeTab === 'details' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('details')}
+                        >
+                            📋 Details
+                        </button>
+                        <button
+                            className={`tab ${activeTab === 'documents' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('documents')}
+                        >
+                            📂 Documents ({application.documents?.length || 0})
+                        </button>
+                        <button
+                            className={`tab ${activeTab === 'timeline' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('timeline')}
+                        >
+                            ⏱️ Timeline
+                        </button>
+                        <button
+                            className={`tab ${activeTab === 'inspection' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('inspection')}
+                        >
+                            🔍 Inspection
+                        </button>
+                        <button
+                            className={`tab ${activeTab === 'queries' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('queries')}
+                        >
+                            ❓ Queries
+                        </button>
+                    </div>
 
-                {/* Tab Content */}
-                <div className="tab-content">
-                    {activeTab === 'details' && (
-                        <div className="details-tab">
-                            {/* Applicant Details */}
-                            <div className="detail-section">
-                                <h3>👤 Applicant Details</h3>
-                                <div className="detail-grid">
-                                    <div className="detail-item">
-                                        <label>Name</label>
-                                        <p>{application.applicantDetails?.name}</p>
-                                    </div>
-                                    <div className="detail-item">
-                                        <label>Type</label>
-                                        <p>{application.applicantDetails?.type}</p>
-                                    </div>
-                                    <div className="detail-item">
-                                        <label>Contact Person</label>
-                                        <p>{application.applicantDetails?.contactPerson}</p>
-                                    </div>
-                                    <div className="detail-item">
-                                        <label>Email</label>
-                                        <p>{application.applicantDetails?.email}</p>
-                                    </div>
-                                    <div className="detail-item">
-                                        <label>Phone</label>
-                                        <p>{application.applicantDetails?.phone}</p>
-                                    </div>
-                                    <div className="detail-item">
-                                        <label>PAN Number</label>
-                                        <p>{application.applicantDetails?.panNumber}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Project Details */}
-                            <div className="detail-section">
-                                <h3>🏭 Project Details</h3>
-                                <div className="detail-grid">
-                                    <div className="detail-item">
-                                        <label>Project Name</label>
-                                        <p>{application.projectDetails?.projectName}</p>
-                                    </div>
-                                    <div className="detail-item">
-                                        <label>Project Type</label>
-                                        <p>{application.projectDetails?.projectType}</p>
-                                    </div>
-                                    <div className="detail-item">
-                                        <label>Sector</label>
-                                        <p>{application.projectDetails?.sector}</p>
-                                    </div>
-                                    <div className="detail-item">
-                                        <label>Industry Type</label>
-                                        <p>{application.projectDetails?.industryType}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Location Details */}
-                            <div className="detail-section">
-                                <h3>📍 Location Details</h3>
-                                <div className="detail-grid">
-                                    <div className="detail-item">
-                                        <label>District</label>
-                                        <p>{application.locationDetails?.district}</p>
-                                    </div>
-                                    <div className="detail-item">
-                                        <label>Block</label>
-                                        <p>{application.locationDetails?.block}</p>
-                                    </div>
-                                    <div className="detail-item">
-                                        <label>Village</label>
-                                        <p>{application.locationDetails?.village}</p>
-                                    </div>
-                                    <div className="detail-item">
-                                        <label>Plot Number</label>
-                                        <p>{application.locationDetails?.plotNumber}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Water Requirement */}
-                            <div className="detail-section">
-                                <h3>💧 Water Requirement</h3>
-                                <div className="detail-grid">
-                                    <div className="detail-item">
-                                        <label>Daily Requirement</label>
-                                        <p>{application.waterRequirement?.dailyRequirement} m³/day</p>
-                                    </div>
-                                    <div className="detail-item">
-                                        <label>Annual Requirement</label>
-                                        <p>{application.waterRequirement?.annualRequirement} m³/year</p>
-                                    </div>
-                                    <div className="detail-item">
-                                        <label>Source Type</label>
-                                        <p>{application.waterRequirement?.sourceType}</p>
-                                    </div>
-                                    <div className="detail-item">
-                                        <label>Number of Borewells</label>
-                                        <p>{application.waterRequirement?.numberOfBorewells}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Exemption Details (If Applicable) */}
-                            {application.isExempted && application.exemptionDetails && (
+                    <div className="tab-content">
+                        {activeTab === 'details' && (
+                            <div className="details-tab">
                                 <div className="detail-section">
-                                    <h3 style={{ color: '#059669' }}>🌾 Exemption Application Details</h3>
+                                    <h3>👤 Applicant Information</h3>
                                     <div className="detail-grid">
                                         <div className="detail-item">
-                                            <label>Application SubType</label>
-                                            <p>{application.exemptionDetails.applicationSubType}</p>
+                                            <label>Full Name</label>
+                                            <p>{application.applicantDetails?.name}</p>
                                         </div>
                                         <div className="detail-item">
-                                            <label>Gram Panchayat / Village</label>
-                                            <p>{application.exemptionDetails.agriculturalDetails?.gramPanchayatName}</p>
+                                            <label>Organization Type</label>
+                                            <p>{resolveIdToName(application.applicantDetails?.type, orgTypeOptions)}</p>
                                         </div>
                                         <div className="detail-item">
-                                            <label>Khasra No / Plot No</label>
-                                            <p>{application.exemptionDetails.agriculturalDetails?.landDetailsKhasraNo}</p>
+                                            <label>Contact Person</label>
+                                            <p>{application.applicantDetails?.contactPerson}</p>
                                         </div>
                                         <div className="detail-item">
-                                            <label>Land Area (Hectare)</label>
-                                            <p>{application.exemptionDetails.agriculturalDetails?.landHoldingAreaHectare}</p>
+                                            <label>Email Address</label>
+                                            <p>{application.applicantDetails?.email}</p>
                                         </div>
                                         <div className="detail-item">
-                                            <label>Requested Water (KLD)</label>
-                                            <p>{application.exemptionDetails.agriculturalDetails?.waterRequirementKLD} KLD</p>
+                                            <label>Phone Number</label>
+                                            <p>{application.applicantDetails?.phone}</p>
                                         </div>
                                         <div className="detail-item">
-                                            <label>System Eligibility Check</label>
-                                            <p style={{
-                                                fontWeight: 'bold',
-                                                color: application.exemptionDetails.exemptionEligible ? '#16a34a' : '#d97706'
-                                            }}>
-                                                {application.exemptionDetails.exemptionEligible ? 'ELIGIBLE' : 'PENDING REVIEW'}
-                                            </p>
+                                            <label>PAN Number</label>
+                                            <p>{application.applicantDetails?.panNumber}</p>
                                         </div>
                                     </div>
                                 </div>
-                            )}
-                        </div>
-                    )}
 
-                    {activeTab === 'documents' && (
-                        <div className="documents-tab">
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                <h3>Documents</h3>
-                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                <div className="detail-section">
+                                    <h3>🏭 Project Specifications</h3>
+                                    <div className="detail-grid">
+                                        <div className="detail-item">
+                                            <label>Project Title</label>
+                                            <p>{application.projectDetails?.projectName}</p>
+                                        </div>
+                                        <div className="detail-item">
+                                            <label>Application Type</label>
+                                            <p>{application.projectDetails?.projectType}</p>
+                                        </div>
+                                         <div className="detail-item">
+                                             <label>Sector / Category</label>
+                                             <p>{application.projectDetails?.sector}</p>
+                                         </div>
+                                    </div>
+                                </div>
+
+                                <div className="detail-section">
+                                    <h3>📍 Geolocation & Address</h3>
+                                    <div className="detail-grid">
+                                        <div className="detail-item">
+                                            <label>District</label>
+                                            <p>{resolveIdToName(application.locationDetails?.district, districtOptions)}</p>
+                                        </div>
+                                        <div className="detail-item">
+                                            <label>Tehsil/Block</label>
+                                            <p>{resolveIdToName(application.locationDetails?.block, blockOptions)}</p>
+                                        </div>
+                                        <div className="detail-item">
+                                            <label>Village/Town</label>
+                                            <p>{application.locationDetails?.village}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="detail-section">
+                                    <h3>💧 Water Extraction Details</h3>
+                                    <div className="detail-grid">
+                                        <div className="detail-item">
+                                            <label>Daily Requirement</label>
+                                            <p>{application.waterRequirement?.dailyRequirement} m³/day</p>
+                                        </div>
+                                        <div className="detail-item">
+                                            <label>Annual Requirement</label>
+                                            <p>{application.waterRequirement?.annualRequirement} m³/year</p>
+                                        </div>
+                                        <div className="detail-item">
+                                            <label>Groundwater Source</label>
+                                            <p>{application.waterRequirement?.sourceType}</p>
+                                        </div>
+                                        <div className="detail-item">
+                                            <label>Number of Structures</label>
+                                            <p>{application.waterRequirement?.numberOfBorewells} Borewells</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {application.isExempted && application.exemptionDetails && (
+                                    <div className="detail-section">
+                                        <h3 style={{ color: '#059669' }}>🌾 Exemption Status</h3>
+                                        <div className="detail-grid">
+                                            <div className="detail-item">
+                                                <label>Eligibility</label>
+                                                <p style={{ color: application.exemptionDetails.exemptionEligible ? '#16a34a' : '#d97706' }}>
+                                                    {application.exemptionDetails.exemptionEligible ? 'ELIGIBLE' : 'MANUAL REVIEW REQUIRED'}
+                                                </p>
+                                            </div>
+                                            <div className="detail-item">
+                                                <label>Area (Ha)</label>
+                                                <p>{application.exemptionDetails.agriculturalDetails?.landHoldingAreaHectare}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeTab === 'documents' && (
+                            <div className="documents-tab">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                                    <h3 style={{ margin: 0 }}>📂 Application Documents</h3>
                                     <button
-                                        className="officer-btn officer-btn-primary"
+                                        className="btn-success"
+                                        style={{ padding: '0.6rem 1.2rem', fontSize: '0.9rem' }}
                                         onClick={handleBulkVerify}
                                         disabled={!application.documents?.some(d => d.status !== 'ACCEPTED')}
                                     >
                                         ✓ Verify All Pending
                                     </button>
                                 </div>
-                            </div>
 
-                            <div className="documents-grid">
-                                {application.documents && application.documents.length > 0 ? (
-                                    application.documents.map((doc, index) => (
+                                <div className="documents-grid">
+                                    {application.documents?.map((doc, index) => (
                                         <div key={index} className="document-card">
-                                            <div className="document-icon">📄</div>
-                                            <div className="document-info">
-                                                <h4>{doc.type?.replace(/_/g, ' ')}</h4>
-                                                <p className="document-filename">{doc.fileName}</p>
-                                                <p className="document-date">
-                                                    Uploaded: {new Date(doc.uploadDate).toLocaleDateString()}
-                                                </p>
-                                                {doc.status === 'ACCEPTED' ? (
-                                                    <span className="verified-badge">✓ Verified</span>
-                                                ) : doc.status === 'REJECTED' ? (
-                                                    <span className="verified-badge" style={{ background: '#fee2e2', color: '#b91c1c' }}>✗ Rejected</span>
-                                                ) : (
-                                                    <span className="verified-badge" style={{ background: '#fef3c7', color: '#b45309' }}>⚠ Pending</span>
-                                                )}
-                                                {doc.remarks && <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.25rem' }}><em>{doc.remarks}</em></p>}
+                                            <div className="document-header">
+                                                <div className="document-icon">📄</div>
+                                                <div className="document-info">
+                                                    <h4>{doc.type?.replace(/_/g, ' ')}</h4>
+                                                    <p className="document-filename">{doc.fileName}</p>
+                                                    {doc.status === 'ACCEPTED' ? (
+                                                        <span className="verified-badge">✓ Verified</span>
+                                                    ) : (
+                                                        <span className="verified-badge" style={{ background: '#fef3c7', color: '#b45309' }}>⚠ Pending</span>
+                                                    )}
+                                                </div>
                                             </div>
                                             <div className="document-actions">
-                                                <button
-                                                    className="btn-icon"
-                                                    onClick={() => handleViewDocument(doc)}
-                                                    title="View Document"
-                                                >
-                                                    👁️
-                                                </button>
+                                                <button className="btn-icon" onClick={() => handleViewDocument(doc)}>👁️ View</button>
                                                 {doc.status !== 'ACCEPTED' && (
-                                                    <>
-                                                        <button
-                                                            className="btn-icon"
-                                                            style={{ color: '#16a34a', borderColor: '#16a34a' }}
-                                                            onClick={() => handleVerifyDocument(doc, 'ACCEPTED')}
-                                                            title="Verify"
-                                                        >
-                                                            ✓
-                                                        </button>
-                                                        <button
-                                                            className="btn-icon"
-                                                            style={{ color: '#dc2626', borderColor: '#dc2626' }}
-                                                            onClick={() => handleVerifyDocument(doc, 'REJECTED')}
-                                                            title="Reject"
-                                                        >
-                                                            ✗
-                                                        </button>
-                                                    </>
+                                                    <button className="btn-icon" style={{ background: '#f0fdf4', color: '#16a34a' }} onClick={() => handleVerifyDocument(doc, 'ACCEPTED')}>✓ Verify</button>
                                                 )}
                                             </div>
                                         </div>
-                                    ))
-                                ) : (
-                                    <div className="empty-state">
-                                        <p>No documents uploaded</p>
-                                    </div>
-                                )}
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {activeTab === 'timeline' && (
-                        <div className="timeline-tab">
-                            <div className="timeline">
-                                {application.timeline && application.timeline.length > 0 ? (
-                                    application.timeline.map((event, index) => (
+                        {activeTab === 'timeline' && (
+                            <div className="timeline-tab">
+                                <div className="timeline">
+                                    {application.timeline?.map((event, index) => (
                                         <div key={index} className="timeline-item">
                                             <div className="timeline-marker"></div>
                                             <div className="timeline-content">
                                                 <div className="timeline-header">
-                                                    <h4>{event.stage?.replace(/_/g, ' ')}</h4>
-                                                    <span className="timeline-date">
-                                                        {new Date(event.date).toLocaleString()}
-                                                    </span>
+                                                    <h4 style={{ margin: 0 }}>{event.stage?.replace(/_/g, ' ')}</h4>
+                                                    <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{new Date(event.date).toLocaleString()}</span>
                                                 </div>
-                                                <p className="timeline-actor">{event.actor}</p>
-                                                {event.remarks && (
-                                                    <p className="timeline-remarks">{event.remarks}</p>
-                                                )}
+                                                <p className="timeline-actor">👤 {event.actor}</p>
+                                                {event.remarks && <p className="timeline-remarks">"{event.remarks}"</p>}
                                             </div>
                                         </div>
-                                    ))
-                                ) : (
-                                    <div className="empty-state">
-                                        <p>No timeline events</p>
-                                    </div>
-                                )}
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {activeTab === 'inspection' && (
-                        <div className="inspection-tab">
-                            {application.workflow?.inspectionReport ? (
-                                <div className="inspection-report">
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                                        <h3>Inspection Details</h3>
-                                        <span className={`status-badge status-${application.workflow.inspectionReport.status.toLowerCase()}`}>
-                                            {application.workflow.inspectionReport.status}
-                                        </span>
-                                    </div>
-                                    <div className="detail-grid">
-                                        <div className="detail-item">
-                                            <label>Scheduled Date</label>
-                                            <p>{new Date(application.workflow.inspectionReport.scheduledDate).toLocaleDateString()}</p>
+                        {activeTab === 'inspection' && (
+                            <div className="inspection-tab">
+                                {application.workflow?.inspection ? (
+                                    <div className="detail-section">
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                            <h3 style={{ margin: 0 }}>🔍 Site Inspection Details</h3>
+                                            <span className={`status-badge status-${application.workflow.inspection.status?.toLowerCase().replace(/_/g, '-')}`}>
+                                                {application.workflow.inspection.status?.replace(/_/g, ' ')}
+                                            </span>
                                         </div>
-                                        <div className="detail-item">
-                                            <label>Assigned Officer</label>
-                                            <p>
-                                                {(() => {
-                                                    const officer = inspectionOfficers.find(o => o._id === application.workflow.inspectionReport.officerId);
-                                                    return officer
-                                                        ? `${officer.firstName} ${officer.lastName}`
-                                                        : (application.workflow.inspectionReport.officerId || 'N/A');
-                                                })()}
-                                            </p>
-                                        </div>
-                                        {application.workflow.inspectionReport.report ? (
-                                            <div className="detail-item full-width">
-                                                <label>Report Findings</label>
-                                                <div className="report-summary" style={{ background: '#f8fafc', padding: '1rem', borderRadius: '4px' }}>
-                                                    <p><strong>Rainwater Harvesting:</strong> {application.workflow.inspectionReport.report.rainwaterHarvesting || 'N/A'}</p>
-                                                    <p><strong>Meter Installed:</strong> {application.workflow.inspectionReport.report.meterInstalled || 'N/A'}</p>
-                                                    <p><strong>Plantation Status:</strong> {application.workflow.inspectionReport.report.plantationStatus || 'N/A'}</p>
-                                                </div>
+                                        <div className="detail-grid">
+                                            <div className="detail-item">
+                                                <label>Scheduled Date</label>
+                                                <p>{application.workflow.inspection.scheduledDate ? new Date(application.workflow.inspection.scheduledDate).toLocaleDateString() : 'Pending'}</p>
                                             </div>
-                                        ) : (
-                                            <div className="detail-item full-width">
-                                                <button
-                                                    className="officer-btn officer-btn-primary"
+                                            <div className="detail-item">
+                                                <label>Assigned Inspector</label>
+                                                <p style={{ fontWeight: '600', color: '#1e293b' }}>
+                                                    {application.workflow.inspection.officer ? 
+                                                        `${application.workflow.inspection.officer.firstName} ${application.workflow.inspection.officer.lastName}` : 
+                                                        (application.workflow.inspection.officerId || 'N/A')}
+                                                </p>
+                                            </div>
+                                            {application.workflow.inspection.officer && (
+                                                <>
+                                                    <div className="detail-item">
+                                                        <label>Inspector Email</label>
+                                                        <p>{application.workflow.inspection.officer.email}</p>
+                                                    </div>
+                                                    <div className="detail-item">
+                                                        <label>Inspector Phone</label>
+                                                        <p>{application.workflow.inspection.officer.phone}</p>
+                                                    </div>
+                                                </>
+                                            )}
+                                            {application.workflow.inspection.inspectionId && (
+                                                <div className="detail-item">
+                                                    <label>Inspection ID</label>
+                                                    <p>{application.workflow.inspection.inspectionId}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        {application.status === 'INSPECTION_COMPLETED' && (
+                                            <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #e2e8f0' }}>
+                                                <button 
+                                                    className="btn-info" 
+                                                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                                                     onClick={() => navigate(`/officer/dgo/applications/${applicationId}/inspection-report`)}
                                                 >
-                                                    📝 Submit Site Inspection Report
+                                                    📄 View Full Inspection Report
                                                 </button>
                                             </div>
                                         )}
                                     </div>
-                                </div>
-                            ) : (
-                                <div className="empty-state">
-                                    <p>No inspection scheduled yet</p>
-                                    <button
-                                        className="officer-btn officer-btn-primary"
-                                        onClick={() => setShowInspectionModal(true)}
-                                    >
-                                        Schedule Inspection
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {activeTab === 'queries' && (
-                        <div className="queries-tab">
-                            {application.workflow?.query ? (
-                                <div className="query-details">
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                                        <h3>Active Query</h3>
-                                        <span className={`status-badge status-${application.workflow.query.status.toLowerCase()}`}>
-                                            {application.workflow.query.status}
-                                        </span>
+                                ) : (
+                                    <div className="empty-state" style={{ textAlign: 'center', padding: '4rem', background: '#f8fafc', borderRadius: '16px' }}>
+                                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📅</div>
+                                        <h4>No inspection scheduled yet</h4>
+                                        <p style={{ color: '#64748b', marginBottom: '2rem' }}>Schedule a site visit to verify the application details on-ground.</p>
+                                        <button className="btn-success" style={{ margin: '0 auto' }} onClick={() => setShowInspectionModal(true)}>Schedule Inspection</button>
                                     </div>
-                                    <div className="detail-grid">
-                                        <div className="detail-item full-width">
-                                            <label>Subject</label>
-                                            <p>{application.workflow.query.subject}</p>
-                                        </div>
-                                        <div className="detail-item full-width">
-                                            <label>Description</label>
-                                            <p>{application.workflow.query.description}</p>
-                                        </div>
-                                        <div className="detail-item">
-                                            <label>Raised At</label>
-                                            <p>{new Date(application.workflow.query.raisedAt).toLocaleString()}</p>
-                                        </div>
-                                        <div className="detail-item">
-                                            <label>Response Deadline</label>
-                                            <p>{new Date(application.workflow.query.responseDeadline).toLocaleDateString()}</p>
+                                )}
+                            </div>
+                        )}
+                        
+                        {activeTab === 'queries' && (
+                            <div className="queries-tab">
+                                {application.workflow?.query ? (
+                                    <div className="detail-section">
+                                        <h3>❓ Active Query Details</h3>
+                                        <div className="detail-grid">
+                                            <div className="detail-item full-width" style={{ gridColumn: '1 / -1' }}>
+                                                <label>Subject</label>
+                                                <p>{application.workflow.query.subject}</p>
+                                            </div>
+                                            <div className="detail-item full-width" style={{ gridColumn: '1 / -1' }}>
+                                                <label>Description</label>
+                                                <p>{application.workflow.query.description}</p>
+                                            </div>
+                                            <div className="detail-item">
+                                                <label>Raised At</label>
+                                                <p>{new Date(application.workflow.query.raisedAt).toLocaleString()}</p>
+                                            </div>
+                                            <div className="detail-item">
+                                                <label>Response Deadline</label>
+                                                <p>{new Date(application.workflow.query.responseDeadline).toLocaleDateString()}</p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ) : (
-                                <div className="empty-state">
-                                    <p>No active queries</p>
-                                    <button
-                                        className="officer-btn officer-btn-warning"
-                                        onClick={() => setShowQueryModal(true)}
-                                    >
-                                        Raise New Query
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                {/* Action Buttons */}
-                <div className="action-buttons">
-                    <button
-                        className="btn-success"
-                        onClick={() => setShowApprovalModal(true)}
-                    >
-                        ✓ Recommend for Approval
-                    </button>
-                    <button
-                        className="btn-danger"
-                        onClick={() => setShowRejectionModal(true)}
-                    >
-                        ✗ Reject
-                    </button>
-                    <button
-                        className="btn-warning"
-                        onClick={() => setShowQueryModal(true)}
-                    >
-                        ❓ Raise Query
-                    </button>
-                </div>
-
-                {/* Document Viewer Modal */}
-                {selectedDocument && (
-                    <div className="modal-overlay" onClick={() => setSelectedDocument(null)}>
-                        <div className="modal-content document-viewer" onClick={(e) => e.stopPropagation()}>
-                            <div className="modal-header">
-                                <h3>{selectedDocument.fileName}</h3>
-                                <button
-                                    className="modal-close"
-                                    onClick={() => setSelectedDocument(null)}
-                                >
-                                    ✕
-                                </button>
+                                ) : (
+                                    <div className="empty-state" style={{ textAlign: 'center', padding: '4rem', background: '#f8fafc', borderRadius: '16px' }}>
+                                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>❓</div>
+                                        <h4>No active queries</h4>
+                                        <p style={{ color: '#64748b', marginBottom: '2rem' }}>You can raise a query to the applicant if you need additional clarification.</p>
+                                        <button className="btn-warning" style={{ margin: '0 auto', color: 'white' }} onClick={() => setShowQueryModal(true)}>Raise New Query</button>
+                                    </div>
+                                )}
                             </div>
-                            <div className="modal-body">
-                                <iframe
-                                    src={officerService.getDocumentUrl(selectedDocument.id)}
-                                    title={selectedDocument.fileName}
-                                    width="100%"
-                                    height="600px"
-                                />
-                            </div>
-                        </div>
+                        )}
                     </div>
-                )}
 
-                {/* Approval Modal */}
-                {showApprovalModal && (
-                    <div className="modal-overlay" onClick={() => setShowApprovalModal(false)}>
-                        <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
-                            <div className="modal-header">
-                                <h3>✓ Recommend for Approval</h3>
-                                <button className="modal-close" onClick={() => setShowApprovalModal(false)}>✕</button>
-                            </div>
-                            <div className="modal-body">
-                                <form onSubmit={(e) => {
-                                    e.preventDefault();
-                                    handleForwardApplication(new FormData(e.target));
-                                }}>
-                                    <div className="officer-form-group">
-                                        <label className="officer-label required">Recommendation Remarks</label>
-                                        <textarea
-                                            name="remarks"
-                                            className="officer-textarea"
-                                            placeholder="Enter your recommendation remarks..."
-                                            required
-                                            rows="4"
-                                        />
-                                    </div>
-                                    <div className="officer-form-group">
-                                        <label className="officer-label">Conditions (if any)</label>
-                                        <textarea
-                                            name="conditions"
-                                            className="officer-textarea"
-                                            placeholder="Enter any conditions or special notes..."
-                                            rows="3"
-                                        />
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-                                        <button
-                                            type="button"
-                                            className="officer-btn officer-btn-secondary"
-                                            onClick={() => setShowApprovalModal(false)}
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button type="submit" className="officer-btn officer-btn-success">
-                                            Submit Recommendation
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
+                    {/* Fixed Action Footer */}
+                    <div className="action-buttons">
+                        <button className="btn-success" onClick={() => setShowApprovalModal(true)}>✓ Recommend</button>
+                        <button className="btn-warning" onClick={() => setShowQueryModal(true)}>❓ Raise Query</button>
+                        <button className="btn-danger" onClick={() => setShowRejectionModal(true)}>✗ Reject</button>
                     </div>
-                )}
-
-                {/* Rejection Modal */}
-                {showRejectionModal && (
-                    <div className="modal-overlay" onClick={() => setShowRejectionModal(false)}>
-                        <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
-                            <div className="modal-header">
-                                <h3>✗ Reject Application</h3>
-                                <button className="modal-close" onClick={() => setShowRejectionModal(false)}>✕</button>
-                            </div>
-                            <div className="modal-body">
-                                <form onSubmit={(e) => {
-                                    e.preventDefault();
-                                    const formData = new FormData(e.target);
-                                    const data = {
-                                        rejectionReason: formData.get('reason'),
-                                        remarks: formData.get('remarks')
-                                    };
-                                    console.log('Rejecting application:', data);
-                                    alert('Application rejected successfully!\n\nApplicant will be notified via email.');
-                                    setShowRejectionModal(false);
-                                }}>
-                                    <div className="officer-form-group">
-                                        <label className="officer-label required">Rejection Reason</label>
-                                        <select name="reason" className="officer-select" required>
-                                            <option value="">Select reason...</option>
-                                            <option value="INCOMPLETE_DOCUMENTS">Incomplete Documents</option>
-                                            <option value="INVALID_LOCATION">Invalid Location</option>
-                                            <option value="EXCESSIVE_WATER_DEMAND">Excessive Water Demand</option>
-                                            <option value="NON_COMPLIANCE">Non-Compliance with Regulations</option>
-                                            <option value="OVEREXPLOITED_AREA">Over-exploited Area</option>
-                                            <option value="OTHER">Other</option>
-                                        </select>
-                                    </div>
-                                    <div className="officer-form-group">
-                                        <label className="officer-label required">Detailed Remarks</label>
-                                        <textarea
-                                            name="remarks"
-                                            className="officer-textarea"
-                                            placeholder="Enter detailed reasons for rejection..."
-                                            required
-                                            rows="5"
-                                        />
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-                                        <button
-                                            type="button"
-                                            className="officer-btn officer-btn-secondary"
-                                            onClick={() => setShowRejectionModal(false)}
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button type="submit" className="officer-btn officer-btn-danger">
-                                            Confirm Rejection
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Query Modal */}
-                {showQueryModal && (
-                    <div className="modal-overlay" onClick={() => setShowQueryModal(false)}>
-                        <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
-                            <div className="modal-header">
-                                <h3>❓ Raise Query</h3>
-                                <button className="modal-close" onClick={() => setShowQueryModal(false)}>✕</button>
-                            </div>
-                            <div className="modal-body">
-                                <form onSubmit={(e) => {
-                                    e.preventDefault();
-                                    handleRaiseQuery(new FormData(e.target));
-                                }}>
-                                    <div className="officer-form-group">
-                                        <label className="officer-label required">Query Type</label>
-                                        <select name="queryType" className="officer-select" required>
-                                            <option value="">Select type...</option>
-                                            <option value="DOCUMENT_CLARIFICATION">Document Clarification</option>
-                                            <option value="TECHNICAL_INFORMATION">Technical Information</option>
-                                            <option value="SITE_DETAILS">Site Details</option>
-                                            <option value="WATER_REQUIREMENT">Water Requirement Justification</option>
-                                            <option value="OTHER">Other</option>
-                                        </select>
-                                    </div>
-                                    <div className="officer-form-group">
-                                        <label className="officer-label required">Subject</label>
-                                        <input
-                                            type="text"
-                                            name="subject"
-                                            className="officer-input"
-                                            placeholder="Enter query subject..."
-                                            required
-                                        />
-                                    </div>
-                                    <div className="officer-form-group">
-                                        <label className="officer-label required">Query Description</label>
-                                        <textarea
-                                            name="description"
-                                            className="officer-textarea"
-                                            placeholder="Enter detailed query description..."
-                                            required
-                                            rows="5"
-                                        />
-                                    </div>
-                                    <div className="officer-form-group">
-                                        <label className="officer-label required">Response Deadline</label>
-                                        <input
-                                            type="date"
-                                            name="deadline"
-                                            className="officer-input"
-                                            min={new Date().toISOString().split('T')[0]}
-                                            required
-                                        />
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-                                        <button
-                                            type="button"
-                                            className="officer-btn officer-btn-secondary"
-                                            onClick={() => setShowQueryModal(false)}
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button type="submit" className="officer-btn" style={{ background: '#f59e0b', color: 'white' }}>
-                                            Send Query
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Inspection Modal */}
-                {showInspectionModal && (
-                    <div className="modal-overlay" onClick={() => setShowInspectionModal(false)}>
-                        <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
-                            <div className="modal-header">
-                                <h3>📅 Schedule Inspection</h3>
-                                <button className="modal-close" onClick={() => setShowInspectionModal(false)}>✕</button>
-                            </div>
-                            <div className="modal-body">
-                                <form onSubmit={(e) => {
-                                    e.preventDefault();
-                                    handleScheduleInspection(new FormData(e.target));
-                                }}>
-                                    <div className="officer-form-group">
-                                        <label className="officer-label required">Inspection Date</label>
-                                        <input
-                                            type="date"
-                                            name="inspectionDate"
-                                            className="officer-input"
-                                            min={new Date().toISOString().split('T')[0]}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="officer-form-group">
-                                        <label className="officer-label required">Assign Inspection Officer</label>
-                                        <select
-                                            name="officerId"
-                                            className="officer-input"
-                                            required
-                                        >
-                                            <option value="">Select Officer</option>
-                                            {inspectionOfficers.map(officer => (
-                                                <option key={officer._id} value={officer._id}>
-                                                    {officer.firstName} {officer.lastName}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-                                        <button
-                                            type="button"
-                                            className="officer-btn officer-btn-secondary"
-                                            onClick={() => setShowInspectionModal(false)}
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button type="submit" className="officer-btn officer-btn-primary">
-                                            Schedule
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                </main>
             </div>
+
+            {/* Document Viewer Modal */}
+            {selectedDocument && (
+                <div className="modal-overlay" onClick={() => setSelectedDocument(null)}>
+                    <div className="modal-container" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '1000px', width: '95%' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 style={{ margin: 0 }}>📄 {selectedDocument.type?.replace(/_/g, ' ')}</h3>
+                            <button onClick={() => setSelectedDocument(null)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>✕</button>
+                        </div>
+                        <iframe
+                            src={officerService.getDocumentUrl(selectedDocument.documentId || selectedDocument.id)}
+                            title={selectedDocument.fileName}
+                            width="100%"
+                            height="70vh"
+                            style={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* Approval Modal */}
+            {showApprovalModal && (
+                <div className="modal-overlay" onClick={() => setShowApprovalModal(false)}>
+                    <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 style={{ margin: 0 }}>✓ Recommend for Approval</h3>
+                            <button onClick={() => setShowApprovalModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>✕</button>
+                        </div>
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            handleForwardApplication(new FormData(e.target));
+                        }}>
+                            <div className="officer-form-group" style={{ marginBottom: '1.5rem' }}>
+                                <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem' }}>Remarks</label>
+                                <textarea name="remarks" className="detail-item" style={{ width: '100%', minHeight: '120px', padding: '1rem' }} placeholder="Enter recommendation remarks..." required />
+                            </div>
+                            <div className="officer-form-group" style={{ marginBottom: '1.5rem' }}>
+                                <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem' }}>Conditions (if any)</label>
+                                <textarea name="conditions" className="detail-item" style={{ width: '100%', minHeight: '80px', padding: '1rem' }} placeholder="Enter conditions..." />
+                            </div>
+                            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                                <button type="button" className="btn-back" style={{ color: '#64748b', borderColor: '#e2e8f0' }} onClick={() => setShowApprovalModal(false)}>Cancel</button>
+                                <button type="submit" className="btn-success">Submit Recommendation</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Rejection Modal */}
+            {showRejectionModal && (
+                <div className="modal-overlay" onClick={() => setShowRejectionModal(false)}>
+                    <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 style={{ margin: 0 }}>✗ Reject Application</h3>
+                            <button onClick={() => setShowRejectionModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>✕</button>
+                        </div>
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            const formData = new FormData(e.target);
+                            // This would normally call a handleRejectApplication
+                            alert('Application rejection submitted.');
+                            setShowRejectionModal(false);
+                        }}>
+                            <div className="officer-form-group" style={{ marginBottom: '1.5rem' }}>
+                                <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem' }}>Reason for Rejection</label>
+                                <select name="reason" className="detail-item" style={{ width: '100%', padding: '1rem' }} required>
+                                    <option value="">Select a reason...</option>
+                                    <option value="INCOMPLETE_DOCUMENTS">Incomplete Documents</option>
+                                    <option value="TECHNICAL_NON_COMPLIANCE">Technical Non-Compliance</option>
+                                    <option value="SITE_NOT_SUITABLE">Site Not Suitable</option>
+                                    <option value="OTHER">Other</option>
+                                </select>
+                            </div>
+                            <div className="officer-form-group" style={{ marginBottom: '1.5rem' }}>
+                                <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem' }}>Detailed Remarks</label>
+                                <textarea name="remarks" className="detail-item" style={{ width: '100%', minHeight: '120px', padding: '1rem' }} placeholder="Enter detailed remarks..." required />
+                            </div>
+                            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                                <button type="button" className="btn-back" style={{ color: '#64748b', borderColor: '#e2e8f0' }} onClick={() => setShowRejectionModal(false)}>Cancel</button>
+                                <button type="submit" className="btn-danger">Confirm Rejection</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Query Modal */}
+            {showQueryModal && (
+                <div className="modal-overlay" onClick={() => setShowQueryModal(false)}>
+                    <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 style={{ margin: 0 }}>❓ Raise Query</h3>
+                            <button onClick={() => setShowQueryModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>✕</button>
+                        </div>
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            handleRaiseQuery(new FormData(e.target));
+                        }}>
+                            <div className="officer-form-group" style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem' }}>Subject</label>
+                                <input type="text" name="subject" className="detail-item" style={{ width: '100%', padding: '1rem' }} placeholder="Query subject..." required />
+                            </div>
+                            <div className="officer-form-group" style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem' }}>Description</label>
+                                <textarea name="description" className="detail-item" style={{ width: '100%', minHeight: '100px', padding: '1rem' }} placeholder="Enter detailed query..." required />
+                            </div>
+                            <div className="officer-form-group" style={{ marginBottom: '1.5rem' }}>
+                                <label style={{ display: 'block', fontWeight: '600', marginBottom: '0.5rem' }}>Response Deadline</label>
+                                <input type="date" name="deadline" className="detail-item" style={{ width: '100%', padding: '1rem' }} required min={new Date().toISOString().split('T')[0]} />
+                            </div>
+                            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                                <button type="button" className="btn-back" style={{ color: '#64748b', borderColor: '#e2e8f0' }} onClick={() => setShowQueryModal(false)}>Cancel</button>
+                                <button type="submit" className="btn-warning" style={{ color: 'white' }}>Send Query</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Inspection Modal */}
+            <ScheduleInspectionModal
+                isOpen={showInspectionModal}
+                onClose={() => setShowInspectionModal(false)}
+                onSchedule={handleScheduleInspection}
+                inspectionOfficers={inspectionOfficers}
+            />
         </div>
     );
 };

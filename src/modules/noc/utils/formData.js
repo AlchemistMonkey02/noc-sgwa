@@ -352,6 +352,11 @@ export const initialFormData = {
     waterReqOther: '',
     waterReqFreshRequirement: '', // Explicit field from user request
 
+    // Population for Domestic Use
+    numberOfWorkers: 0,
+    numberOfResidents: 0,
+    dailyRequirementPerPerson: 135,
+
     // Existing Structures
     existingStructures: [],
 

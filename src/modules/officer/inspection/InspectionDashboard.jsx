@@ -3,15 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import OfficerHeader from '../shared/components/OfficerHeader';
 import OfficerSidebar from '../shared/components/OfficerSidebar';
 import officerService from '../services/officerService';
-import ConsultationCallButton from '../../../components/ConsultationCallButton';
-import { useNotifications } from '../../../context/NotificationContext';
 import { getOfficerData } from '../shared/utils/officerAuth';
 import { EXTERNAL_URLS } from '../../../config/constants';
 import '../shared/styles/officer-portal.css';
 
 const InspectionDashboard = () => {
     const navigate = useNavigate();
-    const notifCtx = useNotifications();
     const [statistics, setStatistics] = useState({
         todayCount: 0,
         pendingCount: 0,
@@ -72,17 +69,6 @@ const InspectionDashboard = () => {
 
     const handleStartInspection = (inspectionId) => {
         navigate(`/officer/inspection/conduct/${inspectionId}`);
-    };
-
-    const handleConsultationCall = (item) => {
-        // Standardised room naming: consultation-{appNumber}-INSPECTION
-        const sanitised = String(item.applicationNumber || 'ROOM')
-            .trim()
-            .replace(/[\/\\\s]+/g, '-')
-            .replace(/[^a-zA-Z0-9\-_]/g, '')
-            .toUpperCase();
-        const roomId = `consultation-${sanitised}-INSPECTION`;
-        notifCtx?.startCall?.(roomId);
     };
 
     return (
@@ -197,13 +183,6 @@ const InspectionDashboard = () => {
                                             </p>
                                         </div>
                                         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                                            <ConsultationCallButton
-                                                applicationNumber={item.applicationNumber}
-                                                officerType="INSPECTION"
-                                                label="📞 Video Call"
-                                                variant="primary"
-                                                style={{ padding: '6px 14px', fontSize: '0.82rem' }}
-                                            />
                                             <button
                                                 className="officer-btn officer-btn-primary"
                                                 onClick={() => handleStartInspection(item.id)}

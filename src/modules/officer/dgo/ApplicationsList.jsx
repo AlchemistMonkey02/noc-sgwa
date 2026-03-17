@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import officerService from '../services/officerService';
+import nocApplicationService from '../../noc/services/nocApplicationService';
 import OfficerHeader from '../shared/components/OfficerHeader';
 import OfficerSidebar from '../shared/components/OfficerSidebar';
+import ScheduleInspectionModal from '../shared/components/ScheduleInspectionModal';
 import '../shared/styles/officer-portal.css';
 
 const ApplicationsList = () => {
@@ -15,11 +17,23 @@ const ApplicationsList = () => {
         district: '',
         search: ''
     });
+    const [showInspectionModal, setShowInspectionModal] = useState(false);
+    const [selectedAppForInspection, setSelectedAppForInspection] = useState(null);
+    const [inspectionOfficers, setInspectionOfficers] = useState([]);
 
-    useEffect(() => {
-        const userData = getOfficerData();
-        setOfficerInfo(userData);
-    }, []);
+    const [masterData, setMasterData] = useState({
+        districts: [],
+        blocks: [],
+        appTypes: []
+    });
+
+    const resolveIdToName = (id, options, defaultVal = 'N/A') => {
+        if (!id || !options || options.length === 0) return id || defaultVal;
+        const match = options.find(opt =>
+            String(opt.id || opt.appTypeCode || opt.appSubTypeCode || opt.projectTypeCode || opt.appTypeCatCode || opt.industryTypeId || opt.code || opt._id) === String(id)
+        );
+        return match ? (match.name || match.label || match.industryName) : id;
+    };
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -27,6 +41,62 @@ const ApplicationsList = () => {
         }, 300);
         return () => clearTimeout(timer);
     }, [filters]);
+
+    useEffect(() => {
+        const userData = getOfficerData();
+        setOfficerInfo(userData);
+        fetchMasterData();
+        fetchInspectionOfficers();
+    }, []);
+
+    const fetchInspectionOfficers = async () => {
+        try {
+            const resp = await officerService.getOfficers();
+            if (resp.success) {
+                setInspectionOfficers(resp.data);
+            }
+        } catch (error) {
+            console.error('Error fetching inspection officers:', error);
+        }
+    };
+
+    const fetchMasterData = async () => {
+        try {
+            const [distResp, typeResp] = await Promise.all([
+                nocApplicationService.getDistricts('Rajasthan'),
+                nocApplicationService.getApplicationTypes()
+            ]);
+
+            if (distResp.success && typeResp.success) {
+                const districts = distResp.data || [];
+                setMasterData(prev => ({
+                    ...prev,
+                    districts: districts,
+                    appTypes: typeResp.data || []
+                }));
+
+                // Fetch blocks for officer's district
+                const userData = getOfficerData();
+                const myDistrictName = userData?.communicationAddress?.district || userData?.district;
+                if (myDistrictName && districts.length > 0) {
+                    const myDist = districts.find(d => 
+                        d.name === myDistrictName || d.id === myDistrictName || d.code === myDistrictName
+                    );
+                    if (myDist) {
+                        const blockResp = await nocApplicationService.getBlocks(myDist.id || myDist.code);
+                        if (blockResp.success) {
+                            setMasterData(prev => ({
+                                ...prev,
+                                blocks: blockResp.data || []
+                            }));
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching master data in ApplicationsList:', error);
+        }
+    };
 
     const fetchApplications = async () => {
         try {
@@ -82,6 +152,34 @@ const ApplicationsList = () => {
     const handleViewApplication = (id) => {
         if (id) {
             navigate(`/officer/dgo/applications/${id}`);
+        }
+    };
+
+    const handleOpenScheduleModal = (app) => {
+        setSelectedAppForInspection({
+            applicationId: app.applicationId || app._id,
+            applicationNumber: app.applicationNumber
+        });
+        setShowInspectionModal(true);
+    };
+
+    const handleScheduleInspection = async (formData) => {
+        try {
+            const data = {
+                inspectionDate: formData.get('inspectionDate'),
+                officerId: formData.get('officerId')
+            };
+            const resp = await officerService.scheduleInspection(selectedAppForInspection.applicationId, data);
+            if (resp.success) {
+                alert('Inspection scheduled successfully!');
+                setShowInspectionModal(false);
+                fetchApplications(); // Refresh list
+            } else {
+                alert('Error: ' + resp.message);
+            }
+        } catch (error) {
+            console.error('Error scheduling inspection:', error);
+            alert('Failed to schedule inspection.');
         }
     };
 
@@ -199,11 +297,14 @@ const ApplicationsList = () => {
                                             </td>
                                             <td>{getNestedValue(app, 'projectDetails.applicantName') || app.applicantName || 'N/A'}</td>
                                             <td>{getNestedValue(app, 'projectDetails.projectName') || app.projectName || 'N/A'}</td>
-                                            <td>{app.sectorType || app.applicationSubType || 'N/A'}</td>
+                                            <td>{resolveIdToName(app.sectorType || app.applicationSubType, masterData.appTypes)}</td>
                                             <td>
                                                 <div style={{ fontSize: '0.85rem' }}>
                                                     {getNestedValue(app, 'location.village')}<br />
-                                                    <span style={{ color: '#666' }}>{getNestedValue(app, 'location.blockId')}</span>
+                                                    <span style={{ color: '#666' }}>
+                                                        {resolveIdToName(getNestedValue(app, 'location.blockId'), masterData.blocks)}
+                                                        {getNestedValue(app, 'location.districtId') && `, ${resolveIdToName(getNestedValue(app, 'location.districtId'), masterData.districts)}`}
+                                                    </span>
                                                 </div>
                                             </td>
                                             <td>{app.submittedAt ? new Date(app.submittedAt).toLocaleDateString() : 'N/A'}</td>
@@ -217,13 +318,24 @@ const ApplicationsList = () => {
                                                 </span>
                                             </td>
                                             <td>
-                                                <button
-                                                    className="officer-btn officer-btn-primary"
-                                                    style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
-                                                    onClick={() => handleViewApplication(app.applicationId || app._id)}
-                                                >
-                                                    View
-                                                </button>
+                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                    <button
+                                                        className="officer-btn officer-btn-primary"
+                                                        style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+                                                        onClick={() => handleViewApplication(app.applicationId || app._id)}
+                                                    >
+                                                        View
+                                                    </button>
+                                                    {['SUBMITTED', 'PENDING_DGO_REVIEW', 'UNDER_REVIEW_DGO'].includes(app.status) && (
+                                                        <button
+                                                            className="officer-btn officer-btn-success"
+                                                            style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+                                                            onClick={() => handleOpenScheduleModal(app)}
+                                                        >
+                                                            Schedule
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -250,6 +362,13 @@ const ApplicationsList = () => {
                     </div>
                 </main>
             </div>
+
+            <ScheduleInspectionModal
+                isOpen={showInspectionModal}
+                onClose={() => setShowInspectionModal(false)}
+                onSchedule={handleScheduleInspection}
+                inspectionOfficers={inspectionOfficers}
+            />
         </div>
     );
 };

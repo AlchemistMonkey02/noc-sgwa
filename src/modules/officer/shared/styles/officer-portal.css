@@ -31,15 +31,17 @@
 
 /* Officer Header */
 .officer-header {
-    background: var(--officer-white);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    padding: 1rem 2rem;
+    background: var(--white);
+    box-shadow: var(--shadow-sm);
+    border-bottom: 1px solid var(--gray-200);
+    padding: 0.75rem 2.5rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
     position: sticky;
     top: 0;
-    z-index: 1000;
+    z-index: var(--z-sticky);
+    height: 72px;
 }
 
 .officer-header-left {
@@ -53,16 +55,21 @@
 }
 
 .officer-header-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--officer-primary);
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--color-primary-900);
     margin: 0;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
 }
 
 .officer-header-subtitle {
-    font-size: 0.875rem;
-    color: var(--officer-text-light);
+    font-size: 0.75rem;
+    color: var(--gray-500);
     margin: 0;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .officer-header-right {
@@ -78,45 +85,80 @@
 }
 
 .officer-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--officer-primary) 0%, var(--officer-primary-light) 100%);
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--color-primary-800) 0%, var(--color-primary-600) 100%);
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 600;
-    font-size: 1.125rem;
+    font-weight: 700;
+    font-size: 1rem;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+    border: 2px solid var(--white);
 }
 
 .officer-info h4 {
     margin: 0;
-    font-size: 0.9375rem;
-    font-weight: 600;
-    color: var(--officer-text);
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--gray-900);
 }
 
 .officer-info p {
     margin: 0;
-    font-size: 0.8125rem;
-    color: var(--officer-text-light);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--gray-500);
 }
 
 .officer-logout-btn {
-    padding: 0.5rem 1.25rem;
-    background: var(--officer-danger);
+    padding: 0.5rem 1rem;
+    background: var(--color-error-50);
+    color: var(--color-error-600);
+    border: 1px solid var(--color-error-100);
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.officer-logout-btn:hover {
+    background: var(--color-error-600);
     color: white;
-    border: none;
-    border-radius: 6px;
-    font-weight: 500;
+    border-color: var(--color-error-600);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+}
+
+/* New Language Toggle Styles */
+.officer-lang-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
     cursor: pointer;
     transition: all 0.2s;
 }
 
-.officer-logout-btn:hover {
-    background: #dc2626;
-    transform: translateY(-1px);
+.officer-lang-toggle:hover {
+    background: var(--gray-100);
+    border-color: var(--gray-300);
+}
+
+.lang-icon {
+    font-size: 1rem;
+}
+
+.lang-text {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--gray-700);
 }
 
 /* Main Layout */

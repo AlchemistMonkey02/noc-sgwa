@@ -3,6 +3,7 @@ import { useLocation, useSearchParams } from 'react-router-dom';
 import Header from '../header/Header';
 import PublicHeader from '../modules/public/components/PublicHeader';
 import NOCRegister from '../modules/noc/NOCRegister';
+import ForgotPassword from '../modules/auth/ForgotPassword';
 
 const Layout = ({ children }) => {
     const location = useLocation();
@@ -11,9 +12,18 @@ const Layout = ({ children }) => {
     // Check for registration modal trigger
     const isRegisterModalOpen = searchParams.get('register') === 'true';
 
+    // Check for forgot password modal trigger
+    const isForgotPasswordModalOpen = searchParams.get('forgot-password') === 'true';
+
     const handleCloseModal = () => {
         const newParams = new URLSearchParams(searchParams);
         newParams.delete('register');
+        setSearchParams(newParams);
+    };
+
+    const handleCloseForgotPassword = () => {
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete('forgot-password');
         setSearchParams(newParams);
     };
 
@@ -43,6 +53,15 @@ const Layout = ({ children }) => {
                 <div className="reg-modal-overlay" onClick={handleCloseModal}>
                     <div className="reg-modal-container" onClick={e => e.stopPropagation()}>
                         <NOCRegister isModal={true} onClose={handleCloseModal} />
+                    </div>
+                </div>
+            )}
+
+            {/* Global Forgot Password Modal Overlay */}
+            {isForgotPasswordModalOpen && (
+                <div className="reg-modal-overlay" onClick={handleCloseForgotPassword}>
+                    <div className="reg-modal-container" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
+                        <ForgotPassword isModal={true} onClose={handleCloseForgotPassword} />
                     </div>
                 </div>
             )}

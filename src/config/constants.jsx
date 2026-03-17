@@ -1,3 +1,5 @@
+import { CONSULTATION_APP_URL as CONSULTATION_URL } from './apiConfig';
+
 // Global Configuration for External URLs
 export const EXTERNAL_URLS = {
     // CGWA NOC Portal URLs
@@ -20,7 +22,7 @@ export const EXTERNAL_URLS = {
     CONTACT_URL: 'https://rgwcma.geoplanetsolution.in/contact',
 
     // Consultation Services
-    CONSULTATION_APP_URL: 'http://localhost:3000',
+    CONSULTATION_APP_URL: CONSULTATION_URL,
 };
 
 // You can also export individual URLs if preferred

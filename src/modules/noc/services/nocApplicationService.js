@@ -72,10 +72,6 @@ export const nocApplicationService = {
         return apiClient.upload('/auth/profile-picture', formData);
     },
 
-    getDocumentUrl: (documentId) => {
-        return `${API_BASE_URL}/documents/${documentId}/view`;
-    },
-
     getDashboardData: () => apiClient.get('/applications/noc/dashboard'),
     getApprovalFlow: (applicationId) => apiClient.get(`/applications/noc/${applicationId}/approval-flow`),
     getProcessingEstimates: (params) => apiClient.get('/applications/noc/processing-estimates', { params }),
@@ -88,15 +84,17 @@ export const nocApplicationService = {
 
     saveStep1: (appId, payload) => apiClient.put(`/applications/noc/${appId}/section1`, payload || {}),
     saveStep2: (appId, payload) => apiClient.put(`/applications/noc/${appId}/section2`, payload || {}),
-    saveStep3: (appId, payload) => {
-        const normalized = payload && payload.drinkingDomesticUse ? payload : { drinkingDomesticUse: payload };
-        return apiClient.put(`/applications/noc/${appId}/section3`, normalized || {});
-    },
+    saveStep3: (appId, payload) => apiClient.put(`/applications/noc/${appId}/section3`, payload || {}),
     saveStep4: (appId, payload) => apiClient.put(`/applications/noc/${appId}/section4`, payload || {}),
     saveStep5: (appId, payload) => apiClient.put(`/applications/noc/${appId}/section5`, payload || {}),
     saveStep6: (appId, payload) => apiClient.put(`/applications/noc/${appId}/section6`, payload || {}),
-    saveStep7: (appId, payload) => apiClient.put(`/applications/noc/${appId}/section6`, payload || {}),
-    saveFlowMeter: (appId, payload) => apiClient.put(`/applications/noc/${appId}/flow-meter`, payload || {}),
+    saveStep7: (appId, payload) => apiClient.put(`/applications/noc/${appId}/section7`, payload || {}),
+    saveStep8: (appId, payload) => apiClient.put(`/applications/noc/${appId}/section8`, payload || {}),
+    saveStep9: (appId, payload) => apiClient.put(`/applications/noc/${appId}/section9`, payload || {}),
+    
+    // Aliases for better readability
+    saveFlowMeter: (appId, payload) => apiClient.put(`/applications/noc/${appId}/section9`, payload || {}),
+    saveDocuments: (appId, payload) => apiClient.put(`/applications/noc/${appId}/section6`, payload || {}),
 
     calculateFee: (payload) => {
         const applicationId = payload?.applicationId || payload?.id;
@@ -148,7 +146,10 @@ export const nocApplicationService = {
     getMeterSerialNumbers: (manufacturer) => Promise.resolve({ success: true, data: [] }),
 
     // Document helper methods
-    getDocumentUrl: (documentId) => `${apiClient.baseUrl}/documents/${documentId}/view`,
+    getDocumentUrl: (documentId) => {
+        const token = localStorage.getItem('authToken');
+        return `${apiClient.baseUrl}/documents/${documentId}/view${token ? `?token=${token}` : ''}`;
+    },
     getDocumentWithAuth: (documentId) => {
         const url = `${apiClient.baseUrl}/documents/${documentId}/view`;
         const token = localStorage.getItem('authToken');

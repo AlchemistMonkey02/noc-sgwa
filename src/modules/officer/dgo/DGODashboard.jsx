@@ -4,13 +4,24 @@ import { useTranslation } from 'react-i18next';
 import OfficerHeader from '../shared/components/OfficerHeader';
 import OfficerSidebar from '../shared/components/OfficerSidebar';
 import ApplicationCard from '../shared/components/ApplicationCard';
+import ScheduleInspectionModal from '../shared/components/ScheduleInspectionModal';
 import officerService from '../services/officerService';
-import { getOfficerData } from '../shared/utils/officerAuth';
+import { nocApplicationService } from '../../noc/services/nocApplicationService';
+import { useAuth } from '../../../context/AuthContext';
 import '../shared/styles/officer-portal.css';
+
+const resolveIdToName = (id, options, defaultVal = 'N/A') => {
+    if (!id || !options || options.length === 0) return id || defaultVal;
+    const match = options.find(opt =>
+        String(opt.id || opt.appTypeCode || opt.appSubTypeCode || opt.projectTypeCode || opt.appTypeCatCode || opt.industryTypeId || opt.code || opt._id) === String(id)
+    );
+    return match ? (match.name || match.label || match.industryName) : id;
+};
 
 const DGODashboard = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const { user, loading: authLoading } = useAuth();
     const [statistics, setStatistics] = useState({
         total: 0,
         pendingVerification: 0,
@@ -19,23 +30,82 @@ const DGODashboard = () => {
         inspectionPending: 0
     });
     const [recentApplications, setRecentApplications] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [rawApplications, setRawApplications] = useState([]);
+    const [dashboardLoading, setDashboardLoading] = useState(true);
     const [district, setDistrict] = useState('');
     const [officerInfo, setOfficerInfo] = useState(null);
     const [pendingInspections, setPendingInspections] = useState([]);
+    const [masterData, setMasterData] = useState({
+        districts: [],
+        blocks: [],
+        appTypes: []
+    });
+    const [showInspectionModal, setShowInspectionModal] = useState(false);
+    const [selectedAppForInspection, setSelectedAppForInspection] = useState(null);
+    const [inspectionOfficers, setInspectionOfficers] = useState([]);
 
     useEffect(() => {
-        // Load officer data from localStorage
-        const userData = getOfficerData();
-        setOfficerInfo(userData);
+        if (!authLoading && user) {
+            setOfficerInfo(user);
+            fetchDashboardData();
+            fetchMasterData();
+            fetchInspectionOfficers();
+        }
+    }, [user, authLoading]);
 
-        // Fetch dashboard statistics
-        fetchDashboardData();
-    }, []);
+    const fetchInspectionOfficers = async () => {
+        try {
+            console.log('DGODashboard: Fetching officers...');
+            const resp = await officerService.getOfficers();
+            console.log('DGODashboard: Officers Response:', resp);
+            if (resp.success) {
+                setInspectionOfficers(resp.data);
+            }
+        } catch (error) {
+            console.error('Error fetching inspection officers:', error);
+        }
+    };
+
+    const fetchMasterData = async () => {
+        try {
+            const [distResp, typeResp] = await Promise.all([
+                nocApplicationService.getDistricts('Rajasthan'),
+                nocApplicationService.getApplicationTypes()
+            ]);
+
+            if (distResp.success && typeResp.success) {
+                const districts = distResp.data || [];
+                setMasterData(prev => ({
+                    ...prev,
+                    districts: districts,
+                    appTypes: typeResp.data || []
+                }));
+
+                // If we have an officer district, fetch its blocks
+                const myDistrictName = district || user?.communicationAddress?.district || user?.district;
+                if (myDistrictName && districts.length > 0) {
+                    const myDist = districts.find(d => 
+                        d.name === myDistrictName || d.id === myDistrictName || d.code === myDistrictName
+                    );
+                    if (myDist) {
+                        const blockResp = await nocApplicationService.getBlocks(myDist.id || myDist.code);
+                        if (blockResp.success) {
+                            setMasterData(prev => ({
+                                ...prev,
+                                blocks: blockResp.data || []
+                            }));
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching dashboard master data:', error);
+        }
+    };
 
     const fetchDashboardData = async () => {
         try {
-            setLoading(true);
+            setDashboardLoading(true);
             console.log('Fetching DGO dashboard data...');
             const response = await officerService.getDGODashboard();
 
@@ -60,37 +130,163 @@ const DGODashboard = () => {
 
                 // Update recent applications
                 if (data.recentApplications && data.recentApplications.length > 0) {
-                    const formattedApps = data.recentApplications.map(app => ({
-                        applicationId: app.applicationId || app._id,
-                        applicationNumber: app.applicationNumber,
-                        applicantName: app.projectDetails?.applicantName || 'N/A',
-                        projectName: app.projectDetails?.projectName || 'N/A',
-                        projectType: app.sectorType || app.applicationSubType || 'N/A',
-                        district: app.location?.districtId || 'N/A',
-                        block: app.location?.blockId || 'N/A',
-                        waterRequirement: `${app.waterRequirement?.totalDailyExtraction || 0} m³/day`,
-                        submittedDate: app.submittedAt,
-                        status: app.status,
-                        daysInQueue: Math.floor((new Date() - new Date(app.submittedAt)) / (1000 * 60 * 60 * 24)) || 0
-                    }));
-                    setRecentApplications(formattedApps);
+                    setRawApplications(data.recentApplications);
                 }
             }
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
             // Error state handled by showing 0s as per initial state
         } finally {
-            setLoading(false);
+            setDashboardLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (rawApplications.length > 0) {
+            const formattedApps = rawApplications.map(app => {
+                // 1. Applicant Name - Exhaustive Fallbacks
+                const getApplicantName = (app) => {
+                    return app.applicantName || 
+                           app.applicantDetails?.name || 
+                           app.ownerDetails?.ownerName ||
+                           app.projectDetails?.applicantName || 
+                           app.projectDetails?.name || 
+                           app.companyId?.contactPerson || 
+                           (app.userId?.firstName ? `${app.userId.firstName} ${app.userId.lastName || ''}`.trim() : '') ||
+                           app.userId?.name ||
+                           app.projectDetails?.companyName ||
+                           'N/A';
+                };
+
+                // 2. District & Block - Multi-layered Fallbacks
+                const districtId = app.districtId ||
+                                 app.district ||
+                                 app.location?.districtId || 
+                                 app.locationDetails?.districtId ||
+                                 app.locationDetails?.district ||
+                                 app.ownerDetails?.district ||
+                                 app.agriculturalDetails?.district ||
+                                 app.projectDetails?.districtId ||
+                                 app.projectDetails?.district ||
+                                 app.communicationAddress?.district;
+
+                const blockId = app.blockId ||
+                              app.block ||
+                              app.location?.blockId || 
+                              app.locationDetails?.blockId ||
+                              app.locationDetails?.block ||
+                              app.locationDetails?.assessmentUnitBlockTehsil ||
+                              app.locationDetails?.assessmentUnit ||
+                              app.locationDetails?.tehsil ||
+                              app.agriculturalDetails?.assessmentUnitBlockTehsil ||
+                              app.agriculturalDetails?.tehsil ||
+                              app.projectDetails?.blockId ||
+                              app.projectDetails?.block ||
+                              app.communicationAddress?.subDistrict;
+
+                // Improved resolver that returns ID if name not found
+                const resolveName = (id, list) => {
+                    if (!id || String(id).toLowerCase() === 'unknown') return null;
+                    if (!list || list.length === 0) return id;
+                    const found = list.find(item => 
+                        String(item.id || item.districtId || item.blockId || item.code || item._id) === String(id) ||
+                        String(item.name || item.districtName || item.blockName) === String(id)
+                    );
+                    return found ? (found.name || found.districtName || found.blockName) : id;
+                };
+
+                const districtValue = resolveName(districtId, masterData.districts);
+                const blockValue = resolveName(blockId, masterData.blocks);
+
+                // 3. Water Requirement - Comprehensive Resolver
+                const getWaterValue = (app) => {
+                    const val = app.waterReqFreshRequirement || 
+                               app.dailyWaterRequirement ||
+                               app.waterReqTotal ||
+                               app.waterRequirementKLD ||
+                               app.agriculturalDetails?.waterRequirementKLD ||
+                               app.waterRequirement?.totalDailyExtraction || 
+                               app.waterRequirement?.dailyRequirement || 
+                               app.waterRequirement?.total || 
+                               app.waterRequirement?.daily ||
+                               app.waterRequirement?.breakup?.total ||
+                               app.drinkingDomesticUse?.totalRequirement ||
+                               app.domesticTotalDaily ||
+                               (typeof app.waterRequirement === 'number' || typeof app.waterRequirement === 'string' ? app.waterRequirement : null) ||
+                               app.projectDetails?.waterRequirement ||
+                               app.projectDetails?.dailyWaterRequirement;
+                    
+                    if (val === undefined || val === null || val === '' || val === 0) {
+                        return app.totalWaterRequirement ? `${app.totalWaterRequirement} m³/day` : 'N/A';
+                    }
+                    return `${val} m³/day`;
+                };
+
+                const submittedDateRaw = app.submittedAt || app.submittedDate || app.updatedAt;
+
+                return {
+                    applicationId: app.applicationId || app.id || app._id,
+                    applicationNumber: app.applicationNumber || app.trackingId || 'N/A',
+                    applicantName: getApplicantName(app),
+                    projectName: app.projectName || 
+                               app.projectDetails?.projectName || 
+                               app.projectDetails?.name || 
+                               app.id || 
+                               'N/A',
+                    projectType: resolveIdToName(app.projectDetails?.projectType || app.projectType || app.applicationSubType || app.applicationType, masterData.appTypes),
+                    district: districtValue || app.districtName || 'N/A',
+                    block: blockValue || app.blockName || 'N/A',
+                    waterRequirement: getWaterValue(app),
+                    submittedDate: submittedDateRaw,
+                    status: app.status || 'PENDING',
+                    daysInQueue: submittedDateRaw
+                            ? Math.floor((new Date() - new Date(submittedDateRaw)) / (1000 * 60 * 60 * 24))
+                            : 0
+                };
+            });
+            setRecentApplications(formattedApps);
+        }
+    }, [rawApplications, masterData]);
 
     const handleApplicationClick = (application) => {
         navigate(`/officer/dgo/applications/${application.applicationId}`);
     };
 
+    const handleOpenScheduleModal = (application) => {
+        setSelectedAppForInspection(application);
+        setShowInspectionModal(true);
+    };
+
+    const handleScheduleInspection = async (formData) => {
+        try {
+            const data = {
+                inspectionDate: formData.get('inspectionDate'),
+                officerId: formData.get('officerId')
+            };
+            const resp = await officerService.scheduleInspection(selectedAppForInspection.applicationId, data);
+            if (resp.success) {
+                alert('Inspection scheduled successfully!');
+                setShowInspectionModal(false);
+                fetchDashboardData(); // Refresh data
+            } else {
+                alert('Error: ' + resp.message);
+            }
+        } catch (error) {
+            console.error('Error scheduling inspection:', error);
+            alert('Failed to schedule inspection.');
+        }
+    };
+
     const handleViewAll = () => {
         navigate('/officer/dgo/applications');
     };
+
+    if (authLoading || dashboardLoading) {
+        return <div className="officer-portal-loading text-center p-10 mt-10">
+            <div className="officer-spinner"></div>
+            <p>Loading Dashboard...</p>
+        </div>;
+    }
 
     return (
         <div className="officer-portal">
@@ -231,15 +427,29 @@ const DGODashboard = () => {
                             </div>
 
                             {recentApplications.length > 0 ? (
-                                recentApplications.map((application) => (
-                                    <ApplicationCard
-                                        key={application.applicationId}
-                                        application={application}
-                                        onClick={handleApplicationClick}
-                                        showCallButton={true}
-                                        officerType="DGO"
-                                    />
-                                ))
+                                recentApplications.map((application) => {
+                                    const needsInspection = ['SUBMITTED', 'PENDING_DGO_REVIEW', 'UNDER_REVIEW_DGO'].includes(application.status);
+                                    const actions = needsInspection ? [
+                                        {
+                                            label: t('officer.dashboard.inspections.schedule'),
+                                            icon: '📅',
+                                            onClick: () => handleOpenScheduleModal(application),
+                                            className: 'officer-btn-success'
+                                        }
+                                    ] : [];
+
+                                    return (
+                                        <ApplicationCard
+                                            key={application.applicationId}
+                                            application={application}
+                                            onClick={handleApplicationClick}
+                                            showCallButton={true}
+                                            officerType="DGO"
+                                            showActions={actions.length > 0}
+                                            actions={actions}
+                                        />
+                                    );
+                                })
                             ) : (
                                 <div style={{
                                     textAlign: 'center',
@@ -253,6 +463,13 @@ const DGODashboard = () => {
                     </div>
                 </main>
             </div >
+
+            <ScheduleInspectionModal
+                isOpen={showInspectionModal}
+                onClose={() => setShowInspectionModal(false)}
+                onSchedule={handleScheduleInspection}
+                inspectionOfficers={inspectionOfficers}
+            />
         </div >
     );
 };

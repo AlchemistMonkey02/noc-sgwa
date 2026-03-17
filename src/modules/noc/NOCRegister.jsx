@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
@@ -71,6 +71,7 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
     const [sendingEmailOTP, setSendingEmailOTP] = useState(false);
     const [verifyingMobileOTP, setVerifyingMobileOTP] = useState(false);
     const [verifyingEmailOTP, setVerifyingEmailOTP] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     // File Upload State
     const [isUploading, setIsUploading] = useState(false);
@@ -231,6 +232,11 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
             }));
         }
 
+        // Reset username validation status when typing
+        if (name === 'loginCredentials.preferredUsername') {
+            setFormData(prev => ({ ...prev, usernameAvailable: undefined }));
+        }
+
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: '' }));
         }
@@ -345,14 +351,21 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
             const response = await fetch(`${API_BASE_URL}/auth/check-username/${formData.loginCredentials.preferredUsername}`);
 
             if (response.ok) {
-                const data = await response.json();
+                const result = await response.json();
+                const isAvailable = result.available || (result.data && result.data.available);
 
-                if (data.available) {
+                if (isAvailable) {
                     setFormData(prev => ({ ...prev, usernameAvailable: true }));
-                    toastSuccess(data.message || 'Username is available!');
+                    toastSuccess(result.message || 'Username is available!');
+                    // Clear any previous error
+                    setErrors(prev => {
+                        const newErrors = { ...prev };
+                        delete newErrors['loginCredentials.preferredUsername'];
+                        return newErrors;
+                    });
                 } else {
                     setFormData(prev => ({ ...prev, usernameAvailable: false }));
-                    setErrors(prev => ({ ...prev, 'loginCredentials.preferredUsername': data.message || 'Username is already taken' }));
+                    setErrors(prev => ({ ...prev, 'loginCredentials.preferredUsername': result.message || 'Username is already taken' }));
                 }
             } else {
                 const errorData = await response.json();
@@ -559,11 +572,18 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                     const errorData = await response.json();
                     console.error('Registration failed:', errorData);
 
-                    // Check for specific "already registered" messages to highlight them
-                    const msg = errorData.message || 'Registration failed. Please checking your details.';
+                    // Check for nested error message structure: errorData.error.message OR errorData.message
+                    let msg = (errorData.error && errorData.error.message) || errorData.message || 'Registration failed. Please check your details.';
 
-                    if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('duplicate')) {
-                        toastWarning(`âš ï¸  Registration Error:\n\n${msg}`);
+                    // If it's a validation error, show the specific details if available
+                    if (errorData.error && errorData.error.code === 'VALIDATION_ERROR' && Array.isArray(errorData.error.details)) {
+                        msg = errorData.error.details.map(d => d.replace(/"/g, '')).join('. ');
+                    }
+
+                    if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('duplicate') || (errorData.error && errorData.error.code === 'DUPLICATE_ENTRY')) {
+                        toastWarning(`⚠️ Registration Error:\n\n${msg}`);
+                    } else if (errorData.error && errorData.error.code === 'VALIDATION_ERROR') {
+                        toastError(`⚠️ Validation Error:\n\n${msg}`);
                     } else {
                         toastError(msg);
                     }
@@ -1109,11 +1129,11 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                                     {errors['loginCredentials.preferredUsername'] && <span className="form-error">{errors['loginCredentials.preferredUsername']}</span>}
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
                                     <div className="form-group">
                                         <label className="form-label">{t('register.password')} <span className="text-error">*</span></label>
                                         <input
-                                            type="password"
+                                            type={showPassword ? "text" : "password"}
                                             name="loginCredentials.password"
                                             className="form-input"
                                             value={formData.loginCredentials.password}
@@ -1126,7 +1146,7 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                                     <div className="form-group">
                                         <label className="form-label">{t('register.confirmPassword')} <span className="text-error">*</span></label>
                                         <input
-                                            type="password"
+                                            type={showPassword ? "text" : "password"}
                                             name="loginCredentials.confirmPassword"
                                             className="form-input"
                                             value={formData.loginCredentials.confirmPassword}
@@ -1135,6 +1155,18 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                                         />
                                         {errors['loginCredentials.confirmPassword'] && <span className="form-error">{errors['loginCredentials.confirmPassword']}</span>}
                                     </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 mb-6">
+                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                        <input 
+                                            type="checkbox" 
+                                            className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                            checked={showPassword}
+                                            onChange={(e) => setShowPassword(e.target.checked)}
+                                        />
+                                        <span className="text-sm font-medium text-gray-600">Show Password</span>
+                                    </label>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">

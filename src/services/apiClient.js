@@ -22,11 +22,19 @@ class ApiClient {
         const officerToken = localStorage.getItem('officerToken');
         const authToken = localStorage.getItem('authToken');
 
-        // Priority: If the URL includes 'officer', use officerToken. 
-        // Otherwise use authToken if available.
-        const token = options.useOfficerToken || (options.url && options.url.includes('/officer/'))
-            ? officerToken
-            : (authToken || officerToken);
+        // Priority logic:
+        // 1. If explicit useOfficerToken is true, use officerToken
+        // 2. If the path contains '/officer/', prioritize officerToken
+        // 3. Fallback to authToken, then officerToken
+        let token = null;
+
+        if (options.useOfficerToken) {
+            token = officerToken;
+        } else if (options.url && options.url.includes('/officer/')) {
+            token = officerToken || authToken;
+        } else {
+            token = authToken || officerToken;
+        }
 
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;

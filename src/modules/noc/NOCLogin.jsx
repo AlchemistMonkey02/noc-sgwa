@@ -167,7 +167,7 @@ const NOCLogin = () => {
                         <div className="form-group mb-6">
                             <div className="flex justify-between items-center mb-2">
                                 <label className="form-label mb-0">{t('nocLogin.passwordLabel')} <span className="text-error">*</span></label>
-                                <a href="#" className="text-xs font-semibold text-primary-600 hover:text-primary-700">{t('nocLogin.forgot')}</a>
+                                <Link to="?forgot-password=true" className="text-xs font-semibold text-primary-600 hover:text-primary-700">{t('nocLogin.forgot')}</Link>
                             </div>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">

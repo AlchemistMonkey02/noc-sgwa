@@ -44,7 +44,10 @@ const officerService = {
 
     forwardApplication: (applicationId, data) => apiClient.post(`/officer/dgo/applications/${applicationId}/forward`, data),
     verifyDocuments: (applicationId, documents) => apiClient.post(`/officer/dgo/applications/${applicationId}/verify-documents`, { documents }),
-    getOfficers: (role) => apiClient.get(`/officer/dgo/officers?role=${role}`),
+    getOfficers: (role) => {
+        const query = role ? `?role=${role}` : '';
+        return apiClient.get(`/officer/dgo/officers${query}`);
+    },
     scheduleInspection: (applicationId, data) => apiClient.post(`/officer/dgo/applications/${applicationId}/schedule-inspection`, data),
     raiseQuery: (applicationId, queryData) => apiClient.post(`/officer/dgo/applications/${applicationId}/raise-query`, queryData),
     submitDGOInspectionReport: (applicationId, reportData) => apiClient.post(`/officer/dgo/applications/${applicationId}/inspection-report`, reportData),
@@ -58,6 +61,7 @@ const officerService = {
     submitInspectionReport: (inspectionId, reportData) => apiClient.post(`/officer/inspection/${inspectionId}/submit`, reportData),
     getInspectionReport: (inspectionId) => apiClient.get(`/officer/inspection/${inspectionId}/report`),
     startInspection: (inspectionId, locationData) => apiClient.post(`/officer/inspection/${inspectionId}/start`, locationData),
+    updateInspectionStatus: (inspectionId, status, remarks) => apiClient.put(`/officer/inspection/${inspectionId}/status`, { status, remarks }),
 
     forwardToSGWA: (applicationId, recommendationData) => apiClient.post(`/officer/dgo/applications/${applicationId}/forward`, recommendationData),
     rejectApplication: (applicationId, rejectionData) => apiClient.post(`/officer/dgo/applications/${applicationId}/reject`, rejectionData),
@@ -70,6 +74,8 @@ const officerService = {
     sgwaRejectApplication: (applicationId, rejectionData) => apiClient.post(`/officer/sgwa/applications/${applicationId}/reject`, rejectionData),
     sgwaRaiseQuery: (applicationId, queryData) => apiClient.post(`/officer/sgwa/applications/${applicationId}/query`, queryData),
     assignApplication: (applicationId, assignmentData) => apiClient.post(`/officer/sgwa/applications/${applicationId}/assign`, assignmentData),
+    verifyAllDocuments: (appId, data) => apiClient.post(`/officer/common/applications/${appId}/documents/verify-all`, data),
+    verifyDocument: (docId, data) => apiClient.post(`/officer/common/verify-doc/${docId}`, data),
 
     // ==================== QUERIES ====================
 
@@ -83,7 +89,7 @@ const officerService = {
 
     // ==================== DOCUMENTS ====================
 
-    uploadDocument: (formData) => apiClient.upload('/officer/documents/upload', formData),
+    uploadDocument: (formData) => apiClient.upload('/officer/common/documents/upload', formData),
     downloadDocument: (documentId) => apiClient.request(`/officer/documents/${documentId}/download`).then(res => res.blob()),
 
     getDocumentUrl: (documentId) => {
@@ -130,8 +136,8 @@ const officerService = {
 
     // ==================== PROFILE ====================
 
-    getProfile: () => apiClient.get('/officer/profile'),
-    updateProfile: (profileData) => apiClient.put('/officer/profile', profileData),
+    getProfile: () => apiClient.get('/officer/common/profile'),
+    updateProfile: (profileData) => apiClient.put('/officer/common/profile', profileData),
     changePassword: (passwordData) => apiClient.post('/officer/change-password', passwordData),
 
     // ==================== ACTIVITY LOG ====================
@@ -143,9 +149,9 @@ const officerService = {
 
     // ==================== MASTER DATA ====================
 
-    getDistricts: () => apiClient.get('/officer/master-data/districts'),
-    getBlocks: (districtId) => apiClient.get(`/officer/master-data/blocks?districtId=${districtId}`),
-    getRejectionReasons: () => apiClient.get('/officer/master-data/rejection-reasons'),
+    getDistricts: (stateId = 'RAJ') => apiClient.get(`/master/districts?stateId=${stateId}`),
+    getBlocks: (districtId) => apiClient.get(`/master/blocks?districtId=${districtId}`),
+    getRejectionReasons: () => apiClient.get('/master/rejection-reasons'),
 
     // Standardized Room ID Helper
     getConsultationRoomId: (appNumber) => {

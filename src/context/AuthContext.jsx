@@ -13,35 +13,44 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         const initAuth = () => {
             try {
+                // Check Officer Auth
                 const officerToken = localStorage.getItem('officerToken');
                 const officerData = localStorage.getItem('officerData');
                 const officerRole = localStorage.getItem('officerRole');
 
                 if (officerToken && officerData) {
                     try {
-                        setUser(JSON.parse(officerData));
-                        setUserType(officerRole);
+                        const parsedData = JSON.parse(officerData);
+                        setUser(parsedData);
+                        setUserType(officerRole || parsedData.userType || 'OFFICER');
+                        console.log("Auth initialized as Officer:", officerRole);
                     } catch (e) {
                         console.error("Failed to parse officer data", e);
                         clearAuthData('OFFICER');
                     }
                 } else {
+                    // Check Applicant Auth
                     const nocToken = localStorage.getItem('authToken');
                     const nocData = localStorage.getItem('nocUser');
                     const savedUserType = localStorage.getItem('userType');
 
                     if (nocToken && nocData) {
                         try {
-                            setUser(JSON.parse(nocData));
-                            setUserType(savedUserType || 'APPLICANT');
+                            const parsedData = JSON.parse(nocData);
+                            setUser(parsedData);
+                            setUserType(savedUserType || parsedData.userType || 'APPLICANT');
+                            console.log("Auth initialized as Applicant:", savedUserType);
                         } catch (e) {
                             console.error("Failed to parse NOC user data", e);
                             clearAuthData('NOC');
                         }
                     } else {
-                        clearAuthData('ALL');
-                        setUser(null);
-                        setUserType(null);
+                        // Only clear if we actually have NO tokens at all
+                        if (!officerToken && !nocToken) {
+                            console.log("No valid tokens found, guest mode");
+                            setUser(null);
+                            setUserType(null);
+                        }
                     }
                 }
             } catch (error) {

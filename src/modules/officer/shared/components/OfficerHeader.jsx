@@ -65,26 +65,18 @@ const OfficerHeader = ({ officerName, officerRole, officerDesignation, district 
             </div>
 
             <div className="officer-header-right">
+                {/* ── Unified Notification Bell ── */}
+                <NotificationBell theme="light" />
+
                 {/* Language toggle */}
                 <div
                     onClick={toggleLanguage}
                     title={i18n.language === 'en' ? 'Switch to Hindi' : 'Switch to English'}
-                    style={{
-                        padding: '8px 12px',
-                        background: 'rgba(255,255,255,0.15)',
-                        border: '1px solid rgba(255,255,255,0.3)',
-                        borderRadius: '8px', color: 'white',
-                        cursor: 'pointer', fontSize: '0.875rem', fontWeight: '600',
-                        transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px',
-                    }}
-                    className="notranslate"
+                    className="officer-lang-toggle notranslate"
                 >
-                    <span style={{ fontSize: '1rem' }}>🌐</span>
-                    {i18n.language === 'en' ? 'Hindi' : 'English'}
+                    <span className="lang-icon">🌐</span>
+                    <span className="lang-text">{i18n.language === 'en' ? 'HI' : 'EN'}</span>
                 </div>
-
-                {/* ── Unified Notification Bell ── */}
-                <NotificationBell theme="dark" />
 
                 {/* Profile */}
                 <div className="officer-profile">

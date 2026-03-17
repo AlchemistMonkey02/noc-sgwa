@@ -666,7 +666,7 @@ const PublicLanding = () => {
                             </form>
 
                             <div className="login-links">
-                                <Link to="/forgot-password">{t('login.forgot')}</Link>
+                                <Link to="?forgot-password=true">{t('login.forgot')}</Link>
                             </div>
                         </>
                     </div>

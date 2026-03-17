@@ -5,13 +5,15 @@ import officerService from '../services/officerService';
 import OfficerHeader from '../shared/components/OfficerHeader';
 import OfficerSidebar from '../shared/components/OfficerSidebar';
 import ConsultationCallButton from '../../../components/ConsultationCallButton';
-import { getOfficerData } from '../shared/utils/officerAuth';
+import { useAuth } from '../../../context/AuthContext';
+import { nocApplicationService } from '../../noc/services/nocApplicationService';
 import '../shared/styles/officer-portal.css';
 
 const SGWADashboard = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const [loading, setLoading] = useState(true);
+    const { user, loading: authLoading } = useAuth();
+    const [dashboardLoading, setDashboardLoading] = useState(true);
     const [statistics, setStatistics] = useState({
         total: 0,
         pendingApproval: 0,
@@ -23,17 +25,63 @@ const SGWADashboard = () => {
     const [recentApplications, setRecentApplications] = useState([]);
     const [officerInfo, setOfficerInfo] = useState(null);
 
-    useEffect(() => {
-        // Load officer data from localStorage
-        const userData = getOfficerData();
-        setOfficerInfo(userData);
+    const [masterData, setMasterData] = useState({
+        districts: [],
+        appTypes: []
+    });
 
-        fetchDashboardData();
-    }, []);
+    const resolveIdToName = (id, options, defaultVal = 'N/A') => {
+        if (!id || !options || options.length === 0) return id || defaultVal;
+        const match = options.find(opt =>
+            String(opt.id || opt.appTypeCode || opt.appSubTypeCode || opt.projectTypeCode || opt.appTypeCatCode || opt.industryTypeId || opt.code || opt._id) === String(id)
+        );
+        return match ? (match.name || match.label || match.industryName) : id;
+    };
+
+    useEffect(() => {
+        if (!authLoading && user) {
+            setOfficerInfo(user);
+            fetchDashboardData();
+            fetchMasterData();
+        }
+    }, [user, authLoading]);
+
+    const fetchMasterData = async () => {
+        try {
+            // Fetch all districts for resolution
+            const [distResp, typeResp] = await Promise.all([
+                nocApplicationService.getDistricts('Rajasthan'),
+                nocApplicationService.getApplicationTypes()
+            ]);
+
+            let blocksData = [];
+            // Try to fetch blocks for officer's district, but also fetch all blocks if needed
+            // or fetch unique districts' blocks from the applications list (handled reactively)
+            const districtIdToFetch = user?.districtId || user?.location?.districtId;
+            if (districtIdToFetch) {
+                try {
+                    const blockResp = await nocApplicationService.getBlocks(districtIdToFetch);
+                    if (blockResp.success) blocksData = blockResp.data || [];
+                } catch (e) {
+                    console.warn('Failed to fetch officer-specific blocks');
+                }
+            }
+
+            if (distResp.success && typeResp.success) {
+                setMasterData({
+                    districts: distResp.data || [],
+                    blocks: blocksData,
+                    appTypes: typeResp.data || []
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching SGWA dashboard master data:', error);
+        }
+    };
 
     const fetchDashboardData = async () => {
         try {
-            setLoading(true);
+            setDashboardLoading(true);
             const response = await officerService.getSGWADashboard();
 
             if (response.success) {
@@ -48,25 +96,114 @@ const SGWADashboard = () => {
                 });
 
                 if (data.recentApplications && data.recentApplications.length > 0) {
-                    const mappedRecents = data.recentApplications.map(app => ({
-                        applicationId: app.id || app._id,
-                        applicationNumber: app.applicationNumber,
-                        applicantName: app.projectDetails?.applicantName || 'N/A',
-                        projectName: app.projectDetails?.projectName || 'N/A',
-                        district: app.location?.districtId || 'N/A',
-                        // Handle both string and object water requirement
-                        waterRequirement: app.waterRequirement?.totalDailyExtraction
-                            ? `${app.waterRequirement.totalDailyExtraction} m³/day`
-                            : (typeof app.waterRequirement === 'object'
-                                ? `${app.waterRequirement.total || 0} m³/day`
-                                : app.waterRequirement || 'N/A'),
-                        submittedDate: app.submittedAt || app.submittedDate,
-                        status: app.status,
-                        daysInQueue: app.submittedAt
-                            ? Math.floor((new Date() - new Date(app.submittedAt)) / (1000 * 60 * 60 * 24))
-                            : (app.daysInQueue || 0)
-                    }));
-                    setRecentApplications(mappedRecents);
+                    const recentApps = (data.recentApplications || []).map(app => {
+                        // 1. Applicant Name - Exhaustive Fallbacks
+                        const getApplicantName = (app) => {
+                            return app.applicantName || 
+                                   app.applicantDetails?.name || 
+                                   app.ownerDetails?.ownerName ||
+                                   app.projectDetails?.applicantName || 
+                                   app.projectDetails?.name || 
+                                   app.companyId?.contactPerson || 
+                                   (app.userId?.firstName ? `${app.userId.firstName} ${app.userId.lastName || ''}`.trim() : '') ||
+                                   app.userId?.name ||
+                                   app.projectDetails?.companyName ||
+                                   'N/A';
+                        };
+
+                        // 2. District & Block - Multi-layered Fallbacks
+                        const districtId = app.districtId ||
+                                         app.district ||
+                                         app.location?.districtId || 
+                                         app.locationDetails?.districtId ||
+                                         app.locationDetails?.district ||
+                                         app.ownerDetails?.district ||
+                                         app.agriculturalDetails?.district ||
+                                         app.projectDetails?.districtId ||
+                                         app.projectDetails?.district ||
+                                         app.communicationAddress?.district;
+
+                        const blockId = app.blockId ||
+                                      app.block ||
+                                      app.location?.blockId || 
+                                      app.locationDetails?.blockId ||
+                                      app.locationDetails?.block ||
+                                      app.locationDetails?.assessmentUnitBlockTehsil ||
+                                      app.locationDetails?.assessmentUnit ||
+                                      app.locationDetails?.tehsil ||
+                                      app.agriculturalDetails?.assessmentUnitBlockTehsil ||
+                                      app.agriculturalDetails?.tehsil ||
+                                      app.projectDetails?.blockId ||
+                                      app.projectDetails?.block ||
+                                      app.communicationAddress?.subDistrict;
+
+                        // Improved resolver that returns ID if name not found
+                        const resolveName = (id, list) => {
+                            if (!id || String(id).toLowerCase() === 'unknown') return null;
+                            if (!list || list.length === 0) return id;
+                            const found = list.find(item => 
+                                String(item.id || item.districtId || item.blockId || item.code || item._id) === String(id) ||
+                                String(item.name || item.districtName || item.blockName) === String(id)
+                            );
+                            return found ? (found.name || found.districtName || found.blockName) : id;
+                        };
+
+                        const districtValue = resolveName(districtId, masterData.districts);
+                        const blockValue = resolveName(blockId, masterData.blocks);
+
+                        // 3. Water Requirement - Comprehensive Resolver
+                        const getWaterValue = (app) => {
+                            const val = app.waterReqFreshRequirement || 
+                                       app.dailyWaterRequirement ||
+                                       app.waterReqTotal ||
+                                       app.waterRequirementKLD ||
+                                       app.agriculturalDetails?.waterRequirementKLD ||
+                                       app.waterRequirement?.totalDailyExtraction || 
+                                       app.waterRequirement?.dailyRequirement || 
+                                       app.waterRequirement?.total || 
+                                       app.waterRequirement?.daily ||
+                                       app.waterRequirement?.breakup?.total ||
+                                       app.drinkingDomesticUse?.totalRequirement ||
+                                       app.domesticTotalDaily ||
+                                       (typeof app.waterRequirement === 'number' || typeof app.waterRequirement === 'string' ? app.waterRequirement : null) ||
+                                       app.projectDetails?.waterRequirement ||
+                                       app.projectDetails?.dailyWaterRequirement;
+                            
+                            if (val === undefined || val === null || val === '' || val === 0) {
+                                return app.totalWaterRequirement ? `${app.totalWaterRequirement} m³/day` : 'N/A';
+                            }
+                            return `${val} m³/day`;
+                        };
+
+                        const submittedDateRaw = app.submittedDate || app.submittedAt || app.updatedAt;
+
+                        return {
+                            applicationId: app.id || app._id || app.applicationId,
+                            applicationNumber: app.applicationNumber || app.trackingId || 'N/A',
+                            applicantName: getApplicantName(app),
+                            projectName: app.projectName || 
+                                       app.projectDetails?.projectName || 
+                                       app.projectDetails?.name || 
+                                       app.id || 
+                                       'N/A',
+                            district: districtValue || app.districtName || 'N/A',
+                            block: blockValue || app.blockName || 'N/A',
+                            waterRequirement: getWaterValue(app),
+                            projectType: app.projectDetails?.projectType || 
+                                       app.projectDetails?.sector || 
+                                       app.projectDetails?.projectCategory ||
+                                       app.applicationType || 
+                                       app.groundWaterUtilizationFor ||
+                                       'N/A',
+                            status: app.status || 'PENDING',
+                            submittedDate: submittedDateRaw,
+                            priority: app.priority || 'MEDIUM',
+                            daysInQueue: submittedDateRaw
+                                    ? Math.floor((new Date() - new Date(submittedDateRaw)) / (1000 * 60 * 60 * 24))
+                                    : (app.daysInQueue || 0)
+                        };
+                    });
+                    setRecentApplications(recentApps);
                 }
             }
         } catch (error) {
@@ -82,7 +219,7 @@ const SGWADashboard = () => {
             });
             setRecentApplications([]);
         } finally {
-            setLoading(false);
+            setDashboardLoading(false);
         }
     };
 
@@ -94,7 +231,7 @@ const SGWADashboard = () => {
         navigate('/officer/sgwa/applications');
     };
 
-    if (loading) {
+    if (authLoading || dashboardLoading) {
         return (
             <div className="loading-container">
                 <div className="loading-spinner"></div>
@@ -224,8 +361,8 @@ const SGWADashboard = () => {
                                                     <span className="officer-app-field-value notranslate">{app.applicantName}</span>
                                                 </div>
                                                 <div className="officer-app-field">
-                                                    <span className="officer-app-field-label">{t('officer.dashboard.fields.district')}</span>
-                                                    <span className="officer-app-field-value notranslate">{app.district}</span>
+                                                    <span className="officer-app-field-label">{t('officer.dashboard.fields.location')}</span>
+                                                    <span className="officer-app-field-value notranslate">{app.block}, {app.district}</span>
                                                 </div>
                                                 <div className="officer-app-field">
                                                     <span className="officer-app-field-label">{t('officer.dashboard.fields.waterRequirement')}</span>

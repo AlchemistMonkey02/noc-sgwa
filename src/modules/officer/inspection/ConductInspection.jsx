@@ -24,6 +24,8 @@ const ConductInspection = () => {
         meterReading: '',
         piezometerInstalled: '',
         dwraDetails: '',
+        rainwaterHarvesting: 'NOT_STARTED',
+        plantationStatus: 'NOT_STARTED',
         recommendation: 'RECOMMENDED',
         remarks: ''
     });
@@ -285,6 +287,35 @@ const ConductInspection = () => {
                                             />
                                         </div>
                                     )}
+
+                                    <div className="form-group-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1.5rem' }}>
+                                        <div className="officer-form-group">
+                                            <label className="officer-label">Rainwater Harvesting Status</label>
+                                            <select
+                                                className="officer-select"
+                                                name="rainwaterHarvesting"
+                                                value={formData.rainwaterHarvesting}
+                                                onChange={handleInputChange}
+                                            >
+                                                <option value="NOT_STARTED">Not Started</option>
+                                                <option value="UNDER_CONSTRUCTION">Under Construction</option>
+                                                <option value="IMPLEMENTED">Implemented/Functional</option>
+                                            </select>
+                                        </div>
+                                        <div className="officer-form-group">
+                                            <label className="officer-label">Plantation Status</label>
+                                            <select
+                                                className="officer-select"
+                                                name="plantationStatus"
+                                                value={formData.plantationStatus}
+                                                onChange={handleInputChange}
+                                            >
+                                                <option value="NOT_STARTED">Not Started</option>
+                                                <option value="STARTED">Started</option>
+                                                <option value="COMPLETED">Completed</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div className="form-section" style={{ marginTop: '2rem' }}>
@@ -334,9 +365,9 @@ const ConductInspection = () => {
                                             </button>
                                             <button
                                                 type="button"
-                                                className={`officer-btn ${formData.recommendation === 'REJECTED' ? 'officer-btn-danger' : 'officer-btn-secondary'}`}
-                                                onClick={() => setFormData(prev => ({ ...prev, recommendation: 'REJECTED' }))}
-                                                style={{ flex: 1, minWidth: '150px', color: formData.recommendation === 'REJECTED' ? 'white' : 'inherit' }}
+                                                className={`officer-btn ${formData.recommendation === 'NOT_RECOMMENDED' ? 'officer-btn-danger' : 'officer-btn-secondary'}`}
+                                                onClick={() => setFormData(prev => ({ ...prev, recommendation: 'NOT_RECOMMENDED' }))}
+                                                style={{ flex: 1, minWidth: '150px', color: formData.recommendation === 'NOT_RECOMMENDED' ? 'white' : 'inherit' }}
                                             >
                                                 ❌ Not Recommended
                                             </button>

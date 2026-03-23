@@ -105,16 +105,7 @@ const officerService = {
         let aiDocType = docType.toUpperCase().replace(/\s+/g, '_');
         if (aiDocType.includes('AADHAAR')) aiDocType = 'AADHAAR';
 
-        const response = await fetch(`${AI_SERVICE_URL}/verify-document/${aiDocType}`, {
-            method: 'POST',
-            body: formData
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`AI Service Error: ${errorText}`);
-        }
-        return await response.json();
+        return apiClient.upload(`${AI_SERVICE_URL}/verify-document/${aiDocType}`, formData);
     },
 
     // ==================== NOTIFICATIONS ====================

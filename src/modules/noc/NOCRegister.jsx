@@ -3,7 +3,7 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import API_BASE_URL from '../../config/apiConfig';
+import apiClient from '../../services/apiClient';
 import PublicHeader from '../../modules/public/components/PublicHeader';
 import NOCFooter from './components/NOCFooter';
 import './styles/noc-portal.css';
@@ -115,33 +115,23 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
             formDataUpload.append('documentType', docType);
 
             // Use public upload endpoint
-            const response = await fetch(`${API_BASE_URL}/public/documents/upload`, {
-                method: 'POST',
-                // Note: Do NOT set Content-Type header for FormData, browser does it automatically with boundary
-                body: formDataUpload
-            });
+            const result = await apiClient.upload('/public/documents/upload', formDataUpload);
 
-            if (response.ok) {
-                const result = await response.json();
-                console.log('Document upload success:', result);
+            console.log('Document upload success:', result);
 
-                if (result.success && result.data && result.data.documentId) {
-                    setUploadSuccess(true);
-                    // Update main form data with document ID
-                    setFormData(prev => ({
-                        ...prev,
-                        applicantInfo: {
-                            ...prev.applicantInfo,
-                            idProofDocumentId: result.data.documentId,
-                            idProofFile: file // Keep file ref if needed for UI, but rely on ID for submit
-                        }
-                    }));
-                } else {
-                    setUploadError('Upload failed: Invalid server response');
-                }
+            if (result.success && result.data && result.data.documentId) {
+                setUploadSuccess(true);
+                // Update main form data with document ID
+                setFormData(prev => ({
+                    ...prev,
+                    applicantInfo: {
+                        ...prev.applicantInfo,
+                        idProofDocumentId: result.data.documentId,
+                        idProofFile: file // Keep file ref if needed for UI, but rely on ID for submit
+                    }
+                }));
             } else {
-                const errorData = await response.json();
-                setUploadError(errorData.message || 'Document upload failed');
+                setUploadError(result.message || 'Upload failed: Invalid server response');
             }
         } catch (error) {
             console.error('Error uploading document:', error);
@@ -152,24 +142,11 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
     };
 
     // Claim uploaded document after successful registration
-    const claimDocument = async (documentId, token) => {
+    const claimDocument = async (documentId) => {
         try {
-            const response = await fetch(`${API_BASE_URL}/documents/${documentId}/claim`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (response.ok) {
-                console.log('Document claimed successfully');
-                return true;
-            } else {
-                const errorData = await response.json();
-                console.error('Failed to claim document:', errorData.message);
-                return false;
-            }
+            const result = await apiClient.post(`/documents/${documentId}/claim`, {});
+            console.log('Document claimed successfully');
+            return true;
         } catch (error) {
             console.error('Error claiming document:', error);
             return false;
@@ -257,45 +234,32 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
 
         try {
             // Call the OTP API
-            const endpoint = type === 'mobile'
-                ? API_BASE_URL + '/auth/send-otp/mobile'
-                : API_BASE_URL + '/auth/send-otp/email';
+            const path = type === 'mobile'
+                ? '/auth/send-otp/mobile'
+                : '/auth/send-otp/email';
 
             const payload = type === 'mobile'
                 ? { phone: value }
                 : { email: value };
 
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload)
-            });
+            const result = await apiClient.post(path, payload);
 
-            if (response.ok) {
-                const result = await response.json();
-                console.log(`OTP sent to ${type}:`, result);
+            console.log(`OTP sent to ${type}:`, result);
 
-                // Set the appropriate state to show OTP input field
-                if (type === 'mobile') {
-                    setSendingMobileOTP(true);
-                } else {
-                    setSendingEmailOTP(true);
-                }
-
-                setOTPSent(prev => ({ ...prev, [type]: true }));
-
-                const expiresIn = result.data?.expiresIn || 300;
-                toastSuccess(`OTP sent successfully to your ${type}. It will expire in ${expiresIn} seconds.`);
+            // Set the appropriate state to show OTP input field
+            if (type === 'mobile') {
+                setSendingMobileOTP(true);
             } else {
-                const errorData = await response.json();
-                // Show specific error from API
-                toastError(errorData.message || `Failed to send OTP to ${type}. Please try again.`);
+                setSendingEmailOTP(true);
             }
+
+            setOTPSent(prev => ({ ...prev, [type]: true }));
+
+            const expiresIn = result.data?.expiresIn || 300;
+            toastSuccess(`OTP sent successfully to your ${type}. It will expire in ${expiresIn} seconds.`);
         } catch (error) {
             console.error(`Error sending OTP to ${type}:`, error);
-            toastError(`Network error while sending OTP. Please check your connection and try again.`);
+            toastError(error.message || `Failed to send OTP to ${type}. Please try again.`);
         }
     };
 
@@ -309,35 +273,23 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
         }
 
         try {
-            const response = await fetch(API_BASE_URL + '/auth/verify-otp', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    identifier: identifier,
-                    otp: otp,
-                    type: type.toUpperCase()
-                })
+            const result = await apiClient.post('/auth/verify-otp', {
+                identifier: identifier,
+                otp: otp,
+                type: type.toUpperCase()
             });
 
-            if (response.ok) {
-                const result = await response.json();
-                console.log(`${type} OTP verified:`, result);
+            console.log(`${type} OTP verified:`, result);
 
-                if (type === 'mobile') setMobileVerified(true);
-                if (type === 'email') setEmailVerified(true);
+            if (type === 'mobile') setMobileVerified(true);
+            if (type === 'email') setEmailVerified(true);
 
-                toastSuccess(`${type.charAt(0).toUpperCase() + type.slice(1)} verified successfully!`);
-            } else {
-                const errorData = await response.json();
-                const errorMessage = errorData.message || 'Invalid OTP';
-                setErrors(prev => ({ ...prev, [`applicantInfo.${type}OTP`]: errorMessage }));
-                toastError(errorMessage);
-            }
+            toastSuccess(`${type.charAt(0).toUpperCase() + type.slice(1)} verified successfully!`);
         } catch (error) {
             console.error(`Error verifying ${type} OTP:`, error);
-            toastError('Network error during OTP verification. Please try again.');
+            const errorMessage = error.message || 'Invalid OTP';
+            setErrors(prev => ({ ...prev, [`applicantInfo.${type}OTP`]: errorMessage }));
+            toastError(errorMessage);
         }
     };
 
@@ -348,32 +300,25 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
         }
 
         try {
-            const response = await fetch(`${API_BASE_URL}/auth/check-username/${formData.loginCredentials.preferredUsername}`);
+            const result = await apiClient.get(`/auth/check-username/${formData.loginCredentials.preferredUsername}`);
+            const isAvailable = result.available || (result.data && result.data.available);
 
-            if (response.ok) {
-                const result = await response.json();
-                const isAvailable = result.available || (result.data && result.data.available);
-
-                if (isAvailable) {
-                    setFormData(prev => ({ ...prev, usernameAvailable: true }));
-                    toastSuccess(result.message || 'Username is available!');
-                    // Clear any previous error
-                    setErrors(prev => {
-                        const newErrors = { ...prev };
-                        delete newErrors['loginCredentials.preferredUsername'];
-                        return newErrors;
-                    });
-                } else {
-                    setFormData(prev => ({ ...prev, usernameAvailable: false }));
-                    setErrors(prev => ({ ...prev, 'loginCredentials.preferredUsername': result.message || 'Username is already taken' }));
-                }
+            if (isAvailable) {
+                setFormData(prev => ({ ...prev, usernameAvailable: true }));
+                toastSuccess(result.message || 'Username is available!');
+                // Clear any previous error
+                setErrors(prev => {
+                    const newErrors = { ...prev };
+                    delete newErrors['loginCredentials.preferredUsername'];
+                    return newErrors;
+                });
             } else {
-                const errorData = await response.json();
-                setErrors(prev => ({ ...prev, 'loginCredentials.preferredUsername': errorData.message || 'Error checking username' }));
+                setFormData(prev => ({ ...prev, usernameAvailable: false }));
+                setErrors(prev => ({ ...prev, 'loginCredentials.preferredUsername': result.message || 'Username is already taken' }));
             }
         } catch (error) {
             console.error('Error checking username availability:', error);
-            setErrors(prev => ({ ...prev, 'loginCredentials.preferredUsername': 'Network error. Please try again.' }));
+            setErrors(prev => ({ ...prev, 'loginCredentials.preferredUsername': error.message || 'Error checking username' }));
         }
     };
 
@@ -527,71 +472,40 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                 };
 
                 // Call registration API with JSON
-                const response = await fetch(API_BASE_URL + '/auth/register', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(registrationData)
-                });
+                const result = await apiClient.post('/auth/register', registrationData);
 
-                if (response.ok) {
-                    const result = await response.json();
-                    console.log('Registration success:', result);
+                console.log('Registration success:', result);
 
-                    // Claim uploaded document if exists
-                    if (formData.applicantInfo.idProofDocumentId) {
-                        // Extract token from response
-                        const token = result.data?.token || result.token;
+                // Claim uploaded document if exists
+                if (formData.applicantInfo.idProofDocumentId) {
+                    await claimDocument(formData.applicantInfo.idProofDocumentId);
+                    console.log('Document linking processed after registration');
+                }
 
-                        if (token) {
-                            console.log('Claiming uploaded document...');
-                            const claimSuccess = await claimDocument(formData.applicantInfo.idProofDocumentId, token);
+                // Show success message with username
+                const successMessage = `ðŸŽ‰ Registration Successful!\n\nYour account has been created successfully.\n\nUsername: ${formData.loginCredentials.preferredUsername}\n\nPlease login with your credentials.`;
+                toastSuccess(successMessage, 6000); // Longer duration for the big message
 
-                            if (claimSuccess) {
-                                console.log('Document successfully linked to user account');
-                            } else {
-                                console.warn('Document claim failed, but registration succeeded');
-                            }
-                        } else {
-                            console.warn('No token received, cannot claim document');
-                        }
-                    }
-
-                    // Show success message with username
-                    const successMessage = `ðŸŽ‰ Registration Successful!\n\nYour account has been created successfully.\n\nUsername: ${formData.loginCredentials.preferredUsername}\n\nPlease login with your credentials.`;
-                    toastSuccess(successMessage, 6000); // Longer duration for the big message
-
-                    // Close modal and return to login panel, or navigate to login page
-                    if (isModal && onClose) {
-                        onClose();
-                    } else {
-                        navigate('/noc/login');
-                    }
+                // Close modal and return to login panel, or navigate to login page
+                if (isModal && onClose) {
+                    onClose();
                 } else {
-                    const errorData = await response.json();
-                    console.error('Registration failed:', errorData);
-
-                    // Check for nested error message structure: errorData.error.message OR errorData.message
-                    let msg = (errorData.error && errorData.error.message) || errorData.message || 'Registration failed. Please check your details.';
-
-                    // If it's a validation error, show the specific details if available
-                    if (errorData.error && errorData.error.code === 'VALIDATION_ERROR' && Array.isArray(errorData.error.details)) {
-                        msg = errorData.error.details.map(d => d.replace(/"/g, '')).join('. ');
-                    }
-
-                    if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('duplicate') || (errorData.error && errorData.error.code === 'DUPLICATE_ENTRY')) {
-                        toastWarning(`⚠️ Registration Error:\n\n${msg}`);
-                    } else if (errorData.error && errorData.error.code === 'VALIDATION_ERROR') {
-                        toastError(`⚠️ Validation Error:\n\n${msg}`);
-                    } else {
-                        toastError(msg);
-                    }
+                    navigate('/noc/login');
                 }
 
             } catch (error) {
-                console.error('Network error during registration:', error);
-                toastError('Network error. Please check if the server is running and try again.');
+                console.error('Registration failed:', error);
+
+                // Check for nested error message structure
+                let msg = error.message || 'Registration failed. Please check your details.';
+
+                if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('duplicate') || error.code === 'DUPLICATE_ENTRY') {
+                    toastWarning(`⚠️ Registration Error:\n\n${msg}`);
+                } else if (error.code === 'VALIDATION_ERROR') {
+                    toastError(`⚠️ Validation Error:\n\n${msg}`);
+                } else {
+                    toastError(msg);
+                }
             }
         }
     };
@@ -608,31 +522,25 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
         const fetchMasterData = async () => {
             try {
                 // Fetch Titles
-                const titleRes = await fetch(API_BASE_URL + '/master/titles');
-                if (titleRes.ok) {
-                    const data = await titleRes.json();
-                    if (Array.isArray(data)) {
-                        setTitleOptions(data);
-                    } else if (data && Array.isArray(data.data)) {
-                        setTitleOptions(data.data);
-                    } else {
-                        console.warn('Titles API returned non-array:', data);
-                        setTitleOptions(['Mr', 'Ms', 'Dr', 'M/s']);
-                    }
+                const titleData = await apiClient.get('/master/titles');
+                if (Array.isArray(titleData)) {
+                    setTitleOptions(titleData);
+                } else if (titleData && Array.isArray(titleData.data)) {
+                    setTitleOptions(titleData.data);
+                } else {
+                    console.warn('Titles API returned non-array:', titleData);
+                    setTitleOptions(['Mr', 'Ms', 'Dr', 'M/s']);
                 }
 
                 // Fetch Genders
-                const genderRes = await fetch(API_BASE_URL + '/master/genders');
-                if (genderRes.ok) {
-                    const data = await genderRes.json();
-                    if (Array.isArray(data)) {
-                        setGenderOptions(data);
-                    } else if (data && Array.isArray(data.data)) {
-                        setGenderOptions(data.data);
-                    } else {
-                        console.warn('Genders API returned non-array:', data);
-                        setGenderOptions(['Male', 'Female', 'Other']);
-                    }
+                const genderData = await apiClient.get('/master/genders');
+                if (Array.isArray(genderData)) {
+                    setGenderOptions(genderData);
+                } else if (genderData && Array.isArray(genderData.data)) {
+                    setGenderOptions(genderData.data);
+                } else {
+                    console.warn('Genders API returned non-array:', genderData);
+                    setGenderOptions(['Male', 'Female', 'Other']);
                 }
             } catch (error) {
                 console.error("Error fetching master data:", error);
@@ -649,14 +557,11 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
     useEffect(() => {
         const fetchStates = async () => {
             try {
-                const response = await fetch(API_BASE_URL + '/master/states');
-                if (response.ok) {
-                    const data = await response.json();
-                    if (Array.isArray(data)) {
-                        setStateOptions(data);
-                    } else if (data && Array.isArray(data.data)) {
-                        setStateOptions(data.data);
-                    }
+                const data = await apiClient.get('/master/states');
+                if (Array.isArray(data)) {
+                    setStateOptions(data);
+                } else if (data && Array.isArray(data.data)) {
+                    setStateOptions(data.data);
                 }
             } catch (error) {
                 console.error('Error fetching states:', error);
@@ -686,14 +591,11 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
             setBlockOptions([]);
 
             try {
-                const response = await fetch(`${API_BASE_URL}/master/districts?stateId=${formData.communicationAddress.state}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    if (Array.isArray(data)) {
-                        setDistrictOptions(data);
-                    } else if (data && Array.isArray(data.data)) {
-                        setDistrictOptions(data.data);
-                    }
+                const data = await apiClient.get(`/master/districts?stateId=${formData.communicationAddress.state}`);
+                if (Array.isArray(data)) {
+                    setDistrictOptions(data);
+                } else if (data && Array.isArray(data.data)) {
+                    setDistrictOptions(data.data);
                 }
             } catch (error) {
                 console.error('Error fetching districts:', error);
@@ -720,14 +622,11 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
             }));
 
             try {
-                const response = await fetch(`${API_BASE_URL}/master/blocks?districtId=${formData.communicationAddress.district}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    if (Array.isArray(data)) {
-                        setBlockOptions(data);
-                    } else if (data && Array.isArray(data.data)) {
-                        setBlockOptions(data.data);
-                    }
+                const data = await apiClient.get(`/master/blocks?districtId=${formData.communicationAddress.district}`);
+                if (Array.isArray(data)) {
+                    setBlockOptions(data);
+                } else if (data && Array.isArray(data.data)) {
+                    setBlockOptions(data.data);
                 }
             } catch (error) {
                 console.error('Error fetching blocks:', error);

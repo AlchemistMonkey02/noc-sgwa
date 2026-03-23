@@ -7,11 +7,18 @@ import './Header.css';
 const Header = () => {
     const { isAuthenticated, logout, user } = useAuth();
     const navigate = useNavigate();
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const handleSearch = () => {
-        // Implement search logic if needed
-        console.log('Searching for:', searchTerm);
+    const toggleMobileMenu = () => {
+        setIsMobileMenuOpen(!isMobileMenuOpen);
+    };
+
+    const handleSearch = (e) => {
+        if (e) e.preventDefault();
+        if (searchTerm.trim()) {
+            navigate(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
+        }
     };
 
     return (
@@ -29,7 +36,7 @@ const Header = () => {
                     </div>
                 </div>
                 <div className="header-right">
-                    <div className="search-box">
+                    <div className="search-box hide-mobile">
                         <input
                             type="text"
                             placeholder="Search here"
@@ -38,29 +45,32 @@ const Header = () => {
                         />
                         <button onClick={handleSearch}>🔍</button>
                     </div>
-                    <div className="helpline-info">
+                    <div className="helpline-info hide-mobile">
                         <strong>Technical Helpline Number</strong>
                         <p>10.00 AM - 6.00 PM (On all working days)</p>
                     </div>
-                    <div className="raj-emblem">
+                    <div className="raj-emblem hide-mobile">
                         <div className="emblem-circle">
                             <img src="/logos/india-emblem.png" alt="Government Emblem" />
                         </div>
                     </div>
+                    <button className="mobile-menu-toggle show-mobile" onClick={toggleMobileMenu}>
+                        {isMobileMenuOpen ? '✕' : '☰'}
+                    </button>
                 </div>
             </div>
-            <nav className="header-nav">
-                <a href={EXTERNAL_URLS.ABOUT_URL} target="_blank" rel="noopener noreferrer">ABOUT DEPARTMENT</a>
-                <a href={EXTERNAL_URLS.SERVICES_URL} target="_blank" rel="noopener noreferrer">SERVICES</a>
-                <a href={EXTERNAL_URLS.GUIDELINES_URL} target="_blank" rel="noopener noreferrer">GUIDELINES</a>
-                <a href={EXTERNAL_URLS.DOWNLOADS_URL} target="_blank" rel="noopener noreferrer">DOWNLOADS</a>
-                <a href="/tools">TOOLS</a>
-                <a href={EXTERNAL_URLS.CONTACT_URL} target="_blank" rel="noopener noreferrer">CONTACT US</a>
+            <nav className={`header-nav ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
+                <a href={EXTERNAL_URLS.ABOUT_URL} target="_blank" rel="noopener noreferrer" onClick={() => setIsMobileMenuOpen(false)}>ABOUT DEPARTMENT</a>
+                <a href={EXTERNAL_URLS.SERVICES_URL} target="_blank" rel="noopener noreferrer" onClick={() => setIsMobileMenuOpen(false)}>SERVICES</a>
+                <a href={EXTERNAL_URLS.GUIDELINES_URL} target="_blank" rel="noopener noreferrer" onClick={() => setIsMobileMenuOpen(false)}>GUIDELINES</a>
+                <a href={EXTERNAL_URLS.DOWNLOADS_URL} target="_blank" rel="noopener noreferrer" onClick={() => setIsMobileMenuOpen(false)}>DOWNLOADS</a>
+                <a href="/tools" onClick={() => setIsMobileMenuOpen(false)}>TOOLS</a>
+                <a href={EXTERNAL_URLS.CONTACT_URL} target="_blank" rel="noopener noreferrer" onClick={() => setIsMobileMenuOpen(false)}>CONTACT US</a>
 
                 {!isAuthenticated && (
                     <div className="auth-nav-items">
-                        <Link to="/noc/login" className="auth-btn login-btn">LOGIN</Link>
-                        <Link to="?register=true" className="auth-btn register-btn">REGISTER</Link>
+                        <Link to="/noc/login" className="auth-btn login-btn" onClick={() => setIsMobileMenuOpen(false)}>LOGIN</Link>
+                        <Link to="?register=true" className="auth-btn register-btn" onClick={() => setIsMobileMenuOpen(false)}>REGISTER</Link>
                     </div>
                 )}
             </nav>

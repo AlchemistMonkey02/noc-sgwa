@@ -77,23 +77,30 @@ const OfficerSidebar = ({ role }) => {
     };
 
     return (
-        <aside className="officer-sidebar">
-            <nav className="officer-nav">
-                <ul className="officer-nav-list" style={{ listStyle: 'none', padding: 0 }}>
-                    {getNavItems().map((item) => (
-                        <li key={item.path} className="officer-nav-item">
-                            <Link
-                                to={item.path}
-                                className={`officer-nav-link ${isActive(item.path) ? 'active' : ''}`}
-                            >
-                                <span className="officer-nav-icon">{item.icon}</span>
-                                <span>{item.label}</span>
-                            </Link>
-                        </li>
-                    ))}
-                </ul>
-            </nav>
-        </aside>
+        <>
+            <div 
+                className="officer-sidebar-backdrop" 
+                onClick={() => document.querySelector('.officer-sidebar').classList.remove('open')}
+            />
+            <aside className="officer-sidebar">
+                <nav className="officer-nav">
+                    <ul className="officer-nav-list" style={{ listStyle: 'none', padding: 0 }}>
+                        {getNavItems().map((item) => (
+                            <li key={item.path} className="officer-nav-item">
+                                <Link
+                                    to={item.path}
+                                    className={`officer-nav-link ${isActive(item.path) ? 'active' : ''}`}
+                                    onClick={() => document.querySelector('.officer-sidebar').classList.remove('open')}
+                                >
+                                    <span className="officer-nav-icon">{item.icon}</span>
+                                    <span>{item.label}</span>
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
+                </nav>
+            </aside>
+        </>
     );
 };
 

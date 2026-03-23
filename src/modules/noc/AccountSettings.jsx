@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import CommonPlaceholder from './components/CommonPlaceholder';
-import API_BASE_URL from '../../config/apiConfig';
+import apiClient from '../../services/apiClient';
 
 const AccountSettings = () => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -56,36 +56,16 @@ const AccountSettings = () => {
         setLoading(true);
 
         try {
-            const token = localStorage.getItem('authToken');
-            if (!token) {
-                setMessage({ type: 'error', text: 'Authentication token not found. Please login again.' });
-                setLoading(false);
-                return;
-            }
-
-            const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    currentPassword: passwordData.currentPassword,
-                    newPassword: passwordData.newPassword
-                })
+            const result = await apiClient.post('/auth/change-password', {
+                currentPassword: passwordData.currentPassword,
+                newPassword: passwordData.newPassword
             });
 
-            const data = await response.json();
-
-            if (response.ok) {
-                setMessage({ type: 'success', text: 'Password updated successfully!' });
-                setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-            } else {
-                setMessage({ type: 'error', text: data.message || 'Failed to update password' });
-            }
+            setMessage({ type: 'success', text: 'Password updated successfully!' });
+            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
         } catch (error) {
             console.error('Password change error:', error);
-            setMessage({ type: 'error', text: 'An error occurred while connecting to the server' });
+            setMessage({ type: 'error', text: error.message || 'Failed to update password' });
         } finally {
             setLoading(false);
         }

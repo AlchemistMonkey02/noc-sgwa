@@ -7,14 +7,20 @@ export default defineConfig({
   plugins: [
     react(),
     nodePolyfills({
-      // To add only specific polyfills, add them here. If no option is passed, adds all.
       globals: {
         Buffer: true,
         global: true,
         process: true,
       },
-      // Whether to polyfill `node:` protocol imports.
       protocolImports: true,
     }),
   ],
+  // Force optimization to resolve 504 Outdated Dep issues
+  optimizeDeps: {
+    force: true,
+  },
+  // Cache busting
+  define: {
+    'process.env.VITE_CACHE_BUST': JSON.stringify(Date.now()),
+  }
 })

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useToast } from '../../context/ToastContext';
+import apiClient from '../../services/apiClient';
 import PublicHeader from '../public/components/PublicHeader';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import NOCFooter from './components/NOCFooter';
@@ -84,28 +85,17 @@ const UserProfile = () => {
         const loadProfilePicture = async () => {
             if (userDetails?.profilePictureId) {
                 try {
-                    const token = localStorage.getItem('authToken');
                     const imageUrl = nocApplicationService.getDocumentUrl(userDetails.profilePictureId);
                     console.log('Fetching profile picture from:', imageUrl);
-                    console.log('Using token:', token ? 'Token present' : 'NO TOKEN');
 
-                    const response = await fetch(imageUrl, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    });
-
-                    console.log('Response status:', response.status);
-
-                    if (response.ok) {
-                        const blob = await response.blob();
-                        const url = URL.createObjectURL(blob);
-                        if (isMounted) {
-                            setProfilePictureUrl(url);
-                            console.log('✓ Profile picture loaded successfully');
-                        }
-                    } else {
-                        console.error('Failed to load profile picture:', response.status, response.statusText);
+                    // Use apiClient to handle auth and response blobs if needed, 
+                    // but for direct authenticated URL loading we can use a blob fetch via apiClient
+                    const response = await apiClient.getBlob(imageUrl);
+                    const url = URL.createObjectURL(response);
+                    
+                    if (isMounted) {
+                        setProfilePictureUrl(url);
+                        console.log('✓ Profile picture loaded successfully');
                     }
                 } catch (error) {
                     console.error('Error loading profile picture:', error);

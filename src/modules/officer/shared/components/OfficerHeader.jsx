@@ -1,33 +1,17 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { getOfficerToken, clearOfficerAuth } from '../utils/officerAuth';
+import { useAuth } from '../../../../context/AuthContext';
 import NotificationBell from '../../../../components/NotificationBell';
 import '../styles/officer-portal.css';
-import API_BASE_URL from '../../../../config/apiConfig';
 
 const OfficerHeader = ({ officerName, officerRole, officerDesignation, district }) => {
     const navigate = useNavigate();
+    const { logout } = useAuth();
     const { t, i18n } = useTranslation();
 
     const handleLogout = async () => {
-        try {
-            const token = getOfficerToken();
-            if (token) {
-                await fetch(`${API_BASE_URL}/auth/logout`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-            }
-        } catch (error) {
-            console.error('Logout error:', error);
-        } finally {
-            clearOfficerAuth();
-            navigate('/officer/login');
-        }
+        await logout(() => navigate('/officer/login'));
     };
 
     const toggleLanguage = () => {
@@ -48,6 +32,19 @@ const OfficerHeader = ({ officerName, officerRole, officerDesignation, district 
     return (
         <header className="officer-header">
             <div className="officer-header-left">
+                {/* Mobile Menu Toggle */}
+                <button 
+                    className="officer-mobile-toggle"
+                    onClick={() => {
+                        const sidebar = document.querySelector('.officer-sidebar');
+                        if (sidebar) sidebar.classList.toggle('open');
+                        const backdrop = document.querySelector('.officer-sidebar-backdrop');
+                        if (backdrop) backdrop.classList.toggle('active');
+                    }}
+                    aria-label="Toggle Menu"
+                >
+                    ☰
+                </button>
                 <img
                     src="/sgwa-logo.png"
                     alt="SGWA Logo"

@@ -9,6 +9,8 @@ i18n
     .use(initReactI18next)
     .init({
         fallbackLng: 'en',
+        supportedLngs: ['en', 'hi'],
+        load: 'languageOnly', // prevents 404s for en-US, etc.
         debug: false,
 
         interpolation: {

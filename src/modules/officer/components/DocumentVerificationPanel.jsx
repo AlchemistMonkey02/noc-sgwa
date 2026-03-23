@@ -35,8 +35,8 @@ const DocumentVerificationPanel = ({ documents, applicationId, applicationDetail
             // The prompt implied we might need user input for some checks:
             // -F 'user_input={"name": "Vinod Alwani", "aadhaar_number": "700489844290"}'
 
-            // 3. Call AI Service (Localhost:5005)
-            // Note: This assumes the browser can reach localhost:5005 directly (CORS).
+            // 3. Call AI Service
+            // Note: This assumes the browser can reach the AI service directly (CORS).
             const aiResponse = await officerService.verifyDocumentWithAI(file, doc.documentType, metadata);
 
             if (aiResponse && aiResponse.success) {

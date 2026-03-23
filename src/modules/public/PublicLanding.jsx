@@ -463,7 +463,7 @@ const PublicLanding = () => {
                 </aside>
 
                 {/* Center Content */}
-                <main className="center-content">
+                <main className="center-content mt-4">
                     {/* Apply Services Group */}
                     <section className="services-section">
                         <h2 className="section-title">{t('services_cards.section1')}</h2>
@@ -527,7 +527,7 @@ const PublicLanding = () => {
                 </main>
 
                 {/* Right Sidebar - Login */}
-                <aside className="right-sidebar">
+                <aside className="right-sidebar mt-4">
                     <div className="login-panel">
                         <>
                             <h3 className="login-title">

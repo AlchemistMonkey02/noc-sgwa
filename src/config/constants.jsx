@@ -1,4 +1,4 @@
-import { CONSULTATION_APP_URL as CONSULTATION_URL } from './apiConfig';
+import { CONSULTATION_APP_URL, PUBLIC_SITE_URL, RIG_REGISTRATION_URL } from './apiConfig';
 
 // Global Configuration for External URLs
 export const EXTERNAL_URLS = {
@@ -7,22 +7,22 @@ export const EXTERNAL_URLS = {
     REGISTER_URL: '/noc/register',
 
     // External Services
-    CHARGES_CALCULATOR: 'https://rgwcma.geoplanetsolution.in/charges',
-    RIG_REGISTRATION: 'https://rgwcma-rig.geoplanetsolution.in/',
+    CHARGES_CALCULATOR: `${PUBLIC_SITE_URL}/charges`,
+    RIG_REGISTRATION: RIG_REGISTRATION_URL,
 
     // Assets
-    LOGO_URL: 'https://rgwcma.geoplanetsolution.in/assets/img/logo.png',
-    EMBLEM_URL: 'https://rgwcma.geoplanetsolution.in/assets/img/emb-logo.png',
+    LOGO_URL: `${PUBLIC_SITE_URL}/assets/img/logo.png`,
+    EMBLEM_URL: `${PUBLIC_SITE_URL}/assets/img/emb-logo.png`,
 
     // Navigation
-    ABOUT_URL: 'https://rgwcma.geoplanetsolution.in/about',
-    SERVICES_URL: 'https://rgwcma.geoplanetsolution.in/services',
-    GUIDELINES_URL: 'https://rgwcma.geoplanetsolution.in/guidelines',
-    DOWNLOADS_URL: 'https://rgwcma.geoplanetsolution.in/downloads',
-    CONTACT_URL: 'https://rgwcma.geoplanetsolution.in/contact',
+    ABOUT_URL: `${PUBLIC_SITE_URL}/about`,
+    SERVICES_URL: `${PUBLIC_SITE_URL}/services`,
+    GUIDELINES_URL: `${PUBLIC_SITE_URL}/guidelines`,
+    DOWNLOADS_URL: `${PUBLIC_SITE_URL}/downloads`,
+    CONTACT_URL: `${PUBLIC_SITE_URL}/contact`,
 
     // Consultation Services
-    CONSULTATION_APP_URL: CONSULTATION_URL,
+    CONSULTATION_APP_URL: CONSULTATION_APP_URL,
 };
 
 // You can also export individual URLs if preferred

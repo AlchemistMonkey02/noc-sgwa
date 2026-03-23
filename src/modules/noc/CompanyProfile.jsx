@@ -3,7 +3,7 @@ import SkeletonLoader from '../../components/SkeletonLoader';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import API_BASE_URL from '../../config/apiConfig';
+import apiClient from '../../services/apiClient';
 
 import LayoutWithSidebar from './components/LayoutWithSidebar';
 import { nocApplicationService } from './services/nocApplicationService';
@@ -94,12 +94,11 @@ const CompanyProfile = () => {
             try {
                 // 1. Fetch Company Types
                 try {
-                    const typesRes = await fetch(`${API_BASE_URL}/companies/types`);
-                    if (typesRes.ok) {
-                        const data = await typesRes.json();
-                        if (data.success && Array.isArray(data.data)) {
-                            setCompanyTypeOptions(data.data);
-                        }
+                    const data = await apiClient.get('/companies/types');
+                    if (data.success && Array.isArray(data.data)) {
+                        setCompanyTypeOptions(data.data);
+                    } else if (Array.isArray(data)) {
+                        setCompanyTypeOptions(data);
                     }
                 } catch (e) { console.error("Error fetching company types", e); }
 
@@ -113,13 +112,10 @@ const CompanyProfile = () => {
 
                 // 2. Fetch States
                 try {
-                    const statesRes = await fetch(`${API_BASE_URL}/master/states`);
-                    if (statesRes.ok) {
-                        const data = await statesRes.json();
-                        // Handle different potential response structures
-                        const statesList = Array.isArray(data) ? data : (data.data || []);
-                        setStateOptions(statesList);
-                    }
+                    const data = await apiClient.get('/master/states');
+                    // Handle different potential response structures
+                    const statesList = Array.isArray(data) ? data : (data.data || []);
+                    setStateOptions(statesList);
                 } catch (e) { console.error("Error fetching states", e); }
 
                 // 3. Fetch Company Profile using correct endpoint
@@ -225,12 +221,13 @@ const CompanyProfile = () => {
                 // Determine if state is passed as ID or Name/Code. API likely supports Name/Code based on previous responses.
                 // If API expects ID but we have "RJ", this might fail if not handled by backend.
                 // Assuming backend handles "RJ" or frontend state mapping is robust.
-                const response = await fetch(`${API_BASE_URL}/master/districts?state=${formData.commAddress.state}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    const list = Array.isArray(data) ? data : (data.data || []);
-                    setCommDistrictOptions(list);
-                }
+            try {
+                const data = await apiClient.get(`/master/districts?state=${formData.commAddress.state}`);
+                const list = Array.isArray(data) ? data : (data.data || []);
+                setCommDistrictOptions(list);
+            } catch (error) {
+                console.error('Error fetching communication districts:', error);
+            }
             } catch (error) {
                 console.error('Error fetching communication districts:', error);
             }
@@ -246,12 +243,13 @@ const CompanyProfile = () => {
                 return;
             }
             try {
-                const response = await fetch(`${API_BASE_URL}/master/districts?state=${formData.regAddress.state}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    const list = Array.isArray(data) ? data : (data.data || []);
-                    setRegDistrictOptions(list);
-                }
+            try {
+                const data = await apiClient.get(`/master/districts?state=${formData.regAddress.state}`);
+                const list = Array.isArray(data) ? data : (data.data || []);
+                setRegDistrictOptions(list);
+            } catch (error) {
+                console.error('Error fetching registered districts:', error);
+            }
             } catch (error) {
                 console.error('Error fetching registered districts:', error);
             }

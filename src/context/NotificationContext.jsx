@@ -91,10 +91,12 @@ export const NotificationProvider = ({ children }) => {
         // Must connect to <host>/stream — NOT the root with a custom path.
         const socketBase = SOCKET_URL;
         const sock = io(`${socketBase}/stream`, {
-            transports: ['websocket', 'polling'],
+            transports: ['polling'], // Restrict to polling to avoid console errors when WS upgrade is blocked
             reconnection: true,
-            reconnectionAttempts: 10,
-            reconnectionDelay: 1500,
+            reconnectionAttempts: 20,
+            reconnectionDelay: 2000,
+            forceNew: true,
+            secure: socketBase.startsWith('https')
         });
         socketRef.current = sock;
 

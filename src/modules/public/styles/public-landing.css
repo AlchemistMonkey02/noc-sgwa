@@ -108,16 +108,69 @@ body.gov-portal-body {
 /* =========================================
    MAIN LAYOUT (2-Column + Floating Login)
    ========================================= */
+/* =========================================
+   MAIN LAYOUT (3-Column Desktop / 1-Column Mobile)
+   ========================================= */
 .portal-main {
-    display: grid;
-    grid-template-columns: 280px 1fr 380px;
+    display: grid !important;
+    grid-template-columns: 300px minmax(400px, 1fr) 360px;
     gap: var(--space-8);
-    max-width: 1440px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 0 var(--space-6) var(--space-12) var(--space-6);
     width: 100%;
     box-sizing: border-box;
-    flex: 1;
+    align-items: start;
+}
+
+@media (max-width: 1300px) {
+    .portal-main {
+        grid-template-columns: 260px 1fr;
+        gap: var(--space-6);
+    }
+    .right-sidebar {
+        grid-column: span 2;
+        /* Move login panel to full width below on smaller desktops */
+    }
+}
+
+@media (max-width: 992px) {
+    .portal-main {
+        grid-template-columns: 1fr;
+    }
+    .left-sidebar, .right-sidebar {
+        grid-column: span 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .landing-hero,
+    .left-sidebar,
+    .center-content,
+    .portal-footer {
+        display: none !important;
+    }
+
+    .portal-main {
+        display: block !important;
+        padding: var(--space-4);
+        margin-top: var(--space-10); /* Give some space from fixed header */
+        background: transparent;
+    }
+
+    .right-sidebar {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .login-panel {
+        margin: 0;
+        box-shadow: none;
+        border: none;
+        background: transparent;
+    }
 }
 
 /* =========================================
@@ -195,6 +248,12 @@ body.gov-portal-body {
     top: 100px;
     background: var(--white);
     border: 1px solid var(--color-warning-200);
+}
+
+@media (max-width: 1024px) {
+    .sticky-notices {
+        position: static;
+    }
 }
 
 .notice-list {
@@ -490,27 +549,31 @@ body.gov-portal-body {
 }
 
 /* =========================================
-   RESPONSIVE DESIGN
+   RESPONSIVE DESIGN (REFINED)
    ========================================= */
-@media (max-width: 1200px) {
+@media (max-width: 768px) {
     .portal-main {
-        grid-template-columns: 1fr 350px;
-        /* Hide left sidebar on medium screens */
-    }
-
-    .left-sidebar {
-        display: none;
-    }
-}
-
-@media (max-width: 850px) {
-    .portal-main {
-        grid-template-columns: 1fr;
         padding: 0 var(--space-4) var(--space-8) var(--space-4);
     }
-
-    .login-panel {
-        position: static;
-        margin-top: var(--space-6);
+    
+    .landing-hero {
+        padding: var(--space-8) var(--space-4);
+    }
+    
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .hero-stats {
+        gap: var(--space-3);
+    }
+    
+    .stat-item {
+        padding: var(--space-3) var(--space-4);
+        flex: 1 1 120px;
+    }
+    
+    .services-grid {
+        grid-template-columns: 1fr;
     }
 }

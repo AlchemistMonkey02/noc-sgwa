@@ -1781,7 +1781,7 @@ const NOCApplication = () => {
                                                 })}
                                             </select>
                                             {errors.applicationType && <span className="text-error">{errors.applicationType}</span>}
-                                            {formData.applicationType === 'NOC Renewal' && (
+                                            {getDisplayLabel(formData.applicationType, appTypeOptions) === 'NOC Renewal' && (
                                                 <div className="noc-alert noc-alert-warning" style={{ marginTop: '10px' }}>
                                                     ?? <strong>Renewal Notice:</strong> Applications must be submitted at least 90 days before expiry. Late applications may attract Environmental Compensation Charges.
                                                 </div>
@@ -3361,7 +3361,7 @@ const NOCApplication = () => {
                                         <div className="noc-card-body">
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
                                                 <div>
-                                                    <strong>Application Type:</strong> {formData.applicationType}
+                                                    <strong>Application Type:</strong> {getDisplayLabel(formData.applicationType, appTypeOptions)}
                                                 </div>
                                                 <div>
                                                     <strong>Project Name:</strong> {formData.projectName}
@@ -3496,7 +3496,7 @@ const NOCApplication = () => {
                                         <div className="noc-card-body">
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
                                                 <div>
-                                                    <strong>Application Type:</strong> {formData.applicationType}
+                                                    <strong>Application Type:</strong> {getDisplayLabel(formData.applicationType, appTypeOptions)}
                                                 </div>
                                                 <div>
                                                     <strong>Project Name:</strong> {formData.projectName}

@@ -6,7 +6,30 @@
 @import url('/src/styles/theme.css');
 @import url('/src/styles/components.css');
 
-/* Module-specific overrides and extensions can go below */
+/* Layout Classes */
+.main-content {
+    transition: margin-left 0.3s ease;
+    min-height: calc(100vh - 100px);
+    margin-top: 20px;
+    padding: 20px;
+}
+
+.main-content.with-sidebar {
+    margin-left: 280px;
+}
+
+.main-content.with-sidebar.collapsed {
+    margin-left: 80px;
+}
+
+@media (max-width: 1024px) {
+    .main-content.with-sidebar,
+    .main-content.with-sidebar.collapsed {
+        margin-left: 0;
+        padding: 15px;
+    }
+}
+
 :root {
   /* Map old noc-portal variables to global theme for backward compatibility */
   --primary-900: var(--color-primary-900);
@@ -6042,6 +6065,14 @@ button[class*="tab"].active {
   margin-bottom: var(--space-8);
   padding: 0 var(--space-4);
   position: relative;
+  overflow-x: auto;
+  gap: 20px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.form-stepper::-webkit-scrollbar {
+  display: none;
 }
 
 .form-stepper::before {
@@ -6053,6 +6084,7 @@ button[class*="tab"].active {
   height: 2px;
   background: var(--gray-300);
   z-index: 0;
+  min-width: 1000px; /* Ensure line stays long enough for all steps */
 }
 
 .step-item {
@@ -6061,7 +6093,8 @@ button[class*="tab"].active {
   align-items: center;
   position: relative;
   z-index: 1;
-  flex: 1;
+  flex: 1 0 auto;
+  min-width: 100px;
 }
 
 .step-circle {
@@ -7106,8 +7139,107 @@ button[class*="tab"].active {
   transform: scale(0.95);
 }
 
+/* =========================================
+   RESPONSIVE OVERRIDES & REFINEMENTS
+   ========================================= */
+
 @media (max-width: 1024px) {
-  .sidebar-toggle-btn {
-    display: flex;
-  }
+    .dashboard-stats-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px !important;
+    }
+
+    .quick-actions-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .dashboard-two-column {
+        grid-template-columns: 1fr !important;
+    }
+
+    .utility-tools-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Professional Table - Mobile Card View */
+    .professional-table-wrapper {
+        border: none;
+        box-shadow: none;
+    }
+
+    .professional-table {
+        display: block;
+    }
+
+    .professional-table thead {
+        display: none; /* Hide headers on mobile */
+    }
+
+    .professional-table tbody, 
+    .professional-table tr, 
+    .professional-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .professional-table tr {
+        margin-bottom: 1.5rem;
+        background: white;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-lg);
+        padding: 1rem;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .professional-table td {
+        text-align: right;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--gray-100);
+        position: relative;
+        padding-left: 50%;
+    }
+
+    .professional-table td:last-child {
+        border-bottom: none;
+    }
+
+    .professional-table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0;
+        width: 45%;
+        padding-right: 10px;
+        white-space: nowrap;
+        text-align: left;
+        font-weight: 600;
+        color: var(--gray-500);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+    }
+
+    .professional-table .table-action-btn {
+        width: 100%;
+        margin-top: 5px;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-stats-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .page-main-title {
+        font-size: 1.5rem !important;
+    }
+
+    .content-container {
+        padding: 10px !important;
+    }
 }

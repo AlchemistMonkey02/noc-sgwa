@@ -213,17 +213,7 @@ export const nocApplicationService = {
         const aiDocType = getAIDocumentType(docType);
         formData.append('documentType', aiDocType);
 
-        const response = await fetch(`${AI_SERVICE_URL}/verify-document`, {
-            method: 'POST',
-            body: formData
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`AI Service Error: ${errorText}`);
-        }
-
-        return await response.json();
+        return apiClient.upload(`${AI_SERVICE_URL}/verify-document`, formData);
     },
 
     // Queries

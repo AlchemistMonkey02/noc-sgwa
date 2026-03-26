@@ -156,7 +156,7 @@ const verify_captcha = async (token, input, secret) => {
 const PublicLanding = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { login, selectUserType, user } = useAuth();
+    const { login, selectUserType, user, isAuthenticated, logout, isOfficer, userType } = useAuth();
     const { t } = useTranslation();
     // ... existing state ...
     const [formData, setFormData] = useState({
@@ -529,146 +529,199 @@ const PublicLanding = () => {
                 {/* Right Sidebar - Login */}
                 <aside className="right-sidebar mt-4">
                     <div className="login-panel">
-                        <>
-                            <h3 className="login-title">
-                                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ marginRight: '8px', verticalAlign: 'middle', color: 'var(--color-primary-600)' }}><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                                {t('login.title')}
-                            </h3>
-
-                            {error && (
-                                <div className="error-msg" style={{ background: '#fef2f2', border: '1px solid #f87171', color: '#b91c1c', padding: '10px', borderRadius: '6px', fontSize: '13px', marginBottom: '16px' }}>
-                                    {error}
+                        {isAuthenticated ? (
+                            <div className="authenticated-panel" style={{ textAlign: 'center', padding: '10px 0' }}>
+                                <div className="auth-welcome-icon" style={{
+                                    width: '64px',
+                                    height: '64px',
+                                    borderRadius: '50%',
+                                    background: 'var(--color-primary-50)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    margin: '0 auto 20px auto',
+                                    color: 'var(--color-primary-600)'
+                                }}>
+                                    <svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                                 </div>
-                            )}
+                                <h3 className="login-title" style={{ marginBottom: '8px' }}>{t('login.welcomeBack') || 'Welcome Back!'}</h3>
+                                <p className="user-welcome-name" style={{
+                                    fontSize: '1.1rem',
+                                    fontWeight: '600',
+                                    color: '#0f172a',
+                                    marginBottom: '24px'
+                                }}>
+                                    {user?.fullName || user?.firstName || (userType === 'APPLICANT' ? t('nav.portal') : userType)}
+                                </p>
 
-                            <form onSubmit={handleSubmit} className="login-form-gov">
-                                <div className="form-field">
-                                    <label>{t('login.roleLabel')}</label>
-                                    <select
-                                        name="userType"
-                                        value={formData.userType}
-                                        onChange={handleChange}
-                                        className="gov-select"
+                                <div className="auth-actions-vertical" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    <Link
+                                        to={isOfficer() ? `/officer/${userType?.toLowerCase()}/dashboard` : "/noc/dashboard"}
+                                        className="login-btn-gov"
+                                        style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                     >
-                                        <option value="">{t('login.rolePlaceholder')}</option>
-                                        <option value="water_abstractor">{t('login.roleOption')}</option>
-                                    </select>
+                                        {t('nav.goToDashboard') || 'Go to Dashboard'}
+                                    </Link>
+                                    <button
+                                        onClick={logout}
+                                        className="login-links"
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            width: '100%',
+                                            marginTop: '8px',
+                                            color: '#64748b',
+                                            fontSize: '0.9rem',
+                                            textDecoration: 'underline'
+                                        }}
+                                    >
+                                        {t('nav.logout') || 'Logout Account'}
+                                    </button>
                                 </div>
+                            </div>
+                        ) : (
+                            <>
+                                <h3 className="login-title">
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ marginRight: '8px', verticalAlign: 'middle', color: 'var(--color-primary-600)' }}><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                    {t('login.title')}
+                                </h3>
 
-                                <div className="form-field">
-                                    <label>{t('login.idLabel')}</label>
-                                    <input
-                                        type="text"
-                                        name="username"
-                                        value={formData.username}
-                                        onChange={handleChange}
-                                        className="gov-input"
-                                        placeholder={t('login.idPlaceholder')}
-                                    />
-                                </div>
+                                {error && (
+                                    <div className="error-msg" style={{ background: '#fef2f2', border: '1px solid #f87171', color: '#b91c1c', padding: '10px', borderRadius: '6px', fontSize: '13px', marginBottom: '16px' }}>
+                                        {error}
+                                    </div>
+                                )}
 
-                                <div className="form-field">
-                                    <label>{t('login.credLabel')}</label>
-                                    <div style={{ position: 'relative' }}>
+                                <form onSubmit={handleSubmit} className="login-form-gov">
+                                    <div className="form-field">
+                                        <label>{t('login.roleLabel')}</label>
+                                        <select
+                                            name="userType"
+                                            value={formData.userType}
+                                            onChange={handleChange}
+                                            className="gov-select"
+                                        >
+                                            <option value="">{t('login.rolePlaceholder')}</option>
+                                            <option value="water_abstractor">{t('login.roleOption')}</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="form-field">
+                                        <label>{t('login.idLabel')}</label>
                                         <input
-                                            type={showPassword ? 'text' : 'password'}
-                                            name="password"
-                                            value={formData.password}
+                                            type="text"
+                                            name="username"
+                                            value={formData.username}
                                             onChange={handleChange}
                                             className="gov-input"
-                                            placeholder={t('login.credPlaceholder')}
+                                            placeholder={t('login.idPlaceholder')}
                                         />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            style={{
-                                                position: 'absolute',
-                                                right: '12px',
-                                                top: '50%',
-                                                transform: 'translateY(-50%)',
-                                                background: 'none',
-                                                border: 'none',
-                                                cursor: 'pointer',
-                                                color: '#94a3b8'
-                                            }}
-                                        >
-                                            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                                {showPassword ? (
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                ) : (
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                                                )}
-                                            </svg>
-                                        </button>
                                     </div>
-                                </div>
 
-                                <div className="form-field">
-                                    <label>{t('login.securityLabel')}</label>
-                                    <div className="captcha-container">
-                                        <div className="captcha-strip">
-                                            {captchaImage ? (
-                                                <img
-                                                    src={captchaImage}
-                                                    alt="Captcha"
-                                                    style={{ height: '100%', objectFit: 'contain' }}
-                                                    onClick={refreshCaptcha}
-                                                    title="Refresh Captcha"
-                                                />
-                                            ) : (
-                                                <span style={{ fontSize: '12px', color: '#64748b' }}>{t('login.captchaLoading')}</span>
-                                            )}
-                                        </div>
-                                        <div className="captcha-input-area">
+                                    <div className="form-field">
+                                        <label>{t('login.credLabel')}</label>
+                                        <div style={{ position: 'relative' }}>
                                             <input
-                                                type="text"
-                                                name="captcha"
-                                                value={formData.captcha}
+                                                type={showPassword ? 'text' : 'password'}
+                                                name="password"
+                                                value={formData.password}
                                                 onChange={handleChange}
                                                 className="gov-input"
-                                                placeholder={t('login.captchaPlaceholder')}
+                                                placeholder={t('login.credPlaceholder')}
                                             />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                style={{
+                                                    position: 'absolute',
+                                                    right: '12px',
+                                                    top: '50%',
+                                                    transform: 'translateY(-50%)',
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    color: '#94a3b8'
+                                                }}
+                                            >
+                                                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                    {showPassword ? (
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    ) : (
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                                    )}
+                                                </svg>
+                                            </button>
                                         </div>
                                     </div>
-                                </div>
 
-                                <button type="submit" className="login-btn-gov" disabled={loading}>
-                                    {loading ? t('login.btnAuth') : t('login.btnSignIn')}
-                                </button>
+                                    <div className="form-field">
+                                        <label>{t('login.securityLabel')}</label>
+                                        <div className="captcha-container">
+                                            <div className="captcha-strip">
+                                                {captchaImage ? (
+                                                    <img
+                                                        src={captchaImage}
+                                                        alt="Captcha"
+                                                        style={{ height: '100%', objectFit: 'contain' }}
+                                                        onClick={refreshCaptcha}
+                                                        title="Refresh Captcha"
+                                                    />
+                                                ) : (
+                                                    <span style={{ fontSize: '12px', color: '#64748b' }}>{t('login.captchaLoading')}</span>
+                                                )}
+                                            </div>
+                                            <div className="captcha-input-area">
+                                                <input
+                                                    type="text"
+                                                    name="captcha"
+                                                    value={formData.captcha}
+                                                    onChange={handleChange}
+                                                    className="gov-input"
+                                                    placeholder={t('login.captchaPlaceholder')}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
 
-                                <Link to="/officer/login" style={{
-                                    display: 'block',
-                                    textAlign: 'center',
-                                    marginTop: '1rem',
-                                    padding: '0.75rem',
-                                    border: '1px solid var(--color-primary-200)',
-                                    borderRadius: '8px',
-                                    color: 'var(--color-primary-700)',
-                                    fontWeight: '600',
-                                    textDecoration: 'none',
-                                    background: 'var(--color-primary-50)',
-                                    transition: 'all 0.2s ease'
-                                }}>
-                                    {t('login.btnOfficer')}
-                                </Link>
+                                    <button type="submit" className="login-btn-gov" disabled={loading}>
+                                        {loading ? t('login.btnAuth') : t('login.btnSignIn')}
+                                    </button>
 
-
-                                <div className="login-divider">
-                                    <span>{t('login.divider')}</span>
-                                </div>
-
-                                <div className="create-account-section">
-                                    <p className="helper-text">{t('login.helper')}</p>
-                                    <Link to="?register=true" className="create-account-btn">
-                                        {t('hero.registerEntity')}
+                                    <Link to="/officer/login" style={{
+                                        display: 'block',
+                                        textAlign: 'center',
+                                        marginTop: '1rem',
+                                        padding: '0.75rem',
+                                        border: '1px solid var(--color-primary-200)',
+                                        borderRadius: '8px',
+                                        color: 'var(--color-primary-700)',
+                                        fontWeight: '600',
+                                        textDecoration: 'none',
+                                        background: 'var(--color-primary-50)',
+                                        transition: 'all 0.2s ease'
+                                    }}>
+                                        {t('login.btnOfficer')}
                                     </Link>
-                                </div>
-                            </form>
 
-                            <div className="login-links">
-                                <Link to="?forgot-password=true">{t('login.forgot')}</Link>
-                            </div>
-                        </>
+
+                                    <div className="login-divider">
+                                        <span>{t('login.divider')}</span>
+                                    </div>
+
+                                    <div className="create-account-section">
+                                        <p className="helper-text">{t('login.helper')}</p>
+                                        <Link to="?register=true" className="create-account-btn">
+                                            {t('hero.registerEntity')}
+                                        </Link>
+                                    </div>
+                                </form>
+
+                                <div className="login-links">
+                                    <Link to="?forgot-password=true">{t('login.forgot')}</Link>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </aside>
             </div>

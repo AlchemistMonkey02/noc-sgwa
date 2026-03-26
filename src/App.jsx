@@ -43,7 +43,7 @@ import DocumentChecklist from './modules/public/DocumentChecklist';
 
 // Officer Module
 import OfficerLogin from './modules/officer/OfficerLogin';
-import ProtectedRoute from './modules/officer/shared/components/ProtectedRoute';
+import ProtectedRoute from './components/ProtectedRoute';
 
 // DGO Module
 import DGODashboard from './modules/officer/dgo/DGODashboard';
@@ -143,32 +143,33 @@ function App() {
                   <Route path="/noc" element={<Navigate to="/" replace />} />
                   <Route path="/noc/login" element={<PublicLanding />} />
                   <Route path="/noc/register" element={<NOCRegister />} />
-                  <Route path="/noc/dashboard" element={<NOCDashboard />} />
-                  <Route path="/noc/company-profile" element={<CompanyProfile />} />
-                  <Route path="/noc/company-documents" element={<CompanyDocuments />} />
-                  <Route path="/noc/user-profile" element={<UserProfile />} />
-                  <Route path="/noc/application" element={<NOCApplication />} />
-                  <Route path="/noc/application/:id" element={<ApplicationDetail />} />
-                  <Route path="/noc/application/summary" element={<ApplicationSummary />} />
-                  <Route path="/noc/certificate/:nocNumber" element={<NOCCertificatePage />} />
-                  <Route path="/noc/payment-details" element={<PaymentDetails />} />
-                  <Route path="/noc/track-status" element={<ApplicationList />} />
-                  <Route path="/noc/track-status/:id" element={<ApplicationStatusTracker />} />
-                  <Route path="/noc/update-contact" element={<ContactUpdate />} />
+                  
+                  {/* Protected NOC Routes */}
+                  <Route path="/noc/dashboard" element={<ProtectedRoute portalType="noc"><NOCDashboard /></ProtectedRoute>} />
+                  <Route path="/noc/company-profile" element={<ProtectedRoute portalType="noc"><CompanyProfile /></ProtectedRoute>} />
+                  <Route path="/noc/company-documents" element={<ProtectedRoute portalType="noc"><CompanyDocuments /></ProtectedRoute>} />
+                  <Route path="/noc/user-profile" element={<ProtectedRoute portalType="noc"><UserProfile /></ProtectedRoute>} />
+                  <Route path="/noc/application" element={<ProtectedRoute portalType="noc"><NOCApplication /></ProtectedRoute>} />
+                  <Route path="/noc/application/:id" element={<ProtectedRoute portalType="noc"><ApplicationDetail /></ProtectedRoute>} />
+                  <Route path="/noc/application/summary" element={<ProtectedRoute portalType="noc"><ApplicationSummary /></ProtectedRoute>} />
+                  <Route path="/noc/certificate/:nocNumber" element={<ProtectedRoute portalType="noc"><NOCCertificatePage /></ProtectedRoute>} />
+                  <Route path="/noc/payment-details" element={<ProtectedRoute portalType="noc"><PaymentDetails /></ProtectedRoute>} />
+                  <Route path="/noc/track-status" element={<ProtectedRoute portalType="noc"><ApplicationList /></ProtectedRoute>} />
+                  <Route path="/noc/track-status/:id" element={<ProtectedRoute portalType="noc"><ApplicationStatusTracker /></ProtectedRoute>} />
+                  <Route path="/noc/update-contact" element={<ProtectedRoute portalType="noc"><ContactUpdate /></ProtectedRoute>} />
                   <Route path="/noc/check-eligibility" element={<EligibilityChecker />} />
                   {/* <Route path="/noc/self-compliance" element={<SelfCompliance />} /> */}
-                  <Route path="/noc/exempt-application" element={<ExemptedApplicationForm />} />
+                  <Route path="/noc/exempt-application" element={<ProtectedRoute portalType="noc"><ExemptedApplicationForm /></ProtectedRoute>} />
 
                   {/* New Sidebar Screens */}
-                  <Route path="/noc/account-settings" element={<AccountSettings />} />
-                  <Route path="/noc/queries" element={<NOCQueries />} />
+                  <Route path="/noc/account-settings" element={<ProtectedRoute portalType="noc"><AccountSettings /></ProtectedRoute>} />
+                  <Route path="/noc/queries" element={<ProtectedRoute portalType="noc"><NOCQueries /></ProtectedRoute>} />
                   {/* <Route path="/noc/eac" element={<EACDashboard />} /> */}
-                  <Route path="/noc/issue-reporting" element={<IssueReporting />} />
-                  <Route path="/noc/payment-details" element={<PaymentDetails />} /> {/* Existing but ensuring clarity */}
-                  <Route path="/noc/charge-revision" element={<ChargeRevision />} />
-                  <Route path="/noc/reports" element={<NOCReports />} />
-                  <Route path="/noc/utilities" element={<Utilities />} />
-                  <Route path="/noc/help" element={<NOCHelp />} />
+                  <Route path="/noc/issue-reporting" element={<ProtectedRoute portalType="noc"><IssueReporting /></ProtectedRoute>} />
+                  <Route path="/noc/charge-revision" element={<ProtectedRoute portalType="noc"><ChargeRevision /></ProtectedRoute>} />
+                  <Route path="/noc/reports" element={<ProtectedRoute portalType="noc"><NOCReports /></ProtectedRoute>} />
+                  <Route path="/noc/utilities" element={<ProtectedRoute portalType="noc"><Utilities /></ProtectedRoute>} />
+                  <Route path="/noc/help" element={<ProtectedRoute portalType="noc"><NOCHelp /></ProtectedRoute>} />
 
                   {/* Tools Routes */}
                   <Route path="/tools" element={<ToolsDashboard />} />
@@ -182,7 +183,7 @@ function App() {
                   <Route
                     path="/officer/dgo/dashboard"
                     element={
-                      <ProtectedRoute requiredRole="DGO">
+                      <ProtectedRoute portalType="officer" requiredRole="DGO">
                         <DGODashboard />
                       </ProtectedRoute>
                     }
@@ -190,7 +191,7 @@ function App() {
                   <Route
                     path="/officer/dgo/applications"
                     element={
-                      <ProtectedRoute requiredRole="DGO">
+                      <ProtectedRoute portalType="officer" requiredRole="DGO">
                         <ApplicationsList />
                       </ProtectedRoute>
                     }
@@ -198,7 +199,7 @@ function App() {
                   <Route
                     path="/officer/dgo/applications/:applicationId"
                     element={
-                      <ProtectedRoute requiredRole="DGO">
+                      <ProtectedRoute portalType="officer" requiredRole="DGO">
                         <ApplicationViewer />
                       </ProtectedRoute>
                     }
@@ -206,7 +207,7 @@ function App() {
                   <Route
                     path="/officer/dgo/applications/:applicationId/inspection-report"
                     element={
-                      <ProtectedRoute requiredRole="DGO">
+                      <ProtectedRoute portalType="officer" requiredRole="DGO">
                         <InspectionReport />
                       </ProtectedRoute>
                     }
@@ -214,7 +215,7 @@ function App() {
                   <Route
                     path="/officer/dgo/inspections"
                     element={
-                      <ProtectedRoute requiredRole="DGO">
+                      <ProtectedRoute portalType="officer" requiredRole="DGO">
                         <DGOInspectionList />
                       </ProtectedRoute>
                     }
@@ -222,7 +223,7 @@ function App() {
                   <Route
                     path="/officer/dgo/queries"
                     element={
-                      <ProtectedRoute requiredRole="DGO">
+                      <ProtectedRoute portalType="officer" requiredRole="DGO">
                         <QueriesList />
                       </ProtectedRoute>
                     }
@@ -230,7 +231,7 @@ function App() {
                   <Route
                     path="/officer/dgo/reports"
                     element={
-                      <ProtectedRoute requiredRole="DGO">
+                      <ProtectedRoute portalType="officer" requiredRole="DGO">
                         <OfficerReports />
                       </ProtectedRoute>
                     }
@@ -240,7 +241,7 @@ function App() {
                   <Route
                     path="/officer/sgwa/dashboard"
                     element={
-                      <ProtectedRoute requiredRole="SGWA">
+                      <ProtectedRoute portalType="officer" requiredRole="SGWA">
                         <SGWADashboard />
                       </ProtectedRoute>
                     }
@@ -248,7 +249,7 @@ function App() {
                   <Route
                     path="/officer/sgwa/applications"
                     element={
-                      <ProtectedRoute requiredRole="SGWA">
+                      <ProtectedRoute portalType="officer" requiredRole="SGWA">
                         <SGWAApplicationsList />
                       </ProtectedRoute>
                     }
@@ -256,7 +257,7 @@ function App() {
                   <Route
                     path="/officer/sgwa/applications/:applicationId"
                     element={
-                      <ProtectedRoute requiredRole="SGWA">
+                      <ProtectedRoute portalType="officer" requiredRole="SGWA">
                         <SGWAApplicationViewer />
                       </ProtectedRoute>
                     }
@@ -265,7 +266,7 @@ function App() {
                   <Route
                     path="/officer/sgwa/technical-review"
                     element={
-                      <ProtectedRoute requiredRole="SGWA">
+                      <ProtectedRoute portalType="officer" requiredRole="SGWA">
                         <SGWATechnicalReview />
                       </ProtectedRoute>
                     }
@@ -275,7 +276,7 @@ function App() {
                   <Route
                     path="/officer/enforcement/dashboard"
                     element={
-                      <ProtectedRoute requiredRole="ENFORCEMENT">
+                      <ProtectedRoute portalType="officer" requiredRole="ENFORCEMENT">
                         <EnforcementDashboard />
                       </ProtectedRoute>
                     }
@@ -283,7 +284,7 @@ function App() {
                   <Route
                     path="/officer/enforcement/approval-queue"
                     element={
-                      <ProtectedRoute requiredRole="ENFORCEMENT">
+                      <ProtectedRoute portalType="officer" requiredRole="ENFORCEMENT">
                         <EnforcementApprovalQueue />
                       </ProtectedRoute>
                     }
@@ -291,7 +292,7 @@ function App() {
                   <Route
                     path="/officer/enforcement/approved"
                     element={
-                      <ProtectedRoute requiredRole="ENFORCEMENT">
+                      <ProtectedRoute portalType="officer" requiredRole="ENFORCEMENT">
                         <EnforcementApprovedList />
                       </ProtectedRoute>
                     }
@@ -299,7 +300,7 @@ function App() {
                   <Route
                     path="/officer/enforcement/rejected"
                     element={
-                      <ProtectedRoute requiredRole="ENFORCEMENT">
+                      <ProtectedRoute portalType="officer" requiredRole="ENFORCEMENT">
                         <EnforcementRejectedList />
                       </ProtectedRoute>
                     }
@@ -307,7 +308,7 @@ function App() {
                   <Route
                     path="/officer/enforcement/compliance"
                     element={
-                      <ProtectedRoute requiredRole="ENFORCEMENT">
+                      <ProtectedRoute portalType="officer" requiredRole="ENFORCEMENT">
                         <EnforcementCompliance />
                       </ProtectedRoute>
                     }
@@ -315,7 +316,7 @@ function App() {
                   <Route
                     path="/officer/enforcement/applications/:applicationId"
                     element={
-                      <ProtectedRoute requiredRole="ENFORCEMENT">
+                      <ProtectedRoute portalType="officer" requiredRole="ENFORCEMENT">
                         <EnforcementApplicationViewer />
                       </ProtectedRoute>
                     }
@@ -323,7 +324,7 @@ function App() {
                   <Route
                     path="/officer/enforcement/applications/:applicationId/approve"
                     element={
-                      <ProtectedRoute requiredRole="ENFORCEMENT">
+                      <ProtectedRoute portalType="officer" requiredRole="ENFORCEMENT">
                         <ApprovalForm />
                       </ProtectedRoute>
                     }
@@ -333,7 +334,7 @@ function App() {
                   <Route
                     path="/officer/inspection/dashboard"
                     element={
-                      <ProtectedRoute requiredRole="INSPECTION">
+                      <ProtectedRoute portalType="officer" requiredRole="INSPECTION">
                         <InspectionDashboard />
                       </ProtectedRoute>
                     }
@@ -341,7 +342,7 @@ function App() {
                   <Route
                     path="/officer/inspection/assignments"
                     element={
-                      <ProtectedRoute requiredRole="INSPECTION">
+                      <ProtectedRoute portalType="officer" requiredRole="INSPECTION">
                         <InspectionList />
                       </ProtectedRoute>
                     }
@@ -349,7 +350,7 @@ function App() {
                   <Route
                     path="/officer/inspection/conduct/:inspectionId"
                     element={
-                      <ProtectedRoute requiredRole="INSPECTION">
+                      <ProtectedRoute portalType="officer" requiredRole="INSPECTION">
                         <ConductInspection />
                       </ProtectedRoute>
                     }
@@ -357,7 +358,7 @@ function App() {
                   <Route
                     path="/officer/inspection/history"
                     element={
-                      <ProtectedRoute requiredRole="INSPECTION">
+                      <ProtectedRoute portalType="officer" requiredRole="INSPECTION">
                         <InspectionHistory />
                       </ProtectedRoute>
                     }
@@ -365,7 +366,7 @@ function App() {
                   <Route
                     path="/officer/inspection/report/:inspectionId"
                     element={
-                      <ProtectedRoute requiredRole="INSPECTION">
+                      <ProtectedRoute portalType="officer" requiredRole="INSPECTION">
                         <ViewInspectionReport />
                       </ProtectedRoute>
                     }

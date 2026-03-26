@@ -189,19 +189,10 @@ const CompanyProfile = () => {
                     }
                 }));
 
-                // Sync to localStorage for other modules
-                const userStr = localStorage.getItem('nocUser');
-                if (userStr) {
-                    try {
-                        const user = JSON.parse(userStr);
-                        if (user.companyId !== company._id) {
-                            user.companyId = company._id;
-                            localStorage.setItem('nocUser', JSON.stringify(user));
-                            console.log("Synced companyId to localStorage");
-                        }
-                    } catch (e) {
-                        console.error("Failed to sync companyId to localStorage", e);
-                    }
+                // Sync to global auth state for other modules
+                if (authUser && authUser.companyId !== company._id) {
+                    updateUser({ companyId: company._id });
+                    console.log("Synced companyId to auth context");
                 }
 
             }
@@ -281,7 +272,7 @@ const CompanyProfile = () => {
     };
 
     // Use Auth & Toast Context
-    const { refreshSession, logout } = useAuth();
+    const { user: authUser, refreshSession, logout, updateUser } = useAuth();
     const { success: toastSuccess, error: toastError, info: toastInfo } = useToast();
 
     // ... existing state ...

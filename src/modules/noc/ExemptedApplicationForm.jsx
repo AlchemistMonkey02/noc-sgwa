@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 import { nocApplicationService } from './services/nocApplicationService';
 import ExemptionCertificate from './components/ExemptionCertificate';
 import LayoutWithSidebar from './components/LayoutWithSidebar';
@@ -11,6 +11,7 @@ import './styles/noc-portal.css';
 const ExemptedApplicationForm = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { user } = useAuth();
     const { success: toastSuccess, error: toastError, info: toastInfo, warning: toastWarning } = useToast();
 
     // Initialize form data from navigation state (if available) or defaults
@@ -61,12 +62,8 @@ const ExemptedApplicationForm = () => {
         { id: 3, title: 'Usage & Submit', description: 'Profile review and final submission' }
     ];
 
-    useEffect(() => {
-        // Ensure user is authorized or has context
-        if (!localStorage.getItem('nocUser')) {
-            // navigate('/noc/login'); // Uncomment if auth is strictly required
-        }
-    }, [navigate]);
+    // Redundant useEffect for auth check removed as route is now protected in App.jsx
+
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;

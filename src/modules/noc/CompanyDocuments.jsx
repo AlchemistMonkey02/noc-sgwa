@@ -9,7 +9,7 @@ import './styles/noc-portal.css';
 
 const CompanyDocuments = () => {
     const navigate = useNavigate();
-    const { logout } = useAuth();
+    const { user, logout } = useAuth();
     const { success: toastSuccess, error: toastError, warning: toastWarning } = useToast();
     // const [sidebarOpen, setSidebarOpen] = useState(false); // Removed manual sidebar state
     const [companyId, setCompanyId] = useState(null);
@@ -29,10 +29,8 @@ const CompanyDocuments = () => {
     useEffect(() => {
         const fetchCompanyData = async () => {
             try {
-                const userStr = localStorage.getItem('nocUser');
-                if (userStr) {
-                    const user = JSON.parse(userStr);
-                    console.log('User data from localStorage:', user);
+                if (user) {
+                    console.log('User data from useAuth:', user);
                     if (user.companyId) {
                         console.log('Company ID found:', user.companyId);
                         setCompanyId(user.companyId);
@@ -51,7 +49,7 @@ const CompanyDocuments = () => {
     const fetchDocuments = async (compId) => {
         setIsLoading(true);
         try {
-            const token = localStorage.getItem('authToken');
+            const token = user?.token;
             const response = await fetch(`${API_BASE_URL}/companies/${compId}/documents`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -107,7 +105,7 @@ const CompanyDocuments = () => {
             formData.append('document', file);
             formData.append('documentType', docType);
 
-            const token = localStorage.getItem('authToken');
+            const token = user?.token;
             const uploadUrl = `${API_BASE_URL}/companies/${companyId}/documents/upload`;
             console.log('Uploading to:', uploadUrl);
 
@@ -173,7 +171,7 @@ const CompanyDocuments = () => {
         }
 
         try {
-            const token = localStorage.getItem('authToken');
+            const token = user?.token;
             const response = await fetch(`${API_BASE_URL}/documents/${documentId}`, {
                 method: 'DELETE',
                 headers: {
@@ -197,7 +195,7 @@ const CompanyDocuments = () => {
 
     const handleViewDocument = async (documentId, fileName) => {
         try {
-            const token = localStorage.getItem('authToken');
+            const token = user?.token;
             const response = await fetch(`${API_BASE_URL}/documents/${documentId}/view`, {
                 method: 'GET',
                 headers: {

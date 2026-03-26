@@ -3,16 +3,17 @@ import { AI_SERVICE_URL } from '../../../config/apiConfig';
 
 export const nocApplicationService = {
     // Master Data
+    // Master Data (Consolidated under /master)
     getApplicationTypes: () => apiClient.get('/master/application-types'),
     getApplicationSubTypes: (appTypeCode) => {
-        const url = appTypeCode
-            ? `/master-data/application-sub-types?appTypeCode=${appTypeCode}`
+        const url = appTypeCode 
+            ? `/master/application-sub-types?appTypeCode=${appTypeCode}` 
             : `/master/application-sub-types`;
         return apiClient.get(url);
     },
     getProjectTypes: (appSubTypeCode) => {
-        const url = appSubTypeCode
-            ? `/master-data/project-types?appSubTypeCode=${appSubTypeCode}`
+        const url = appSubTypeCode 
+            ? `/master/project-types?appSubTypeCode=${appSubTypeCode}` 
             : `/master/project-types`;
         return apiClient.get(url);
     },
@@ -26,38 +27,15 @@ export const nocApplicationService = {
     getBlocks: (districtId) => apiClient.get(`/master/blocks?districtId=${districtId}`),
     getTehsils: (districtId) => apiClient.get(`/master/tehsils?districtId=${districtId}`),
     getAssessmentUnits: (districtId) => apiClient.get(`/master/assessment-units?districtId=${districtId}`),
-    getBlockCategory: (districtId, blockId) => apiClient.get(`/master/block-category?districtId=${districtId}&blockId=${blockId}`)
-        .catch(() => ({ success: true, data: { name: 'Safe', color: '#10b981', description: 'Safe for extraction' } })),
-
-    fetchBlockCategory: (payload) => apiClient.post('/master/blocks/category', payload),
-    getUtilizationSectors: async () => {
-        // API endpoint /master/utilization-sectors no longer exists
-        // Returning static list directly to avoid 404 errors
-        return {
-            success: true,
-            data: [
-                { id: '1', name: 'Industry' },
-                { id: '2', name: 'Infrastructure' },
-                { id: '3', name: 'Mining' }
-            ]
-        };
-    },
-
+    getBlockCategory: (districtId, blockId) => apiClient.get(`/master/block-category?districtId=${districtId}&blockId=${blockId}`),
+    getGeologyTypes: () => apiClient.get('/master/geology-types'),
+    getMeterTypes: () => apiClient.get('/master/meter-types'),
+    getSectorTypes: () => apiClient.get('/master/sector-types'),
     getIndustryTypes: (category) => {
-        const url = category
-            ? `/master/industry-types?category=${encodeURIComponent(category)}`
+        const url = category 
+            ? `/master/industry-types?category=${encodeURIComponent(category)}` 
             : `/master/industry-types`;
-        return apiClient.get(url).catch(() => ({
-            success: true,
-            data: [
-                { industryTypeId: 'IND_001', industryName: 'Food Processing' },
-                { industryTypeId: 'IND_002', industryName: 'Textiles' },
-                { industryTypeId: 'IND_003', industryName: 'Chemical' },
-                { industryTypeId: 'IND_004', industryName: 'Power Plant' },
-                { industryTypeId: 'IND_005', industryName: 'Pharmaceuticals' },
-                { industryTypeId: 'IND_999', industryName: 'Other' }
-            ]
-        }));
+        return apiClient.get(url);
     },
 
     // Company & Profile
@@ -132,16 +110,7 @@ export const nocApplicationService = {
     },
 
     // Flow Meter Data
-    getFlowMeterConfig: () => apiClient.get('/master/flow-meter-config')
-        .catch(() => ({
-            success: true,
-            data: {
-                manufacturers: ["Kranti", "Dasmesh", "It's Yours", "Other"],
-                telemetryProviders: ["Provider A", "Provider B"],
-                bisStandards: ["IS 779", "IS 13779"],
-                meterTypes: ["Digital", "Mechanical", "Electromagnetic"]
-            }
-        })),
+    getFlowMeterConfig: () => apiClient.get('/master/flow-meter-config'),
     getMeterModels: (manufacturer) => apiClient.get(`/master/meter-models?manufacturer=${manufacturer}`),
     getMeterSerialNumbers: (manufacturer) => Promise.resolve({ success: true, data: [] }),
 

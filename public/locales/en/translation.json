@@ -7,6 +7,7 @@
         "register": "Register",
         "portal": "Portal",
         "logout": "Logout",
+        "goToDashboard": "Go to Dashboard",
         "searchPlaceholder": "Search...",
         "govTitle": "Government of Rajasthan",
         "skipToMain": "Skip to Main Content",
@@ -39,6 +40,7 @@
         }
     },
     "login": {
+        "welcomeBack": "Welcome Back!",
         "title": "Login",
         "roleLabel": "Role",
         "rolePlaceholder": "— Select Role —",

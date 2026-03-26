@@ -36,7 +36,7 @@ class ApiClient {
             token = authToken || officerToken;
         }
 
-        if (token) {
+        if (token && token !== 'undefined' && token !== 'null') {
             headers['Authorization'] = `Bearer ${token}`;
         }
 
@@ -65,22 +65,38 @@ class ApiClient {
 
             // Handle 401 specifically for potential session expiry alerts
             if (response.status === 401) {
-                // Potential auto-refresh logic could go here
-                // For now, we'll let the error bubble up to be handled by context/hooks
+                // Clear state if unauthorized (optional based on app requirements)
+                console.warn("[ApiClient] 401 Unauthorized - Session may have expired");
             }
 
-            const data = await response.json();
+            // Check if response is JSON
+            const contentType = response.headers.get("content-type");
+            let data;
+            
+            if (contentType && contentType.includes("application/json")) {
+                data = await response.json();
+            } else if (options.method === 'DELETE' || response.status === 204) {
+                data = { success: true };
+            } else {
+                // Handle non-JSON or blob responses if explicitly requested
+                if (options.asBlob) return response; 
+                data = { success: response.ok, message: response.statusText };
+            }
 
             if (!response.ok) {
-                // Wrap in handleApiError for consistency
-                const error = handleApiError({ response: { data, status: response.status } });
-                throw error;
+                // Throwing let's the catch block handle formatting via handleApiError
+                throw { response: { data, status: response.status }, message: data?.error?.message || data?.message || response.statusText };
             }
 
             return data;
         } catch (error) {
-            if (error.code) throw error; // Already standardized
-            throw handleApiError(error);
+            // If it's already a formatted error from our throw above, re-throw after passing through handleApiError
+            if (error.response) {
+                throw handleApiError(error);
+            }
+            
+            // For network errors or unexpected JS errors
+            throw handleApiError(error, "Connection to server failed. Please check your internet.");
         }
     }
 
@@ -90,11 +106,11 @@ class ApiClient {
     }
 
     async post(path, body, options = {}) {
-        return this.request(path, { ...options, method: 'POST', body: JSON.stringify(body) });
+        return this.request(path, { ...options, method: 'POST', body: body ? JSON.stringify(body) : undefined });
     }
 
     async put(path, body, options = {}) {
-        return this.request(path, { ...options, method: 'PUT', body: JSON.stringify(body) });
+        return this.request(path, { ...options, method: 'PUT', body: body ? JSON.stringify(body) : undefined });
     }
 
     async delete(path, options = {}) {
@@ -108,3 +124,4 @@ class ApiClient {
 
 export const apiClient = new ApiClient();
 export default apiClient;
+

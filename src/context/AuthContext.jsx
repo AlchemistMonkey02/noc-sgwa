@@ -174,7 +174,19 @@ export const AuthProvider = ({ children }) => {
         const officerRoles = ['DGO', 'SGWA', 'ENFORCEMENT', 'INSPECTION'];
         return officerRoles.includes(userType);
     };
-
+ 
+    const updateUser = (updatedUserData) => {
+        const newUser = { ...user, ...updatedUserData };
+        setUser(newUser);
+        
+        // Update appropriate localStorage based on current user type or role
+        if (isOfficer()) {
+            localStorage.setItem('officerData', JSON.stringify(newUser));
+        } else {
+            localStorage.setItem('nocUser', JSON.stringify(newUser));
+        }
+    };
+ 
     const value = {
         user,
         userType,
@@ -185,7 +197,8 @@ export const AuthProvider = ({ children }) => {
         selectUserType,
         isAuthenticated: !!user,
         hasRole,
-        isOfficer
+        isOfficer,
+        updateUser
     };
 
     return (

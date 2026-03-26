@@ -1,3 +1,6 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import PublicHeader from './components/PublicHeader';
 import publicService from './services/publicService';
 
 const KnowYourEC = () => {
@@ -111,63 +114,82 @@ const KnowYourEC = () => {
     };
 
     return (
-        <div className="gov-portal" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <div className="gov-portal" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc' }}>
             <PublicHeader />
 
-            <div className="portal-main" style={{
+            <div className="portal-single-main" style={{
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'flex-start',
                 padding: '40px 20px',
                 flex: 1,
-                maxWidth: '100%',
-                margin: 0
+                width: '100%',
+                margin: '120px 0 0',
+                boxSizing: 'border-box'
             }}>
                 <div className="ec-calculator-container" style={{
-                    maxWidth: '900px',
+                    maxWidth: '1000px',
                     width: '100%',
                     background: '#fff',
-                    borderRadius: '12px',
-                    boxShadow: '0 10px 25px rgba(0,0,0,0.05)',
-                    padding: '40px',
-                    border: '1px solid #eef2f6'
+                    borderRadius: '24px',
+                    boxShadow: '0 20px 50px rgba(0,0,0,0.08)',
+                    padding: '60px',
+                    border: '1px solid #e2e8f0',
+                    transition: 'transform 0.3s ease',
+                    boxSizing: 'border-box'
                 }}>
-                    <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '50px' }}>
                         <div style={{
-                            width: '60px',
-                            height: '60px',
-                            background: '#eff6ff',
-                            borderRadius: '50%',
+                            width: '80px',
+                            height: '80px',
+                            background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                            borderRadius: '22px',
                             display: 'inline-flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            fontSize: '30px',
-                            marginBottom: '15px'
+                            fontSize: '40px',
+                            marginBottom: '20px',
+                            boxShadow: '0 10px 15px -3px rgba(37, 99, 235, 0.1)'
                         }}>
                             💰
                         </div>
-                        <h2 style={{ color: '#1e293b', fontSize: '1.75rem', fontWeight: '700', marginBottom: '10px' }}>
+                        <h2 style={{ color: '#0f172a', fontSize: '2.5rem', fontWeight: '800', marginBottom: '15px', letterSpacing: '-0.02em' }}>
                             Know Your EC Liability
                         </h2>
-                        <p style={{ color: '#64748b', maxWidth: '600px', margin: '0 auto', lineHeight: '1.6' }}>
-                            Select your project parameters and violation period to estimate the Environment Compensation charges.
+                        <p style={{ color: '#64748b', maxWidth: '600px', margin: '0 auto', lineHeight: '1.7', fontSize: '1.1rem' }}>
+                            Estimate your Environment Compensation charges by selecting your project parameters and violation period.
                         </p>
                     </div>
 
-                    <form onSubmit={handleCalculate} className="ec-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+                    <form onSubmit={handleCalculate} className="ec-form" style={{ 
+                        display: 'grid', 
+                        gridTemplateColumns: 'repeat(2, 1fr)', 
+                        gap: '32px',
+                        maxWidth: '1000px',
+                        margin: '0 auto'
+                    }}>
 
                         {/* Group 1: Project Details */}
                         <div className="form-group">
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>
-                                Application Type <span style={{ color: 'red' }}>*</span>
+                            <label style={{ display: 'block', marginBottom: '10px', fontWeight: '700', color: '#1e293b', fontSize: '0.95rem' }}>
+                                Application Type <span style={{ color: '#ef4444' }}>*</span>
                             </label>
                             <select
                                 name="applicationType"
                                 value={formData.applicationType}
                                 onChange={handleChange}
                                 className="gov-select"
-                                style={{ width: '100%', padding: '12px', background: '#f8fafc', borderColor: '#cbd5e1' }}
+                                style={{ 
+                                    width: '100%', 
+                                    padding: '14px 18px', 
+                                    background: '#f8fafc', 
+                                    borderColor: '#e2e8f0',
+                                    borderRadius: '12px',
+                                    fontSize: '1rem',
+                                    color: '#334155',
+                                    transition: 'all 0.2s'
+                                }}
                             >
                                 <option value="">Select Application Type</option>
                                 {renderOptions(applicationTypes)}
@@ -175,15 +197,23 @@ const KnowYourEC = () => {
                         </div>
 
                         <div className="form-group">
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>
-                                Water Quality <span style={{ color: 'red' }}>*</span>
+                            <label style={{ display: 'block', marginBottom: '10px', fontWeight: '700', color: '#1e293b', fontSize: '0.95rem' }}>
+                                Water Quality <span style={{ color: '#ef4444' }}>*</span>
                             </label>
                             <select
                                 name="waterQualityType"
                                 value={formData.waterQualityType}
                                 onChange={handleChange}
                                 className="gov-select"
-                                style={{ width: '100%', padding: '12px', background: '#f8fafc', borderColor: '#cbd5e1' }}
+                                style={{ 
+                                    width: '100%', 
+                                    padding: '14px 18px', 
+                                    background: '#f8fafc', 
+                                    borderColor: '#e2e8f0',
+                                    borderRadius: '12px',
+                                    fontSize: '1rem',
+                                    color: '#334155'
+                                }}
                             >
                                 <option value="">Select Water Quality</option>
                                 {renderOptions(waterQualityTypes)}
@@ -191,25 +221,43 @@ const KnowYourEC = () => {
                         </div>
 
                         <div className="form-group">
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>
-                                Area Category <span style={{ color: 'red' }}>*</span>
+                            <label style={{ display: 'block', marginBottom: '10px', fontWeight: '700', color: '#1e293b', fontSize: '0.95rem' }}>
+                                Area Category <span style={{ color: '#ef4444' }}>*</span>
                             </label>
                             <select
                                 name="areaCategory"
                                 value={formData.areaCategory}
                                 onChange={handleChange}
                                 className="gov-select"
-                                style={{ width: '100%', padding: '12px', background: '#f8fafc', borderColor: '#cbd5e1' }}
+                                style={{ 
+                                    width: '100%', 
+                                    padding: '14px 18px', 
+                                    background: '#f8fafc', 
+                                    borderColor: '#e2e8f0',
+                                    borderRadius: '12px',
+                                    fontSize: '1rem',
+                                    color: '#334155'
+                                }}
                             >
                                 <option value="">Select Area Category</option>
                                 {renderOptions(areaCategories)}
                             </select>
                         </div>
 
+                        {/* Empty cell for grid alignment if needed or just let it wrap */}
+                        <div style={{ display: 'none' }}></div>
+
+                        <div style={{ 
+                            gridColumn: '1 / -1', 
+                            height: '1px', 
+                            background: '#f1f5f9', 
+                            margin: '10px 0' 
+                        }}></div>
+
                         {/* Group 2: Violation Period */}
                         <div className="form-group">
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>
-                                Violation Date From <span style={{ color: 'red' }}>*</span>
+                            <label style={{ display: 'block', marginBottom: '10px', fontWeight: '700', color: '#1e293b', fontSize: '0.95rem' }}>
+                                Violation Date From <span style={{ color: '#ef4444' }}>*</span>
                             </label>
                             <input
                                 type="date"
@@ -217,13 +265,20 @@ const KnowYourEC = () => {
                                 value={formData.dateFrom}
                                 onChange={handleChange}
                                 className="gov-input"
-                                style={{ width: '100%', padding: '12px', background: '#f8fafc', borderColor: '#cbd5e1' }}
+                                style={{ 
+                                    width: '100%', 
+                                    padding: '14px 18px', 
+                                    background: '#f8fafc', 
+                                    borderColor: '#e2e8f0',
+                                    borderRadius: '12px',
+                                    fontSize: '1rem'
+                                }}
                             />
                         </div>
 
                         <div className="form-group">
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>
-                                Violation Date To <span style={{ color: 'red' }}>*</span>
+                            <label style={{ display: 'block', marginBottom: '10px', fontWeight: '700', color: '#1e293b', fontSize: '0.95rem' }}>
+                                Violation Date To <span style={{ color: '#ef4444' }}>*</span>
                             </label>
                             <input
                                 type="date"
@@ -231,14 +286,21 @@ const KnowYourEC = () => {
                                 value={formData.dateTo}
                                 onChange={handleChange}
                                 className="gov-input"
-                                style={{ width: '100%', padding: '12px', background: '#f8fafc', borderColor: '#cbd5e1' }}
+                                style={{ 
+                                    width: '100%', 
+                                    padding: '14px 18px', 
+                                    background: '#f8fafc', 
+                                    borderColor: '#e2e8f0',
+                                    borderRadius: '12px',
+                                    fontSize: '1rem'
+                                }}
                             />
                         </div>
 
                         {/* Group 3: Extraction Details */}
                         <div className="form-group">
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>
-                                Daily Extraction (m³/day) <span style={{ color: 'red' }}>*</span>
+                            <label style={{ display: 'block', marginBottom: '10px', fontWeight: '700', color: '#1e293b', fontSize: '0.95rem' }}>
+                                Daily Extraction (m³/day) <span style={{ color: '#ef4444' }}>*</span>
                             </label>
                             <input
                                 type="number"
@@ -248,13 +310,20 @@ const KnowYourEC = () => {
                                 className="gov-input"
                                 placeholder="e.g. 100"
                                 min="0"
-                                style={{ width: '100%', padding: '12px', background: '#f8fafc', borderColor: '#cbd5e1' }}
+                                style={{ 
+                                    width: '100%', 
+                                    padding: '14px 18px', 
+                                    background: '#f8fafc', 
+                                    borderColor: '#e2e8f0',
+                                    borderRadius: '12px',
+                                    fontSize: '1rem'
+                                }}
                             />
                         </div>
 
                         <div className="form-group">
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>
-                                Annual Extraction (m³/year) <span style={{ color: 'red' }}>*</span>
+                            <label style={{ display: 'block', marginBottom: '10px', fontWeight: '700', color: '#1e293b', fontSize: '0.95rem' }}>
+                                Annual Extraction (m³/year) <span style={{ color: '#ef4444' }}>*</span>
                             </label>
                             <input
                                 type="number"
@@ -264,23 +333,34 @@ const KnowYourEC = () => {
                                 className="gov-input"
                                 placeholder="e.g. 36500"
                                 min="0"
-                                style={{ width: '100%', padding: '12px', background: '#f8fafc', borderColor: '#cbd5e1' }}
+                                style={{ 
+                                    width: '100%', 
+                                    padding: '14px 18px', 
+                                    background: '#f8fafc', 
+                                    borderColor: '#e2e8f0',
+                                    borderRadius: '12px',
+                                    fontSize: '1rem'
+                                }}
                             />
                         </div>
 
-                        <div className="form-actions" style={{ gridColumn: '1 / -1', marginTop: '10px' }}>
+                        <div className="form-actions" style={{ gridColumn: '1 / -1', marginTop: '20px' }}>
                             <button
                                 type="submit"
                                 className="login-btn-gov"
                                 disabled={loading}
                                 style={{
                                     width: '100%',
-                                    padding: '14px',
-                                    fontSize: '1.1rem',
-                                    background: '#2563eb',
-                                    borderRadius: '8px',
-                                    marginTop: '10px',
-                                    boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)'
+                                    padding: '18px',
+                                    fontSize: '1.25rem',
+                                    fontWeight: '700',
+                                    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '14px',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 10px 20px -5px rgba(37, 99, 235, 0.4)',
+                                    transition: 'all 0.3s ease'
                                 }}
                             >
                                 {loading ? 'Calculating Charges...' : 'Calculate Compensation'}
@@ -290,15 +370,16 @@ const KnowYourEC = () => {
 
                     {error && (
                         <div className="error-msg" style={{
-                            marginTop: '25px',
-                            padding: '15px',
-                            background: '#fef2f2',
-                            color: '#991b1b',
-                            borderRadius: '8px',
-                            border: '1px solid #fecaca',
+                            marginTop: '30px',
+                            padding: '18px',
+                            background: '#fff1f2',
+                            color: '#e11d48',
+                            borderRadius: '12px',
+                            border: '1px solid #fda4af',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '10px'
+                            gap: '12px',
+                            fontWeight: '600'
                         }}>
                             ⚠️ {error}
                         </div>
@@ -306,69 +387,113 @@ const KnowYourEC = () => {
 
                     {result && result.calculation && (
                         <div className="result-card" style={{
-                            marginTop: '35px',
-                            padding: '0',
+                            marginTop: '50px',
                             background: '#ffffff',
-                            borderRadius: '12px',
+                            borderRadius: '20px',
                             border: '1px solid #e2e8f0',
                             overflow: 'hidden',
-                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)'
+                            boxShadow: '0 25px 40px -15px rgba(0, 0, 0, 0.08)'
                         }}>
-                            <div style={{ padding: '20px 25px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                                <h3 style={{ color: '#0f172a', margin: 0, fontSize: '1.1rem' }}>Estimation Results</h3>
+                            <div style={{ 
+                                padding: '24px 32px', 
+                                background: 'linear-gradient(90deg, #f8fafc 0%, #f1f5f9 100%)', 
+                                borderBottom: '1px solid #e2e8f0',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center'
+                            }}>
+                                <h3 style={{ color: '#0f172a', margin: 0, fontSize: '1.2rem', fontWeight: '700' }}>Estimation Summary</h3>
+                                <span style={{ 
+                                    background: '#dcfce7', 
+                                    color: '#166534', 
+                                    padding: '4px 12px', 
+                                    borderRadius: 'full', 
+                                    fontSize: '0.8rem', 
+                                    fontWeight: '700',
+                                    textTransform: 'uppercase'
+                                }}>Calculated</span>
                             </div>
 
-                            <div style={{ padding: '25px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                                    <span style={{ color: '#64748b', fontSize: '0.95rem' }}>Total Liability Amount</span>
-                                    <span style={{ fontSize: '1.75rem', fontWeight: '800', color: '#dc2626' }}>
+                            <div style={{ padding: '40px' }}>
+                                <div style={{ 
+                                    textAlign: 'center',
+                                    marginBottom: '40px'
+                                }}>
+                                    <span style={{ color: '#64748b', fontSize: '1rem', fontWeight: '500', display: 'block', marginBottom: '8px' }}>Total Compensation Amount</span>
+                                    <span style={{ fontSize: '3.5rem', fontWeight: '900', color: '#dc2626', letterSpacing: '-0.02em', display: 'block' }}>
                                         {result.calculation.formattedAmount}
                                     </span>
                                 </div>
 
-                                <div style={{ background: '#fcfcfc', borderRadius: '8px', padding: '15px', border: '1px dashed #e2e8f0' }}>
-                                    <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Fee Breakdown</p>
-                                    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                                        <li style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.95rem', color: '#334155' }}>
-                                            <span>Applicable EC Rate</span>
-                                            <span style={{ fontWeight: '500' }}>₹ {result.calculation.ecRate}/m³</span>
-                                        </li>
-                                        <li style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.95rem', color: '#334155' }}>
-                                            <span>Applied Category</span>
-                                            <span style={{ fontWeight: '500' }}>{result.calculation.appliedCategory}</span>
-                                        </li>
-                                        {result.input && result.input.dateRange && (
-                                            <li style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem', color: '#334155' }}>
-                                                <span>Total Violation Days</span>
-                                                <span style={{ fontWeight: '500' }}>{result.input.dateRange.totalDays} Days</span>
-                                            </li>
-                                        )}
-                                    </ul>
+                                <div style={{ 
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                                    gap: '20px',
+                                    background: '#f8fafc', 
+                                    borderRadius: '16px', 
+                                    padding: '24px', 
+                                    border: '1px solid #e2e8f0' 
+                                }}>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <p style={{ margin: '0 0 8px 0', fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>EC Rate</p>
+                                        <p style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700', color: '#1e293b' }}>₹ {result.calculation.ecRate}/m³</p>
+                                    </div>
+                                    <div style={{ textAlign: 'center', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0' }}>
+                                        <p style={{ margin: '0 0 8px 0', fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Area Category</p>
+                                        <p style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700', color: '#1e293b' }}>{result.calculation.appliedCategory}</p>
+                                    </div>
+                                    {result.input && result.input.dateRange && (
+                                        <div style={{ textAlign: 'center' }}>
+                                            <p style={{ margin: '0 0 8px 0', fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Violation Period</p>
+                                            <p style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700', color: '#1e293b' }}>{result.input.dateRange.totalDays} Days</p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {result.notes && result.notes.length > 0 && (
-                                    <div style={{ marginTop: '20px' }}>
-                                        <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Important Notes</p>
-                                        <ul style={{ paddingLeft: '20px', margin: 0, color: '#64748b', fontSize: '0.85rem', lineHeight: '1.5' }}>
+                                    <div style={{ 
+                                        marginTop: '35px',
+                                        padding: '20px',
+                                        background: '#fffbeb',
+                                        borderRadius: '12px',
+                                        border: '1px solid #fef3c7'
+                                    }}>
+                                        <p style={{ margin: '0 0 12px 0', fontSize: '0.85rem', color: '#92400e', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Important Notes</p>
+                                        <ul style={{ paddingLeft: '20px', margin: 0, color: '#b45309', fontSize: '0.9rem', lineHeight: '1.6' }}>
                                             {result.notes.map((note, index) => (
-                                                <li key={index} style={{ marginBottom: '5px' }}>{note}</li>
+                                                <li key={index} style={{ marginBottom: '6px' }}>{note}</li>
                                             ))}
                                         </ul>
                                     </div>
                                 )}
                             </div>
 
-                            <div style={{ padding: '12px 25px', background: '#fffbeb', borderTop: '1px solid #fef3c7', color: '#92400e', fontSize: '0.85rem' }}>
-                                * This calculation is an estimate based on provided inputs. Final charges will be assessed by the Authorized Officer upon verification.
+                            <div style={{ 
+                                padding: '16px 32px', 
+                                background: '#f1f5f9', 
+                                borderTop: '1px solid #e2e8f0', 
+                                color: '#64748b', 
+                                fontSize: '0.85rem',
+                                textAlign: 'center',
+                                fontStyle: 'italic'
+                            }}>
+                                * Note: This estimation is for informational purposes. Final liability will be determined by the SGWA Authority.
                             </div>
                         </div>
                     )}
                 </div>
             </div>
 
-            <footer className="portal-footer" style={{ marginTop: 'auto' }}>
-                <p>
-                    © 2026 Ground Water Department, Rajasthan
+            <footer className="portal-footer" style={{ 
+                marginTop: 'auto', 
+                padding: '40px', 
+                textAlign: 'center', 
+                background: '#0f172a', 
+                color: '#94a3b8',
+                borderTop: '1px solid #1e293b'
+            }}>
+                <p style={{ margin: 0, fontSize: '0.9rem' }}>
+                    © 2026 Ground Water Department, Government of Rajasthan
                 </p>
             </footer>
         </div>

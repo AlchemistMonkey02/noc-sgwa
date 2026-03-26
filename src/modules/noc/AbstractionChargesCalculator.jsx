@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import NOCHeader from './components/NOCHeader';
 import NOCFooter from './components/NOCFooter';
 import { getDistricts, getBlocksForDistrict, getBlockCategory } from './utils/blockClassification';
@@ -27,13 +28,14 @@ const AbstractionChargesCalculator = () => {
     const [calculatedCharges, setCalculatedCharges] = useState(null);
     const [submitted, setSubmitted] = useState(false);
 
+    const { user } = useAuth();
+ 
     useEffect(() => {
         // Check if user is logged in
-        const userData = localStorage.getItem('nocUser');
-        if (!userData) {
+        if (!user) {
             navigate('/noc/login');
         }
-    }, [navigate]);
+    }, [user, navigate]);
 
     // Load blocks when district changes
     useEffect(() => {

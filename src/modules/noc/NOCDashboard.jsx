@@ -48,13 +48,7 @@ const NOCDashboard = () => {
         }
     }, [user, loading]);
 
-    // Redirect if not authenticated
-    useEffect(() => {
-        if (!loading && !user && !isLoggingOut) {
-            console.log("Redirecting to login from NOCDashboard");
-            navigate('/noc/login');
-        }
-    }, [user, loading, isLoggingOut, navigate]);
+
 
     if (loading || dashboardLoading) {
         return (
@@ -137,7 +131,7 @@ const NOCDashboard = () => {
         );
     }
 
-    if (!user) return <div style={{ padding: '100px', textAlign: 'center' }}>Redirecting to login...</div>; // Will redirect via effect
+
 
     // Map API data to dashboard stats
     const stats = dashboardData?.stats || {};
@@ -260,9 +254,7 @@ const NOCDashboard = () => {
         }
     };
 
-    if (!user) {
-        return null;
-    }
+
 
     return (
         <LayoutWithSidebar>

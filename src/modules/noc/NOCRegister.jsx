@@ -73,6 +73,10 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
     const [verifyingEmailOTP, setVerifyingEmailOTP] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
+    // Loading states for Location Data
+    const [districtsLoading, setDistrictsLoading] = useState(false);
+    const [blocksLoading, setBlocksLoading] = useState(false);
+
     // File Upload State
     const [isUploading, setIsUploading] = useState(false);
     const [uploadError, setUploadError] = useState('');
@@ -460,6 +464,7 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                         addressLine2: formData.communicationAddress.addressLine2 || '',
                         state: formData.communicationAddress.state,
                         district: formData.communicationAddress.district,
+                        subDistrict: formData.communicationAddress.subDistrict,
                         pincode: formData.communicationAddress.pincode
                     },
                     loginCredentials: {
@@ -590,6 +595,7 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
             }));
             setBlockOptions([]);
 
+            setDistrictsLoading(true);
             try {
                 const data = await apiClient.get(`/master/districts?stateId=${formData.communicationAddress.state}`);
                 if (Array.isArray(data)) {
@@ -599,6 +605,8 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                 }
             } catch (error) {
                 console.error('Error fetching districts:', error);
+            } finally {
+                setDistrictsLoading(false);
             }
         };
         fetchDistricts();
@@ -621,6 +629,7 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                 }
             }));
 
+            setBlocksLoading(true);
             try {
                 const data = await apiClient.get(`/master/blocks?districtId=${formData.communicationAddress.district}`);
                 if (Array.isArray(data)) {
@@ -630,6 +639,8 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                 }
             } catch (error) {
                 console.error('Error fetching blocks:', error);
+            } finally {
+                setBlocksLoading(false);
             }
         };
         fetchBlocks();
@@ -924,8 +935,9 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                                             className="form-select"
                                             value={formData.communicationAddress.state}
                                             onChange={handleChange}
+                                            disabled={districtsLoading}
                                         >
-                                            <option value="">{t('register.state')}</option>
+                                            <option value="">{districtsLoading ? 'Loading states...' : t('register.state')}</option>
                                             {stateOptions.map((state, index) => {
                                                 const label = typeof state === 'string' ? state : (state.stateName || state.name || state.label || state.id);
                                                 const value = typeof state === 'string' ? state : (state.stateId || state.id || state.code || state.name);
@@ -942,9 +954,9 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                                             className="form-select"
                                             value={formData.communicationAddress.district}
                                             onChange={handleChange}
-                                            disabled={!formData.communicationAddress.state}
+                                            disabled={!formData.communicationAddress.state || blocksLoading}
                                         >
-                                            <option value="">{t('register.district')}</option>
+                                            <option value="">{blocksLoading ? 'Loading districts...' : t('register.district')}</option>
                                             {districtOptions.map((dist, index) => {
                                                 const label = typeof dist === 'string' ? dist : (dist.districtName || dist.name || dist.label || dist.id);
                                                 const value = typeof dist === 'string' ? dist : (dist.districtId || dist.id || dist.code || dist.name);
@@ -963,9 +975,9 @@ const NOCRegister = ({ isModal = false, onClose = null }) => {
                                             className="form-select"
                                             value={formData.communicationAddress.subDistrict}
                                             onChange={handleChange}
-                                            disabled={!formData.communicationAddress.district}
+                                            disabled={!formData.communicationAddress.district || blocksLoading}
                                         >
-                                            <option value="">{t('register.subDistrict')}</option>
+                                            <option value="">{blocksLoading ? 'Loading...' : t('register.subDistrict')}</option>
                                             {blockOptions.length > 0 ? (
                                                 blockOptions.map((block, index) => {
                                                     const label = typeof block === 'string' ? block : (block.blockName || block.name || block.label || block.id);

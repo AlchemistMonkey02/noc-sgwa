@@ -3,6 +3,7 @@
 
 import React, { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import NOCHeader from './components/NOCHeader';
 import NOCFooter from './components/NOCFooter';
 import './styles/noc-portal.css';
@@ -42,12 +43,13 @@ const modificationCharges = [
 const PenaltiesInfo = () => {
     const navigate = useNavigate();
 
+    const { user } = useAuth();
+ 
     useEffect(() => {
-        const userData = localStorage.getItem('nocUser');
-        if (!userData) {
+        if (!user) {
             navigate('/noc/login');
         }
-    }, [navigate]);
+    }, [user, navigate]);
 
     return (
         <div className="noc-portal">

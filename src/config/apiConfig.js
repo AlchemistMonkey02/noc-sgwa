@@ -1,7 +1,7 @@
-// const DEFAULT_API_URL = 'https://rgwcma-noc-api.geoplanetsolution.in/api';
-// const DEFAULT_SITE_URL = 'https://rgwcma.geoplanetsolution.in';
-const DEFAULT_API_URL = 'http://localhost:5021/api';
-const DEFAULT_SITE_URL = 'http://localhost:5173';
+const DEFAULT_API_URL = 'https://rgwcma-noc-api.geoplanetsolution.in/api';
+const DEFAULT_SITE_URL = 'https://rgwcma.geoplanetsolution.in';
+// const DEFAULT_API_URL = 'http://localhost:5021/api';
+// const DEFAULT_SITE_URL = 'http://localhost:5173';
 
 export const API_BASE_URL = import.meta.env.VITE_API_URL || DEFAULT_API_URL;
 export const AI_SERVICE_URL = import.meta.env.VITE_AI_SERVICE_URL || 'https://ocr.geoplanetsolution.in';

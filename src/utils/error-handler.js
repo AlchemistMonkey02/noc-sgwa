@@ -51,12 +51,14 @@ export const getErrorCode = (error) => {
     return "UNKNOWN_ERROR";
 };
 
-export const handleApiError = (error, fallbackMessage = "Something went wrong") => {
+export const handleApiError = (error, fallbackMessage = "Something went wrong", options = {}) => {
     const code = getErrorCode(error);
     const message = getErrorMessage(error);
 
-    // Only log if it's not a known user-cancellable error or similar (optional)
-    console.error(`[API Error] ${code}: ${message}`, error);
+    // Only log if it's not silent
+    if (!options.silent) {
+        console.error(`[API Error] ${code}: ${message}`, error);
+    }
 
     return {
         code,

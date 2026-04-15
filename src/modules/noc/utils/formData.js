@@ -361,10 +361,10 @@ export const initialFormData = {
     existingStructures: [],
 
     // Proposed Structures (Step 4)
-    // We will use the existingStructures array model for proposed as well, or specific fields if simpler.
-    // User asked for "ask for water pump submersible centrifugal pump capacity hp" in GW structures.
-    // We'll add these to the structure object model, so no new top-level fields needed for structure details specifically,
-    // but we need to ensure the structure object has them.
+    proposedBorewells: 0,
+    proposedTubewells: 0,
+    proposedDugwells: 0,
+    proposedPumps: 0,
 
     // Applicant Details
     applicantName: '',

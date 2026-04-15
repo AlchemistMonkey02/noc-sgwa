@@ -117,22 +117,29 @@
 }
 
 /* Blue Headers */
+/* Blue Background Elements (White Text) */
+.blue-header,
+.tech-table th,
+.tech-table thead th,
+.tech-table thead td {
+    background-color: #1f4e79 !important;
+    color: #ffffff !important;
+    font-weight: bold !important;
+}
+
 .blue-header {
-    background-color: #1f4e79;
-    color: white;
-    padding: 5px;
-    font-weight: bold;
+    padding: 8px 12px;
     font-size: 12px;
-    margin-top: 10px;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    border-radius: 4px 4px 0 0;
 }
 
 /* Technical Tables */
 .tech-table th {
-    background-color: #1f4e79;
-    color: white;
     text-align: center;
-    border: 1px solid white;
-    font-weight: normal;
+    border: 1px solid #ffffff;
+    padding: 6px 4px;
 }
 
 .tech-table td {

@@ -58,52 +58,21 @@ const OfficerLogin = () => {
 
 
     return (
-        <div style={{
-            minHeight: '100vh',
-            background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #60a5fa 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '2rem'
-        }}>
-            <div style={{
-                background: 'white',
-                borderRadius: '16px',
-                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
-                padding: '3rem',
-                maxWidth: '500px',
-                width: '100%'
-            }}>
+        <div className="officer-login-page">
+            <div className="officer-login-card">
                 {/* Header */}
-                <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                    <h1 style={{
-                        fontSize: '2rem',
-                        fontWeight: '700',
-                        color: 'var(--officer-primary)',
-                        margin: '0 0 0.5rem 0'
-                    }}>
+                <div className="officer-login-header">
+                    <h1 className="officer-login-title">
                         {t('officer.login.title')}
                     </h1>
-                    <p style={{
-                        fontSize: '1rem',
-                        color: 'var(--officer-text-light)',
-                        margin: 0
-                    }}>
+                    <p className="officer-login-subtitle">
                         {t('officer.login.subtitle')}
                     </p>
                 </div>
 
                 {/* Error Message */}
                 {error && (
-                    <div style={{
-                        background: 'rgba(239, 68, 68, 0.1)',
-                        border: '1px solid var(--officer-danger)',
-                        borderRadius: '8px',
-                        padding: '1rem',
-                        marginBottom: '1.5rem',
-                        color: 'var(--officer-danger)',
-                        fontSize: '0.9375rem'
-                    }}>
+                    <div className="officer-login-error">
                         {error}
                     </div>
                 )}
@@ -155,38 +124,23 @@ const OfficerLogin = () => {
                     {/* Submit Button */}
                     <button
                         type="submit"
-                        className="officer-btn officer-btn-primary"
+                        className="officer-btn officer-btn-primary officer-login-submit"
                         disabled={loading}
-                        style={{
-                            width: '100%',
-                            justifyContent: 'center',
-                            marginTop: '1rem'
-                        }}
                     >
                         {loading ? t('officer.login.loggingIn') : t('officer.login.btnLogin')}
                     </button>
                 </form>
 
                 {/* Footer Links */}
-                <div style={{
-                    marginTop: '2rem',
-                    paddingTop: '1.5rem',
-                    borderTop: '1px solid var(--officer-border)',
-                    textAlign: 'center',
-                    fontSize: '0.875rem',
-                    color: 'var(--officer-text-light)'
-                }}>
-                    <p style={{ margin: 0 }}>
-                        <Link to="?forgot-password=true" style={{ color: 'var(--officer-primary)', textDecoration: 'none' }}>
+                <div className="officer-login-footer">
+                    <p>
+                        <Link to="?forgot-password=true">
                             {t('officer.login.forgotPassword')}
                         </Link>
                     </p>
-                    <p style={{ margin: '0.5rem 0 0 0' }}>
+                    <p>
                         {t('officer.login.applicantLink').split('please')[0]}
-                        <a
-                            href="/noc/login"
-                            style={{ color: 'var(--officer-primary)', textDecoration: 'none', fontWeight: '600' }}
-                        >
+                        <a href="/noc/login">
                             {t('officer.login.applicantLink').includes('click here') ? 'click here' : 'यहाँ क्लिक करें'}
                         </a>
                     </p>

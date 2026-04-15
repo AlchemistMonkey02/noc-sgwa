@@ -41,7 +41,7 @@ const Layout = ({ children }) => {
     // Check if current route should use PublicHeader
     const usePublicHeader = publicRoutes.some(route =>
         location.pathname === route || location.pathname.startsWith(route + '/')
-    );
+    ) || location.pathname.startsWith('/noc/');
 
     return (
         <>

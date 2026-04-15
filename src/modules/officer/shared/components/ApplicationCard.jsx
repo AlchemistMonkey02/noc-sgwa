@@ -66,15 +66,15 @@ const ApplicationCard = ({ application, onClick, showActions = false, actions = 
             </div>
 
             <div className="officer-app-footer">
-                <div style={{ fontSize: '0.875rem', color: 'var(--officer-text-light)' }}>
+                <div className="officer-app-meta">
                     <span>{t('officer.dashboard.fields.submitted')}: <span className="notranslate">{formatDate(application.submittedDate)}</span></span>
-                    <span style={{ margin: '0 0.5rem' }}>•</span>
+                    <span className="officer-meta-dot">•</span>
                     <span><span className="notranslate">{getDaysInQueue(application.submittedDate)}</span> {t('officer.dashboard.fields.daysSuffix')} {t('officer.dashboard.fields.inQueue')}</span>
                 </div>
 
                 {/* Call Applicant button */}
                 {showCallButton && (
-                    <div style={{ marginTop: '0.75rem' }} onClick={(e) => e.stopPropagation()}>
+                    <div className="officer-app-call-wrapper" onClick={(e) => e.stopPropagation()}>
                         <ConsultationCallButton
                             applicationNumber={application.applicationNumber}
                             officerType={officerType}

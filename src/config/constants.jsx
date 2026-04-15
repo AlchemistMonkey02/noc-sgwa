@@ -1,10 +1,11 @@
-import { CONSULTATION_APP_URL, PUBLIC_SITE_URL, RIG_REGISTRATION_URL } from './apiConfig';
+import { CONSULTATION_APP_URL, PUBLIC_SITE_URL, RIG_REGISTRATION_URL, MAIN_PORTAL_URL } from './apiConfig';
 
 // Global Configuration for External URLs
 export const EXTERNAL_URLS = {
     // CGWA NOC Portal URLs
     LOGIN_URL: '/noc/login',
     REGISTER_URL: '/noc/register',
+    MAIN_PORTAL: MAIN_PORTAL_URL,
 
     // External Services
     CHARGES_CALCULATOR: `${PUBLIC_SITE_URL}/charges`,

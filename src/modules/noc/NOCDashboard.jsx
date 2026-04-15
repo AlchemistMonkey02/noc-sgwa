@@ -205,8 +205,8 @@ const NOCDashboard = () => {
     const announcements = dashboardData?.announcements || [];
 
     // Filter approved NOCs from dashboard data
-    const approvedNOCs = (dashboardData?.recentApplications || [])
-        .filter(app => app.status === 'NOC_ISSUED' || app.status === 'APPROVED' || app.status === 'SGWA_APPROVED' || app.status === 'ACTIVE')
+    const approvedNOCs = (dashboardData?.approvedApplications || dashboardData?.recentApplications || [])
+        .filter(app => app.status === 'NOC_ISSUED' || app.status === 'APPROVED' || app.status === 'SGWA_APPROVED' || app.status === 'ACTIVE' || app.status === 'EXEMPT')
         .map(app => {
             const issueDateRaw = app.nocIssuedDate || app.updatedAt || app.submittedAt;
             return {
@@ -316,14 +316,34 @@ const NOCDashboard = () => {
                     </div>
                     <div className="card-content-area">
                         <div className="quick-actions-grid">
-                            <Link to="/noc/application" className="quick-action-item">
-                                <span className="action-icon-badge blue">📝</span>
-                                <span className="action-text">{t('dashboard.applyFresh')}</span>
+                            <Link to="/noc/application?type=bulk" className="quick-action-item">
+                                <span className="action-icon-badge blue">💧</span>
+                                <span className="action-text">Bulk Water Supply</span>
                                 <span className="action-chevron">→</span>
                             </Link>
-                            <Link to="/noc/check-eligibility" className="quick-action-item">
-                                <span className="action-icon-badge indigo">✨</span>
-                                <span className="action-text">{t('dashboard.checkEligibility')}</span>
+                            <Link to="/noc/application?type=industrial" className="quick-action-item">
+                                <span className="action-icon-badge blue">🏭</span>
+                                <span className="action-text">Industrial NOC</span>
+                                <span className="action-chevron">→</span>
+                            </Link>
+                            <Link to="/noc/application?type=infrastructure" className="quick-action-item">
+                                <span className="action-icon-badge indigo">🏗️</span>
+                                <span className="action-text">Infrastructure NOC</span>
+                                <span className="action-chevron">→</span>
+                            </Link>
+                            <Link to="/noc/application?type=mining" className="quick-action-item">
+                                <span className="action-icon-badge orange">⛏️</span>
+                                <span className="action-text">Mining NOC</span>
+                                <span className="action-chevron">→</span>
+                            </Link>
+                            <Link to="/noc/application?type=domestic" className="quick-action-item">
+                                <span className="action-icon-badge teal">🏠</span>
+                                <span className="action-text">Individual Domestic</span>
+                                <span className="action-chevron">→</span>
+                            </Link>
+                            <Link to="/noc/application?type=agriculture" className="quick-action-item">
+                                <span className="action-icon-badge green">🚜</span>
+                                <span className="action-text">Agriculture NOC</span>
                                 <span className="action-chevron">→</span>
                             </Link>
                             <Link to="/noc/application?type=renewal" className="quick-action-item">
@@ -334,16 +354,6 @@ const NOCDashboard = () => {
                             <Link to="/noc/track-status" className="quick-action-item">
                                 <span className="action-icon-badge red">🔍</span>
                                 <span className="action-text">{t('dashboard.trackApp')}</span>
-                                <span className="action-chevron">→</span>
-                            </Link>
-                            <Link to="/noc/queries" className="quick-action-item">
-                                <span className="action-icon-badge purple">❓</span>
-                                <span className="action-text">{t('dashboard.viewQueries')}</span>
-                                <span className="action-chevron">→</span>
-                            </Link>
-                            <Link to="/noc/payment-details" className="quick-action-item">
-                                <span className="action-icon-badge teal">💳</span>
-                                <span className="action-text">{t('dashboard.paymentDetails')}</span>
                                 <span className="action-chevron">→</span>
                             </Link>
                         </div>
@@ -358,20 +368,13 @@ const NOCDashboard = () => {
                             <span className="status-badge success">{approvedNOCs.length} {t('dashboard.active')}</span>
                         </div>
                         <div className="card-content-area">
-                            <div style={{ display: 'grid', gap: '1rem' }}>
+                        <div className="approved-nocs-list">
                                 {approvedNOCs.map((noc, index) => (
                                     <div
                                         key={index}
-                                        className="card"
-                                        style={{
-                                            padding: '1.5rem',
-                                            display: 'flex',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center',
-                                            marginBottom: '1rem'
-                                        }}
+                                        className="approved-noc-item"
                                     >
-                                        <div>
+                                        <div className="noc-info">
                                             <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--gray-900)', fontSize: '1.125rem' }}>
                                                 📋 <span className="notranslate">{noc.projectName}</span>
                                             </h3>
@@ -385,7 +388,7 @@ const NOCDashboard = () => {
                                                 ✅ {noc.status}
                                             </span>
                                         </div>
-                                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                        <div className="noc-actions">
                                             <button
                                                 onClick={() => handleViewCertificate(noc.uuid, noc.nocNumber)}
                                                 className="btn btn-secondary"
@@ -418,7 +421,7 @@ const NOCDashboard = () => {
                                 Start a live consultation with your assigned officer for your most recent application:{' '}
                                 <strong className="notranslate">{recentApplications[0]?.applicationNumber || recentApplications[0]?.id}</strong>.
                             </p>
-                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                            <div className="consultation-actions">
                                 <ConsultationCallButton
                                     applicationNumber={recentApplications[0]?.applicationNumber || recentApplications[0]?.id}
                                     officerType="DGO"
@@ -467,53 +470,61 @@ const NOCDashboard = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {recentApplications.map((app, index) => (
-                                        <tr key={index}>
-                                            <td data-label={t('dashboard.appId')} className="notranslate"><strong className="text-blue">{app.id}</strong></td>
-                                            <td data-label={t('dashboard.type')} className="notranslate">{app.type}</td>
-                                            <td data-label={t('dashboard.submittedDate')} className="notranslate">{app.submittedDate}</td>
-                                            <td data-label={t('dashboard.status')}>
-                                                <span className={`status-badge notranslate ${app.statusClass || (app.status === 'Exempt' ? 'success' : 'info')}`}>
-                                                    {app.status}
-                                                </span>
-                                            </td>
-                                            <td data-label={t('dashboard.actions')}>
-                                                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', minWidth: '150px' }}>
-                                                    <button
-                                                        className="table-action-btn"
-                                                        onClick={() => {
-                                                            const targetId = app._id;
-                                                            navigate(`/noc/application/${targetId}`);
-                                                        }}
-                                                        style={{ height: '28px', display: 'flex', alignItems: 'center' }}
-                                                    >
-                                                        {t('dashboard.view')}
-                                                    </button>
-                                                    <ConsultationCallButton
-                                                        applicationNumber={app.id}
-                                                        officerType="DGO"
-                                                        label="📞 DGO"
-                                                        variant="mini"
-                                                        style={{ padding: '4px 8px' }}
-                                                    />
-                                                    <ConsultationCallButton
-                                                        applicationNumber={app.id}
-                                                        officerType="SGWA"
-                                                        label="📞 SGWA"
-                                                        variant="mini"
-                                                        style={{ padding: '4px 8px' }}
-                                                    />
-                                                    <ConsultationCallButton
-                                                        applicationNumber={app.id}
-                                                        officerType="ENFORCEMENT"
-                                                        label="📞 Enf."
-                                                        variant="mini"
-                                                        style={{ padding: '4px 8px' }}
-                                                    />
-                                                </div>
+                                    {recentApplications.length > 0 ? (
+                                        recentApplications.map((app, index) => (
+                                            <tr key={index}>
+                                                <td data-label={t('dashboard.appId')} className="notranslate"><strong className="text-blue">{app.id}</strong></td>
+                                                <td data-label={t('dashboard.type')} className="notranslate">{app.type}</td>
+                                                <td data-label={t('dashboard.submittedDate')} className="notranslate">{app.submittedDate}</td>
+                                                <td data-label={t('dashboard.status')}>
+                                                    <span className={`status-badge notranslate ${app.statusClass || (app.status === 'Exempt' ? 'success' : 'info')}`}>
+                                                        {app.status}
+                                                    </span>
+                                                </td>
+                                                <td data-label={t('dashboard.actions')}>
+                                                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', minWidth: '150px' }}>
+                                                        <button
+                                                            className="table-action-btn"
+                                                            onClick={() => {
+                                                                const targetId = app._id;
+                                                                navigate(`/noc/application/${targetId}`);
+                                                            }}
+                                                            style={{ height: '28px', display: 'flex', alignItems: 'center' }}
+                                                        >
+                                                            {t('dashboard.view')}
+                                                        </button>
+                                                        <ConsultationCallButton
+                                                            applicationNumber={app.id}
+                                                            officerType="DGO"
+                                                            label="📞 DGO"
+                                                            variant="mini"
+                                                            style={{ padding: '4px 8px' }}
+                                                        />
+                                                        <ConsultationCallButton
+                                                            applicationNumber={app.id}
+                                                            officerType="SGWA"
+                                                            label="📞 SGWA"
+                                                            variant="mini"
+                                                            style={{ padding: '4px 8px' }}
+                                                        />
+                                                        <ConsultationCallButton
+                                                            applicationNumber={app.id}
+                                                            officerType="ENFORCEMENT"
+                                                            label="📞 Enf."
+                                                            variant="mini"
+                                                            style={{ padding: '4px 8px' }}
+                                                        />
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan="5" className="no-data-text" style={{ textAlign: 'center', padding: '3rem' }}>
+                                                {t('dashboard.noRecentApps')}
                                             </td>
                                         </tr>
-                                    ))}
+                                    )}
                                 </tbody>
                             </table>
                         </div>

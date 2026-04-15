@@ -84,7 +84,7 @@ export const useMasterData = () => {
     }, [fetchAllMasterData]);
 
     // Helper to fetch conditional data
-    const fetchSubTypes = async (appTypeCode) => {
+    const fetchSubTypes = useCallback(async (appTypeCode) => {
         try {
             const res = await nocApplicationService.getApplicationSubTypes(appTypeCode);
             return res.data || [];
@@ -92,9 +92,9 @@ export const useMasterData = () => {
             console.error("Failed to fetch sub-types:", err);
             return [];
         }
-    };
+    }, []);
 
-    const fetchProjectTypes = async (appSubTypeCode) => {
+    const fetchProjectTypes = useCallback(async (appSubTypeCode) => {
         try {
             const res = await nocApplicationService.getProjectTypes(appSubTypeCode);
             return res.data || [];
@@ -102,9 +102,9 @@ export const useMasterData = () => {
             console.error("Failed to fetch project types:", err);
             return [];
         }
-    };
+    }, []);
 
-    const fetchIndustryTypes = async (category) => {
+    const fetchIndustryTypes = useCallback(async (category) => {
         try {
             const res = await nocApplicationService.getIndustryTypes(category);
             return res.data || [];
@@ -112,7 +112,7 @@ export const useMasterData = () => {
             console.error("Failed to fetch industry types:", err);
             return [];
         }
-    };
+    }, []);
 
     return {
         ...masterData,

@@ -740,6 +740,7 @@
 @media (max-width: 1024px) {
     .officer-header {
         padding: 0.75rem 1rem;
+        height: 64px;
     }
 
     .officer-header-title {
@@ -757,15 +758,22 @@
 
     .officer-sidebar {
         position: fixed;
-        left: -280px;
-        top: 72px;
+        left: -100%;
+        top: 64px;
         bottom: 0;
         z-index: 1000;
-        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.2);
+        box-shadow: 10px 0 30px rgba(15, 23, 42, 0.2);
+        width: 280px;
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        transform: translateX(0);
     }
 
     .officer-sidebar.open {
-        left: 0;
+        transform: translateX(100%);
+    }
+
+    .officer-layout {
+        min-height: calc(100vh - 64px);
     }
 
     .officer-content {
@@ -773,17 +781,42 @@
     }
 
     .officer-container {
-        padding: 1.5rem;
+        padding: clamp(1rem, 4vw, 1.5rem);
+        border-radius: 12px;
     }
 
     .officer-mobile-toggle {
         display: block !important;
-        background: none;
-        border: none;
-        font-size: 1.5rem;
+        background: var(--gray-50);
+        border: 1px solid var(--gray-200);
+        font-size: 1.25rem;
         cursor: pointer;
-        padding: 0 10px;
+        padding: 8px;
+        border-radius: 8px;
         color: var(--officer-primary);
+        line-height: 1;
+    }
+
+    .officer-stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 1rem;
+    }
+
+    .officer-stat-card {
+        padding: 1.25rem;
+    }
+
+    .officer-stat-value {
+        font-size: 1.75rem;
+    }
+
+    .officer-app-body {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .officer-page-title {
+        font-size: 1.5rem;
     }
 }
 
@@ -1000,5 +1033,201 @@
 @media (max-width: 1024px) {
     .inspection-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+/* =========================================
+   OFFICER LOGIN PAGE (NEW)
+   ========================================= */
+
+.officer-login-page {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #60a5fa 100%);
+    background-image: 
+        linear-gradient(135deg, rgba(30, 58, 138, 0.9) 0%, rgba(59, 130, 246, 0.85) 50%, rgba(96, 165, 250, 0.8) 100%),
+        url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxwYXR0ZXJuIGlkPSJzbWFsbEdyaWQiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMC4yIiBvcGFjaXR5PSIwLjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjc21hbGxHcmlkKSIvPjwvc3ZnPg==');
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(1rem, 5vw, 2.5rem);
+    box-sizing: border-box;
+}
+
+.officer-login-card {
+    background: var(--white);
+    border-radius: var(--radius-2xl);
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
+    padding: clamp(1.5rem, 8vw, 3.5rem);
+    width: 100%;
+    max-width: 520px;
+    animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+}
+
+.officer-login-card:hover {
+    box-shadow: 0 25px 70px rgba(15, 23, 42, 0.3);
+    transform: translateY(-5px);
+}
+
+.officer-login-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.officer-login-title {
+    font-size: clamp(1.85rem, 5vw, 2.5rem);
+    font-weight: 800;
+    color: var(--officer-primary);
+    margin: 0 0 0.5rem 0;
+    letter-spacing: -0.035em;
+    line-height: 1.1;
+}
+
+.officer-login-subtitle {
+    font-size: 1.0625rem;
+    color: var(--officer-text-light);
+    margin: 0;
+    font-weight: 500;
+}
+
+.officer-login-error {
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid var(--officer-danger);
+    border-radius: 12px;
+    padding: 1.125rem 1.5rem;
+    margin-bottom: 2rem;
+    color: var(--officer-danger);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+.officer-login-submit {
+    width: 100%;
+    justify-content: center;
+    margin-top: 1.5rem;
+    padding: 1rem;
+    font-size: 1.0625rem;
+    box-shadow: 0 8px 24px rgba(30, 58, 138, 0.2);
+}
+
+.officer-login-footer {
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--gray-100);
+    text-align: center;
+    font-size: 0.95rem;
+    color: var(--gray-500);
+}
+
+.officer-login-footer p {
+    margin: 0.625rem 0;
+}
+
+.officer-login-footer a {
+    color: var(--officer-primary);
+    text-decoration: none;
+    font-weight: 700;
+    transition: all 0.2s;
+}
+
+.officer-login-footer a:hover {
+    color: var(--color-primary-600);
+    text-decoration: underline;
+}
+
+@keyframes slideInUp {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 480px) {
+    .officer-login-card {
+        padding: 1.75rem 1.25rem;
+        border-radius: var(--radius-xl);
+    }
+    
+    .officer-login-header {
+        margin-bottom: 2rem;
+    }
+    
+    .officer-login-title {
+        font-size: 1.75rem;
+    }
+    
+    .officer-login-footer {
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+    }
+}
+
+/* =========================================
+   OFFICER APPLICATION CARD REFINEMENTS
+   ========================================= */
+
+.officer-app-meta {
+    font-size: 0.875rem;
+    color: var(--officer-text-light);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.officer-meta-dot {
+    opacity: 0.5;
+    margin: 0 4px;
+}
+
+.officer-app-call-wrapper {
+    margin-top: 0.75rem;
+}
+
+@media (max-width: 640px) {
+    .officer-app-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .officer-app-footer {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 1.25rem;
+        padding-top: 1.25rem;
+    }
+    
+    .officer-app-meta {
+        font-size: 0.8125rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+    
+    .officer-meta-dot {
+        display: none;
+    }
+    
+    .officer-flex.officer-gap-2 {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        width: 100%;
+    }
+    
+    .officer-flex.officer-gap-2 .officer-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 0.875rem;
+    }
+
+    .officer-app-call-wrapper {
+        width: 100%;
+    }
+
+    .officer-app-call-wrapper > div {
+        width: 100%;
     }
 }

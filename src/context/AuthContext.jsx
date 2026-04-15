@@ -47,19 +47,68 @@ export const AuthProvider = ({ children }) => {
                     } else {
                         // Only clear if we actually have NO tokens at all
                         if (!officerToken && !nocToken) {
-                            console.log("No valid tokens found, guest mode");
+                            // Only log once to avoid clutter
+                            if (!sessionStorage.getItem('guestModeNotified')) {
+                                console.log("[Auth] guest mode");
+                                sessionStorage.setItem('guestModeNotified', 'true');
+                            }
                             setUser(null);
                             setUserType(null);
                         }
                     }
                 }
+
+                // If still not logged in, check for SSO Cookie from Main Portal (Once per session)
+                const ssoChecked = sessionStorage.getItem('ssoChecked');
+                
+                if (!localStorage.getItem('officerToken') && !localStorage.getItem('authToken') && !ssoChecked) {
+                    checkSsoSession();
+                } else {
+                    setIsLoggingOut(false);
+                    setLoading(false);
+                }
             } catch (error) {
                 console.error("Auth initialization error:", error);
-            } finally {
                 setIsLoggingOut(false);
                 setLoading(false);
             }
         };
+
+        const checkSsoSession = async () => {
+            try {
+                console.log("[SSO] Checking for shared session...");
+                // Call profile/verify endpoint which checks the cookie
+                const response = await apiClient.get('/auth/profile', { silent: true }).catch(() => null);
+
+                if (response && response.user) {
+                    const userData = response.user;
+                    const effectiveRole = userData.role || 'APPLICANT';
+                    const token = userData.token; // Should be in cookie, but response might return it too
+
+                    const finalUser = { ...userData, userType: effectiveRole };
+
+                    // Populate localStorage for consistency (though cookie is primary)
+                    if (effectiveRole === 'SGWA' || effectiveRole === 'RSGWA') {
+                        localStorage.setItem('officerData', JSON.stringify(finalUser));
+                        localStorage.setItem('officerRole', effectiveRole);
+                    } else {
+                        localStorage.setItem('nocUser', JSON.stringify(finalUser));
+                        localStorage.setItem('userType', effectiveRole);
+                    }
+
+                    setUser(finalUser);
+                    setUserType(effectiveRole);
+                    console.log("[SSO] Automated login successful for:", userData.email);
+                }
+                 } catch (err) {
+                    // Silently fail, just log for internal state
+                    console.log("[SSO] No active shared session found.");
+                } finally {
+                    sessionStorage.setItem('ssoChecked', 'true');
+                    setIsLoggingOut(false);
+                    setLoading(false);
+                }
+            };
 
         initAuth();
     }, []);

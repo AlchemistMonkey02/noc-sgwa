@@ -37,9 +37,12 @@ const Icons = {
     )
 };
 
+import { useUI } from '../../../../context/UIContext';
+
 const OfficerSidebar = ({ role }) => {
     const { t } = useTranslation();
     const location = useLocation();
+    const { isSidebarOpen, setIsSidebarOpen, closeAll } = useUI();
 
     const getNavItems = () => {
         const navItems = {
@@ -78,11 +81,13 @@ const OfficerSidebar = ({ role }) => {
 
     return (
         <>
-            <div 
-                className="officer-sidebar-backdrop" 
-                onClick={() => document.querySelector('.officer-sidebar').classList.remove('open')}
-            />
-            <aside className="officer-sidebar">
+            {isSidebarOpen && (
+                <div 
+                    className="officer-sidebar-backdrop active" 
+                    onClick={closeAll}
+                />
+            )}
+            <aside className={`officer-sidebar ${isSidebarOpen ? 'open' : ''}`}>
                 <nav className="officer-nav">
                     <ul className="officer-nav-list" style={{ listStyle: 'none', padding: 0 }}>
                         {getNavItems().map((item) => (
@@ -90,7 +95,7 @@ const OfficerSidebar = ({ role }) => {
                                 <Link
                                     to={item.path}
                                     className={`officer-nav-link ${isActive(item.path) ? 'active' : ''}`}
-                                    onClick={() => document.querySelector('.officer-sidebar').classList.remove('open')}
+                                    onClick={closeAll}
                                 >
                                     <span className="officer-nav-icon">{item.icon}</span>
                                     <span>{item.label}</span>

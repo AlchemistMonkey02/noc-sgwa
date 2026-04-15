@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { useNavigate } from 'react-router-dom';
 import PublicHeader from '../public/components/PublicHeader';
 import NOCFooter from './components/NOCFooter';
 import LayoutWithSidebar from './components/LayoutWithSidebar';
@@ -37,6 +37,7 @@ import SummaryStep from './components/form-steps/SummaryStep';
 
 const NOCApplication = () => {
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const { user } = useAuth();
     const [currentStep, setCurrentStep] = useState(1);
     const [formData, setFormData] = useState(initialFormData);
@@ -55,7 +56,8 @@ const NOCApplication = () => {
         sectorTypes,
         loading: masterLoading,
         fetchSubTypes,
-        fetchProjectTypes
+        fetchProjectTypes,
+        fetchIndustryTypes
     } = useMasterData();
 
     const [appSubTypeOptions, setAppSubTypeOptions] = useState([]);
@@ -246,9 +248,28 @@ const NOCApplication = () => {
             if (formData.applicationType) {
                 const subs = await fetchSubTypes(formData.applicationType);
                 setAppSubTypeOptions(subs);
-                // Reset sub-type if no longer valid
-                if (formData.applicationSubType && !subs.find(s => String(s.id || s.code) === String(formData.applicationSubType))) {
-                    setFormData(prev => ({ ...prev, applicationSubType: '', projectType: '' }));
+                
+                // If we have a pre-filled or existing sub-type, verify it exists in the new options list
+                if (subs.length > 0 && formData.applicationSubType) {
+                    const found = subs.find(s => {
+                        const val = typeof s === 'object' ? (s.id || s.code || s._id || s.name || s.appSubTypeCode) : s;
+                        const label = typeof s === 'object' ? (s.name || s.label || "") : String(s);
+                        // Match either ID or label (important for catching URL string intents)
+                        return String(val).toLowerCase() === String(formData.applicationSubType).toLowerCase() || 
+                               label.toLowerCase().includes(String(formData.applicationSubType).toLowerCase());
+                    });
+
+                    if (found) {
+                        // If it's a match, update to the actual ID/Code from the list
+                        const foundId = typeof found === 'object' ? (found.id || found.code || found._id || found.appSubTypeCode || found.name) : found;
+                        if (String(foundId) !== String(formData.applicationSubType)) {
+                            setFormData(prev => ({ ...prev, applicationSubType: foundId }));
+                        }
+                    } else {
+                        // Truly not found in the new list, reset
+                        console.log(`Resetting sub-type as '${formData.applicationSubType}' not found in:`, subs);
+                        setFormData(prev => ({ ...prev, applicationSubType: '', projectType: '' }));
+                    }
                 }
             } else {
                 setAppSubTypeOptions([]);
@@ -263,9 +284,28 @@ const NOCApplication = () => {
             if (formData.applicationSubType) {
                 const projects = await fetchProjectTypes(formData.applicationSubType);
                 setProjectTypeOptions(projects);
-                // Reset project type if no longer valid
-                if (formData.projectType && !projects.find(p => String(p.id || p.code) === String(formData.projectType))) {
-                    setFormData(prev => ({ ...prev, projectType: '' }));
+                
+                // If we have a pre-filled or existing project type, verify it exists in the new options list
+                if (projects.length > 0 && formData.projectType) {
+                    const found = projects.find(p => {
+                        const val = typeof p === 'object' ? (p.id || p.code || p._id || p.name || p.categoryCode || p.projectTypeCode) : p;
+                        const label = typeof p === 'object' ? (p.name || p.label || "") : String(p);
+                        // Match either ID or label
+                        return String(val).toLowerCase() === String(formData.projectType).toLowerCase() || 
+                               label.toLowerCase().includes(String(formData.projectType).toLowerCase());
+                    });
+
+                    if (found) {
+                        // Update to the actual ID/Code
+                        const foundId = typeof found === 'object' ? (found.id || found.code || found._id || found.categoryCode || found.projectTypeCode || found.name) : found;
+                        if (String(foundId) !== String(formData.projectType)) {
+                            setFormData(prev => ({ ...prev, projectType: foundId }));
+                        }
+                    } else {
+                        // Reset if truly not valid
+                        console.log(`Resetting project-type as '${formData.projectType}' not found in:`, projects);
+                        setFormData(prev => ({ ...prev, projectType: '' }));
+                    }
                 }
             } else {
                 setProjectTypeOptions([]);
@@ -294,6 +334,88 @@ const NOCApplication = () => {
             }
         }
     }, [stateOptions, formData.state]);
+
+    // Pre-fill form from URL parameters (e.g., ?type=industrial)
+    useEffect(() => {
+        const typeParam = searchParams.get('type') || searchParams.get('applicationType');
+
+        // Wait for master data to load
+        if (typeParam && appTypeOptions.length > 0 && utilizationPurposeOptions.length > 0) {
+            const rawType = typeParam.toLowerCase().trim();
+            console.log(`Pre-filling form for type: ${rawType}`);
+
+            const updates = {};
+
+            // 1. Find App Type (Direct match or label match)
+            let targetAppType = appTypeOptions.find(opt => {
+                const label = (typeof opt === 'object' ? (opt.label || opt.name || "") : String(opt)).toLowerCase();
+                // Match industrial -> Industry, bulk -> Bulk Water Supply, domestic -> Individual Domestic Consumer, etc.
+                return label.includes(rawType) ||
+                    (rawType === 'industrial' && label === 'industry') ||
+                    (rawType === 'bulk' && (label.includes('bulk') || label.includes('others'))) ||
+                    (rawType === 'domestic' && label.includes('domestic')) ||
+                    (rawType === 'agriculture' && label.includes('agri'));
+            });
+
+            if (!targetAppType) {
+                // Fallback: Default to Provisional if no direct match but it's a known NOC type
+                targetAppType = appTypeOptions.find(opt => {
+                    const label = (typeof opt === 'object' ? (opt.label || opt.name || "") : String(opt)).toLowerCase();
+                    return label.includes('provisional') || (label.includes('new') && !label.includes('renewal'));
+                });
+            }
+
+            if (targetAppType) {
+                const val = typeof targetAppType === 'object' ? (targetAppType.appTypeId || targetAppType.id || targetAppType.appTypeCode || targetAppType.code || targetAppType._id || targetAppType.name) : targetAppType;
+                updates.applicationType = val;
+            }
+
+            // 2. Find Utilization (Robust mapping)
+            let utilPurp = utilizationPurposeOptions.find(opt => {
+                const label = (typeof opt === 'object' ? (opt.label || opt.name || "") : String(opt)).toLowerCase();
+                return label.includes(rawType) ||
+                    (rawType === 'industrial' && label === 'industry') ||
+                    (rawType === 'bulk' && (label.includes('bulk') || label.includes('domestic'))) ||
+                    (rawType === 'domestic' && label.includes('domestic')) ||
+                    (rawType === 'agriculture' && label.includes('agri'));
+            });
+
+            if (!utilPurp && rawType === 'bulk') {
+                // Bulk usually maps to Drinking/Domestic utilization
+                utilPurp = utilizationPurposeOptions.find(opt => (opt.name || opt.label || opt).toLowerCase().includes('domestic'));
+            }
+
+            if (utilPurp) {
+                updates.groundWaterUtilizationFor = typeof utilPurp === 'object' ? (utilPurp.code || utilPurp.name) : utilPurp;
+            }
+
+            // 3. Sub-type (Standardize to exact strings used in dropdowns/API)
+            if (rawType.includes('indust')) updates.applicationSubType = 'Industrial';
+            else if (rawType.includes('infra')) updates.applicationSubType = 'Infrastructure';
+            else if (rawType.includes('minin')) updates.applicationSubType = 'Mining';
+            else if (rawType.includes('bulk')) updates.applicationSubType = 'Domestic (Bulk/Community)';
+            else if (rawType.includes('domestic')) updates.applicationSubType = 'Domestic (Bulk/Community)';
+            else if (rawType.includes('agri')) updates.applicationSubType = 'Agriculture';
+            else if (rawType.includes('msme')) updates.applicationSubType = 'Industrial'; // MSME usually industrial
+
+            // 4. MSME specific flag
+            if (rawType.includes('msme')) {
+                updates.isMSME = 'Yes';
+            }
+
+            // 5. Standard Defaults
+            updates.projectType = 'New Project';
+            updates.waterQualityType = 'Potable';
+
+            if (Object.keys(updates).length > 0) {
+                console.log('Applying pre-fill updates:', updates);
+                setFormData(prev => ({
+                    ...prev,
+                    ...updates
+                }));
+            }
+        }
+    }, [searchParams, appTypeOptions, utilizationPurposeOptions]);
 
     // Auto-calculate fees when entering Step 7 (no meter) or Step 8 (with meter)
     useEffect(() => {
@@ -1070,6 +1192,15 @@ const NOCApplication = () => {
                         if (newAppId) {
                             setApplicationId(newAppId);
                             localStorage.setItem('currentApplicationId', newAppId);
+                            
+                            // SYNC COMPANY ID: If backend auto-created a company, update our auth context
+                            const returnedCompanyId = response.data?.companyId || response.companyId;
+                            if (returnedCompanyId && !user.companyId) {
+                                console.log("Updating user context with auto-provisioned companyId:", returnedCompanyId);
+                                updateUser({ companyId: returnedCompanyId });
+                            }
+
+                            // Re-fetch to ensure Step 1 is fully synced
                             response = await nocApplicationService.saveStep1(newAppId, step1Payload);
                         } else {
                             throw new Error('Failed to create application draft');
@@ -1197,6 +1328,7 @@ const NOCApplication = () => {
                                 numberOfBorewells: parseInt(formData.proposedBorewells || 0),
                                 numberOfTubewells: parseInt(formData.proposedTubewells || 0),
                                 numberOfDugwells: parseInt(formData.proposedDugwells || 0),
+                                numberOfPumps: parseInt(formData.proposedPumps || 0),
                                 totalDailyExtraction: parseFloat(formData.proposedExtraction || 0) || (parseFloat(formData.waterReqFreshRequirement || 0) + parseFloat(formData.waterReqRecycled || 0))
                             }
                         }
@@ -1590,6 +1722,7 @@ const NOCApplication = () => {
                             {currentStep === 1 && (
                                 <BasicDetailsStep
                                     formData={formData}
+                                    setFormData={setFormData}
                                     handleChange={handleChange}
                                     errors={errors}
                                     appTypeOptions={appTypeOptions}

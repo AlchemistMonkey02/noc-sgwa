@@ -2,10 +2,14 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EXTERNAL_URLS } from '../../config/constants';
 
+import { useAuth } from '../../context/AuthContext';
 import PublicHeader from './components/PublicHeader';
+import LoginRequiredModal from './components/LoginRequiredModal';
 
 const ToolsDashboard = () => {
     const navigate = useNavigate();
+    const { isAuthenticated } = useAuth();
+    const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
     const tools = [
         {
@@ -35,6 +39,12 @@ const ToolsDashboard = () => {
     ];
 
     const handleCardClick = (tool) => {
+        // Restrict internal links for guests
+        if (!isAuthenticated && !tool.isExternal) {
+            setIsLoginModalOpen(true);
+            return;
+        }
+
         if (tool.isExternal) {
             window.open(tool.link, '_blank', 'noopener,noreferrer');
         } else {
@@ -95,6 +105,11 @@ const ToolsDashboard = () => {
                     </div>
                 ))}
             </div>
+            {/* Login Required Modal */}
+            <LoginRequiredModal 
+                isOpen={isLoginModalOpen} 
+                onClose={() => setIsLoginModalOpen(false)} 
+            />
         </div>
     );
 };

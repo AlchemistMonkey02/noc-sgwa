@@ -57,14 +57,15 @@ class ApiClient {
 
         const config = {
             ...options,
-            headers
+            headers,
+            credentials: 'include' // Allow cookies to be sent for SSO
         };
 
         try {
             const response = await fetch(url, config);
 
             // Handle 401 specifically for potential session expiry alerts
-            if (response.status === 401) {
+            if (response.status === 401 && !options.silent) {
                 // Clear state if unauthorized (optional based on app requirements)
                 console.warn("[ApiClient] 401 Unauthorized - Session may have expired");
             }
@@ -92,11 +93,11 @@ class ApiClient {
         } catch (error) {
             // If it's already a formatted error from our throw above, re-throw after passing through handleApiError
             if (error.response) {
-                throw handleApiError(error);
+                throw handleApiError(error, undefined, { silent: options.silent });
             }
             
             // For network errors or unexpected JS errors
-            throw handleApiError(error, "Connection to server failed. Please check your internet.");
+            throw handleApiError(error, "Connection to server failed. Please check your internet.", { silent: options.silent });
         }
     }
 

@@ -90,7 +90,7 @@ const officerService = {
     // ==================== DOCUMENTS ====================
 
     uploadDocument: (formData) => apiClient.upload('/officer/common/documents/upload', formData),
-    downloadDocument: (documentId) => apiClient.request(`/officer/documents/${documentId}/download`).then(res => res.blob()),
+    downloadDocument: (documentId) => apiClient.request(`/officer/documents/${documentId}/download`, { asBlob: true }).then(res => res.blob()),
 
     getDocumentUrl: (documentId) => {
         const token = localStorage.getItem('officerToken');

@@ -220,3 +220,27 @@ h3 {
 p.text-muted {
     color: var(--gray-500) !important;
 }
+/* 9. Global Navigation Color Fix (High Specificity) */
+.header-nav a, .header-nav a *, .public-header-nav a, .public-header-nav a * { color: #ffffff !important; text-decoration: none !important; }
+.desktop-nav a, .desktop-nav a * { color: var(--gray-700) !important; }
+.desktop-nav a:hover { color: var(--color-primary-600) !important; }
+
+/* 10. Specific Component Visibility Fixes - White Text Forced on Dark Backgrounds */
+.landing-hero h1,
+.hero-title,
+.accordion-header-gov h3, 
+.quick-action-card-gov h1, 
+.quick-action-card-gov h2, 
+.quick-action-card-gov h3,
+.quick-action-card-gov p,
+.quick-action-card-gov span,
+.quick-action-card-gov * {
+    color: #ffffff !important;
+    -webkit-text-fill-color: initial !important; /* Reset for hero gradient compatibility if needed */
+}
+
+.hero-title {
+    background: linear-gradient(180deg, #FFFFFF 0%, #CBD5E1 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+}

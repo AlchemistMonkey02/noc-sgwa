@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './styles/public-landing.css';
-
-import PublicHeader from './components/PublicHeader';
-import publicService from './services/publicService';
+import { useTranslation } from 'react-i18next';
+import './styles/public-pages.css';
 
 const ApplicationStatus = () => {
     const navigate = useNavigate();
@@ -67,178 +65,79 @@ const ApplicationStatus = () => {
     };
 
     return (
-        <div className="gov-portal" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-            <PublicHeader />
-
-            <div className="portal-main" style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'flex-start',
-                padding: '40px 20px',
-                flex: 1
-            }}>
-                <div className="status-container" style={{
-                    maxWidth: '800px',
-                    width: '100%',
-                    background: '#fff',
-                    borderRadius: '12px',
-                    boxShadow: '0 10px 25px rgba(0,0,0,0.05)',
-                    padding: '40px',
-                    border: '1px solid #eef2f6'
-                }}>
-                    <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                        <div style={{
-                            width: '60px',
-                            height: '60px',
-                            background: '#eff6ff',
-                            borderRadius: '50%',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '30px',
-                            marginBottom: '15px'
-                        }}>
-                            📋
-                        </div>
-                        <h2 style={{ color: '#1e293b', fontSize: '1.75rem', fontWeight: '700', marginBottom: '10px' }}>
-                            Check Application Status
-                        </h2>
-                        <p style={{ color: '#64748b', maxWidth: '500px', margin: '0 auto', lineHeight: '1.6' }}>
+        <div className="public-info-page">
+            <div className="public-content-container">
+                <div className="public-tool-container">
+                    <div className="public-tool-header">
+                        <div className="public-tool-icon">📋</div>
+                        <h1 className="public-tool-title">Check Application Status</h1>
+                        <p className="public-tool-subtitle">
                             Enter your Application Reference Number to track the current status of your NOC request.
                         </p>
                     </div>
 
-                    <form onSubmit={handleSearch} style={{ display: 'flex', gap: '15px', marginBottom: '30px', maxWidth: '600px', margin: '0 auto 30px' }}>
+                    <form onSubmit={handleSearch} className="officer-flex officer-gap-4" style={{ maxWidth: '600px', margin: '0 auto 3rem' }}>
                         <input
                             type="text"
                             placeholder="e.g. RJ-NOC-2025-001"
                             value={searchId}
                             onChange={(e) => setSearchId(e.target.value)}
-                            className="gov-input"
-                            style={{
-                                flex: 1,
-                                padding: '14px',
-                                border: '2px solid #e2e8f0',
-                                borderRadius: '8px',
-                                fontSize: '1rem',
-                                outline: 'none'
-                            }}
+                            className="officer-input"
+                            style={{ flex: 1 }}
+                            required
                         />
                         <button
                             type="submit"
                             disabled={loading}
-                            style={{
-                                padding: '0 25px',
-                                background: '#2563eb',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '8px',
-                                fontSize: '1rem',
-                                fontWeight: '600',
-                                cursor: 'pointer',
-                                transition: 'background 0.2s'
-                            }}
+                            className="officer-btn officer-btn-primary"
+                            style={{ padding: '0 2rem' }}
                         >
-                            {loading ? 'Searching...' : 'Track'}
+                            {loading ? 'Tracking...' : 'Track'}
                         </button>
                     </form>
 
                     {error && (
-                        <div style={{
-                            maxWidth: '600px',
-                            margin: '0 auto 20px',
-                            padding: '12px',
-                            background: '#fef2f2',
-                            color: '#dc2626',
-                            borderRadius: '6px',
-                            border: '1px solid #fecaca',
-                            textAlign: 'center'
-                        }}>
-                            {error}
+                        <div className="officer-login-error" style={{ maxWidth: '600px', margin: '0 auto 2rem' }}>
+                            ⚠️ {error}
                         </div>
                     )}
 
                     {statusData && (
-                        <div className="status-result" style={{
-                            borderTop: '1px solid #e2e8f0',
-                            paddingTop: '30px',
-                            marginTop: '10px'
-                        }}>
-                            <div style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                marginBottom: '20px',
-                                background: '#f8fafc',
-                                padding: '15px 20px',
-                                borderRadius: '8px'
-                            }}>
+                        <div className="public-feature-card" style={{ borderTop: '6px solid var(--color-primary-600)' }}>
+                            <div className="officer-flex officer-justify-between officer-items-center" style={{ marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                                 <div>
-                                    <span style={{ display: 'block', fontSize: '0.85rem', color: '#64748b' }}>Application ID</span>
-                                    <span style={{ fontWeight: '700', color: '#0f172a', fontSize: '1.1rem' }}>{statusData.id}</span>
+                                    <span style={{ display: 'block', fontSize: '0.875rem', color: 'var(--gray-500)', fontWeight: '600', textTransform: 'uppercase' }}>Application ID</span>
+                                    <span style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--gray-900)' }}>{statusData.id}</span>
                                 </div>
                                 <div style={{ textAlign: 'right' }}>
-                                    <span style={{ display: 'block', fontSize: '0.85rem', color: '#64748b' }}>Current Status</span>
-                                    <span style={{
-                                        display: 'inline-block',
-                                        padding: '4px 12px',
-                                        borderRadius: '20px',
-                                        background: statusData.statusColor === 'success' ? '#dcfce7' : statusData.statusColor === 'danger' ? '#fee2e2' : '#fff7ed',
-                                        color: statusData.statusColor === 'success' ? '#166534' : statusData.statusColor === 'danger' ? '#b91c1c' : '#c2410c',
-                                        fontWeight: '700',
-                                        fontSize: '0.9rem'
-                                    }}>
+                                    <span style={{ display: 'block', fontSize: '0.875rem', color: 'var(--gray-500)', fontWeight: '600', textTransform: 'uppercase' }}>Current Status</span>
+                                    <span className={`officer-badge ${statusData.statusColor === 'success' ? 'approved' : statusData.statusColor === 'danger' ? 'rejected' : 'under-review'}`}>
                                         {statusData.status}
                                     </span>
                                 </div>
                             </div>
 
-                            <div style={{ position: 'relative', padding: '20px 0' }}>
-                                {/* Simple Timeline */}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative' }}>
-                                    {/* Line */}
-                                    <div style={{
-                                        position: 'absolute',
-                                        top: '15px',
-                                        left: '40px',
-                                        right: '40px',
-                                        height: '3px',
-                                        background: '#e2e8f0',
-                                        zIndex: 0
-                                    }}>
-                                        <div style={{
-                                            height: '100%',
-                                            width: `${(statusData.currentStage / 4) * 100}%`,
-                                            background: '#3b82f6',
-                                            transition: 'width 0.5s ease'
-                                        }}></div>
-                                    </div>
+                            <div className="public-timeline">
+                                <div className="public-timeline-track">
+                                    <div 
+                                        className="public-timeline-progress" 
+                                        style={{ width: `${((statusData.currentStage - 1) / (statusData.stages.length - 1)) * 100}%` }}
+                                    />
+                                </div>
 
+                                <div className="public-timeline-steps">
                                     {statusData.stages.map((stage, idx) => {
                                         const isCompleted = idx + 1 <= statusData.currentStage;
                                         return (
-                                            <div key={stage.id} style={{ position: 'relative', zIndex: 1, textAlign: 'center', width: '25%' }}>
-                                                <div style={{
-                                                    width: '32px',
-                                                    height: '32px',
-                                                    borderRadius: '50%',
-                                                    background: isCompleted ? '#3b82f6' : '#fff',
-                                                    border: `3px solid ${isCompleted ? '#3b82f6' : '#e2e8f0'}`,
-                                                    color: isCompleted ? 'white' : '#94a3b8',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    fontWeight: '700',
-                                                    margin: '0 auto 10px'
-                                                }}>
+                                            <div key={stage.id} className={`public-step-item ${isCompleted ? 'active' : ''}`}>
+                                                <div className="public-step-icon">
                                                     {isCompleted ? '✓' : idx + 1}
                                                 </div>
-                                                <div style={{ fontSize: '0.85rem', fontWeight: '600', color: isCompleted ? '#1e293b' : '#94a3b8' }}>
-                                                    {stage.label}
-                                                </div>
-                                                <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '2px' }}>
-                                                    {stage.date}
+                                                <div className="public-step-content">
+                                                    <div className="public-step-label">{stage.label}</div>
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)', marginTop: '4px' }}>
+                                                        {stage.date || 'Pending'}
+                                                    </div>
                                                 </div>
                                             </div>
                                         );
@@ -249,12 +148,6 @@ const ApplicationStatus = () => {
                     )}
                 </div>
             </div>
-
-            <footer className="portal-footer" style={{ marginTop: 'auto' }}>
-                <p>
-                    © 2026 Ground Water Department, Rajasthan
-                </p>
-            </footer>
         </div>
     );
 };

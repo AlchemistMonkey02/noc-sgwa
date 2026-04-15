@@ -4,7 +4,10 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import NOCRegister from '../noc/NOCRegister';
 import PublicHeader from './components/PublicHeader';
+import LoginRequiredModal from './components/LoginRequiredModal';
+import LandingFooter from './components/LandingFooter';
 import { EXTERNAL_URLS } from '../../config/constants';
+import "./styles/public-landing.css";
 // Native Web Crypto API Implementation for Token Signing/Verification
 // This removes dependency on 'jsonwebtoken' and Node polyfills like Buffer/Crypto
 const textEncoder = new TextEncoder();
@@ -172,6 +175,7 @@ const PublicLanding = () => {
     const [flashMessage, setFlashMessage] = useState('');
     const [captchaJwt, setCaptchaJwt] = useState('');
     const [captchaImage, setCaptchaImage] = useState('');
+    const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
     const HASH_SECRET = 'sgwa_secret_key_2026'; // In production, this should be backend-side
     const RANDOM_KEY = 'sgwa_random_key_987';
@@ -303,6 +307,13 @@ const PublicLanding = () => {
 
 
     const handleServiceCardClick = (service) => {
+        // Restrict access for guests to specific services
+        const restrictedServices = ['/public/services/noc', '/public/services/rig', '/public/services/vendor', '/noc/track-status'];
+        
+        if (!isAuthenticated && restrictedServices.includes(service.link)) {
+            setIsLoginModalOpen(true);
+            return;
+        }
 
         if (service.link) {
             if (service.external) {
@@ -727,16 +738,14 @@ const PublicLanding = () => {
             </div>
 
 
+            {/* Login Required Modal */}
+            <LoginRequiredModal 
+                isOpen={isLoginModalOpen} 
+                onClose={() => setIsLoginModalOpen(false)} 
+            />
+
             {/* Footer */}
-            <footer className="portal-footer">
-                <p>
-                    <strong>{t('landing.footer1')}</strong><br />
-                    {t('landing.footer2')}<br />
-                    <span style={{ opacity: 0.6, fontSize: '0.8rem', marginTop: '10px', display: 'block' }}>
-                        {t('landing.footer3')}
-                    </span>
-                </p>
-            </footer>
+            <LandingFooter />
         </div>
     );
 };

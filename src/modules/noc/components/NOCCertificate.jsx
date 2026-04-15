@@ -11,11 +11,17 @@ const NOCCertificate = ({ nocData }) => {
     const application = nocData?.applicationId || {};
     const projectDetails = application?.projectDetails || {};
     const locationInfo = application?.location || {};
+    const commsAddress = application?.communicationAddress || {};
 
-    // Water Requirements (Section 4) - Abstracted Structure Handling
-    const waterReq = application?.waterRequirementBreakup || {};
-    const gwReq = waterReq.groundWaterRequirement || {};
-    const dewateringReq = waterReq.dewateringRequirement || {};
+    // Master Data Mappings
+    const APPLICATION_TYPE_MAP = {
+        "1": "Bulk Water Supply",
+        "2": "Industry",
+        "3": "Infrastructure",
+        "4": "Mining",
+        "5": "Individual Domestic Consumer",
+        "6": "Agriculture Activities"
+    };
 
     // Map extracted data with defaults
     const {
@@ -27,35 +33,65 @@ const NOCCertificate = ({ nocData }) => {
         district = locationInfo?.districtId || 'N/A',
         town = locationInfo?.village || locationInfo?.tehsil || '',
         block = locationInfo?.blockId || '',
-        communicationAddress = 'Registered Office Address',
+        communicationAddress = commsAddress.addressLine1 
+            ? `${commsAddress.addressLine1}${commsAddress.addressLine2 ? ', ' + commsAddress.addressLine2 : ''}, ${commsAddress.district || ''}, ${commsAddress.state || ''} - ${commsAddress.pincode || ''}`
+            : 'Registered Office Address',
 
         // Certificate Core Data
         nocNumber = nocData?.nocNumber || 'N/A',
         applicationNumber = application?.applicationNumber || 'N/A',
-        nocType = application?.applicationType || 'New',
+        nocType = APPLICATION_TYPE_MAP[String(application?.applicationType)] || application?.applicationType || 'New',
+        applicationTypeMapped = APPLICATION_TYPE_MAP[String(application?.applicationType)] || application?.applicationType || 'New',
         projectStatus = application?.projectStatus || 'Existing',
         category = locationInfo?.blockCategory || 'Safe',
 
         // Format dates correctly from ISO strings if present
-        issueDate = nocData?.issueDate ? new Date(nocData.issueDate).toLocaleDateString() : '',
-        validFrom = nocData?.validFrom ? new Date(nocData.validFrom).toLocaleDateString() : '',
-        validUpto = nocData?.validUpto ? new Date(nocData.validUpto).toLocaleDateString() : '',
+        issueDate = nocData?.issueDate ? new Date(nocData.issueDate).toLocaleDateString('en-GB') : '',
+        validFrom = nocData?.validFrom ? new Date(nocData.validFrom).toLocaleDateString('en-GB') : '',
+        validUpto = nocData?.validUpto ? new Date(nocData.validUpto).toLocaleDateString('en-GB') : '',
 
         // Approved Quantities
-        approvedWaterQuantity = nocData?.approvedWaterQuantity || gwReq.totalRequirementKld || '0.00',
-        approvedWaterQuantityAnnual = nocData?.approvedWaterQuantityAnnual || gwReq.totalRequirementAnnual || '0.00',
-
-        // Structures Data (Placeholder logic, abstracting true API shape if needed)
-        structures = application?.groundWaterStructures || {},
-        total_ex = structures.existingTotal || 0, total_prop = structures.proposedTotal || 0, grand_total = (structures.existingTotal || 0) + (structures.proposedTotal || 0),
-        dw_ex = structures.existingDW || 0, dcb_ex = structures.existingDCB || 0, bw_ex = structures.existingBW || 0, tw_ex = structures.existingTW || 0, mpu_ex = structures.existingMPU || 0,
-        dw_prop = structures.proposedDW || 0, dcb_prop = structures.proposedDCB || 0, bw_prop = structures.proposedBW || 0, tw_prop = structures.proposedTW || 0, mpu_prop = structures.proposedMPU || 0,
-        total_dw = dw_ex + dw_prop, total_dcb = dcb_ex + dcb_prop, total_bw = bw_ex + bw_prop, total_tw = tw_ex + tw_prop, total_mpu = mpu_ex + mpu_prop,
-
+        approvedWaterQuantity = application?.waterRequirement?.freshWaterRequirement || application?.waterRequirement?.proposedExtraction?.totalDailyExtraction || '0.00',
+        
+        // QR & Images
         emblemImage = '/logos/india-emblem.png',
         qrCodeImage = nocData?.qrCode,
         signatureImage
     } = nocData || {};
+
+    // Annual Quantity with Fallback Calculation
+    let approvedWaterQuantityAnnual = application?.waterRequirement?.annualRequirement || application?.waterRequirement?.proposedExtraction?.totalAnnualExtraction || 0;
+    if ((!approvedWaterQuantityAnnual || approvedWaterQuantityAnnual === 0 || approvedWaterQuantityAnnual === '0.00') && (approvedWaterQuantity && approvedWaterQuantity !== '0.00')) {
+        approvedWaterQuantityAnnual = (parseFloat(approvedWaterQuantity) * 365).toFixed(2);
+    }
+
+    // Structures Data Aggregation
+    const groundWaterStructures = application?.groundWaterStructures || [];
+    const proposedExtraction = application?.waterRequirement?.proposedExtraction || {};
+
+    // Aggregate Existing Structures
+    const dw_ex = groundWaterStructures.filter(s => s.structureType?.toUpperCase().includes('DUGWELL') || s.structureType?.toUpperCase() === 'DW').length;
+    const dcb_ex = groundWaterStructures.filter(s => s.structureType?.toUpperCase().includes('DUG CUM BOREWELL') || s.structureType?.toUpperCase() === 'DCB').length;
+    const bw_ex = groundWaterStructures.filter(s => s.structureType?.toUpperCase().includes('BOREWELL') || s.structureType?.toUpperCase() === 'BW').length;
+    const tw_ex = groundWaterStructures.filter(s => s.structureType?.toUpperCase().includes('TUBEWELL') || s.structureType?.toUpperCase() === 'TW').length;
+    const mpu_ex = groundWaterStructures.filter(s => s.structureType?.toUpperCase().includes('PUMP') || s.structureType?.toUpperCase() === 'PU').length;
+    const total_ex = groundWaterStructures.length;
+
+    // Map Proposed Structures
+    const dw_prop = parseInt(proposedExtraction.numberOfDugwells || 0);
+    const dcb_prop = 0; // Not explicitly tracked in model proposedExtraction yet
+    const bw_prop = parseInt(proposedExtraction.numberOfBorewells || 0);
+    const tw_prop = parseInt(proposedExtraction.numberOfTubewells || 0);
+    const mpu_prop = parseInt(proposedExtraction.numberOfPumps || 0);
+    const total_prop = dw_prop + dcb_prop + bw_prop + tw_prop + mpu_prop;
+
+    // Totals
+    const total_dw = dw_ex + dw_prop;
+    const total_dcb = dcb_ex + dcb_prop;
+    const total_bw = bw_ex + bw_prop;
+    const total_tw = tw_ex + tw_prop;
+    const total_mpu = mpu_ex + mpu_prop;
+    const grand_total = total_ex + total_prop;
 
     const handlePrint = () => {
         window.print();
@@ -211,11 +247,14 @@ const NOCCertificate = ({ nocData }) => {
                 <table className="tech-table">
                     <thead>
                         <tr>
-                            <th rowSpan="2" style={{ width: '40%' }}>GW Abstraction</th>
+                            <th rowSpan="2" style={{ width: '25%' }}>GW Abstraction</th>
+                            <th colSpan="2">GW Abstraction</th>
                             <th colSpan="2">Dewatering</th>
                             <th colSpan="2">Total</th>
                         </tr>
                         <tr>
+                            <th>m³/day</th>
+                            <th>m³/year</th>
                             <th>m³/day</th>
                             <th>m³/year</th>
                             <th>m³/day</th>
@@ -225,6 +264,8 @@ const NOCCertificate = ({ nocData }) => {
                     <tbody>
                         <tr>
                             <td><strong>Ground Water Abstraction</strong></td>
+                            <td>{approvedWaterQuantity}</td>
+                            <td>{approvedWaterQuantityAnnual}</td>
                             <td>0.00</td>
                             <td>0.00</td>
                             <td><strong>{approvedWaterQuantity}</strong></td>
@@ -234,11 +275,15 @@ const NOCCertificate = ({ nocData }) => {
                             <td><strong>Dewatering</strong></td>
                             <td>0.00</td>
                             <td>0.00</td>
+                            <td>0.00</td>
+                            <td>0.00</td>
                             <td><strong>0.00</strong></td>
                             <td><strong>0.00</strong></td>
                         </tr>
                         <tr style={{ backgroundColor: '#eee' }}>
                             <td><strong>Total</strong></td>
+                            <td><strong>{approvedWaterQuantity}</strong></td>
+                            <td><strong>{approvedWaterQuantityAnnual}</strong></td>
                             <td><strong>0.00</strong></td>
                             <td><strong>0.00</strong></td>
                             <td><strong>{approvedWaterQuantity}</strong></td>

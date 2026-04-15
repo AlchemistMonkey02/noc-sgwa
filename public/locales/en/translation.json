@@ -12,7 +12,7 @@
         "govTitle": "Government of Rajasthan",
         "skipToMain": "Skip to Main Content",
         "screenReader": "Screen Reader Access",
-        "rgwaTitle": "Rajasthan Ground Water Authority",
+        "rgwaTitle": "Rajasthan Ground Water Conservation & Management Authority",
         "rgwaSubtitle": "Government of Rajasthan",
         "about": "About",
         "guidelines": "Guidelines",
@@ -28,7 +28,7 @@
     },
     "hero": {
         "title1": "Rajasthan Ground Water",
-        "title2": "Management Authority",
+        "title2": "Conservation & Management Authority",
         "subtitle": "A unified platform for NOC applications, renewals, and ground water conservation in Rajasthan.",
         "applyNow": "Apply for New NOC",
         "trackStatus": "Track Status",
@@ -152,7 +152,10 @@
         "important": "IMPORTANT",
         "toolsTitle": "🛠️ Tools & Calculators",
         "abstraction": "Abstraction Charges",
-        "docChecklist": "Document Checklist"
+        "docChecklist": "Document Checklist",
+        "noUpcomingDeadlines": "No upcoming deadlines found",
+        "noAnnouncements": "No new announcements at this time",
+        "noRecentApps": "No recent applications found"
     },
     "nocLogin": {
         "titleSuffix": "Login",
@@ -175,7 +178,13 @@
         "logoutSuccess": "You have been logged out successfully.",
         "fillAll": "Please fill all required fields",
         "invalidCaptcha": "Invalid Captcha Code",
-        "networkError": "Network error. Please check your connection and try again."
+        "networkError": "Network error. Please check your connection and try again.",
+        "loginRequired": {
+            "title": "Access Restricted",
+            "message": "Login to continue to this resource.",
+            "accept": "Accept",
+            "reject": "Reject"
+        }
     },
     "sidebar": {
         "dashboard": "Dashboard",

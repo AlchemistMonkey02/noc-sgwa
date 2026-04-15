@@ -105,17 +105,20 @@ import NOCReports from './modules/noc/NOCReports';
 import Utilities from './modules/noc/Utilities';
 import NOCHelp from './modules/noc/NOCHelp';
 
+import { UIProvider } from './context/UIContext';
+
 function App() {
   return (
     <ToastProvider>
       <LanguageProvider>
         <AuthProvider>
           <Router>
-            <ScrollToTop />
-            <NotificationProvider>
-              <NativeConsultation />
-              <Layout>
-                <Routes>
+            <UIProvider>
+              <ScrollToTop />
+              <NotificationProvider>
+                <NativeConsultation />
+                <Layout>
+                  <Routes>
                   {/* Root redirect to Public Landing Page */}
                   <Route path="/" element={<PublicLanding />} />
                   <Route path="/public/know-your-ec" element={<KnowYourEC />} />
@@ -378,7 +381,8 @@ function App() {
                 </Routes>
               </Layout>
             </NotificationProvider>
-          </Router >
+          </UIProvider>
+        </Router >
         </AuthProvider>
       </LanguageProvider>
     </ToastProvider>

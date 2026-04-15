@@ -5,13 +5,26 @@ import { useAuth } from '../../../context/AuthContext';
 import { EXTERNAL_URLS } from '../../../config/constants';
 import NotificationBell from '../../../components/NotificationBell';
 import './PublicHeader.css';
+import { useUI } from '../../../context/UIContext';
+import { useLocation } from 'react-router-dom';
 
 const PublicHeader = () => {
     const { isAuthenticated, user, logout, isOfficer, userType } = useAuth();
+    const { isMobileMenuOpen, toggleMobileMenu, isSidebarOpen, toggleSidebar } = useUI();
+    const location = useLocation();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const { t, i18n } = useTranslation();
+
+    const isNocPortal = location.pathname.startsWith('/noc/') && !['/noc/login', '/noc/register'].includes(location.pathname);
+
+    const toggleMenu = () => {
+        if (isNocPortal && isAuthenticated) {
+            toggleSidebar();
+        } else {
+            toggleMobileMenu();
+        }
+    };
 
     const toggleLanguage = () => {
         const newLang = i18n.language === 'en' ? 'hi' : 'en';
@@ -33,12 +46,9 @@ const PublicHeader = () => {
         e.preventDefault();
         await logout();
         navigate('/noc/login');
-        setIsMenuOpen(false);
+        setIsMobileMenuOpen(false);
     };
 
-    const toggleMenu = () => {
-        setIsMenuOpen(!isMenuOpen);
-    };
 
     return (
         <header className="public-portal-header">
@@ -118,32 +128,32 @@ const PublicHeader = () => {
 
                         {/* Mobile Menu Toggle */}
                         <button className="public-mobile-toggle" onClick={toggleMenu} aria-label="Toggle Menu">
-                            {isMenuOpen ? '✕' : '☰'}
+                            {isMobileMenuOpen ? '✕' : '☰'}
                         </button>
                     </div>
                 </div>
             </div>
 
             {/* Navigation Bar */}
-            <nav className={`public-header-nav ${isMenuOpen ? 'open' : ''}`}>
+            <nav className={`public-header-nav ${isMobileMenuOpen ? 'open' : ''}`}>
                 <div className="public-header-container">
                     <div className="mobile-menu-header">
                         <span className="mobile-menu-title">{t('nav.menu')}</span>
-                        <button className="mobile-close-btn" onClick={() => setIsMenuOpen(false)}>✕</button>
+                        <button className="mobile-close-btn" onClick={() => setIsMobileMenuOpen(false)}>✕</button>
                     </div>
                     <div className="nav-links-wrapper">
-                        <Link to="/" onClick={() => setIsMenuOpen(false)}>{t('nav.home').toUpperCase()}</Link>
-                        <a href={EXTERNAL_URLS.ABOUT_URL} target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>{t('nav.aboutMobile')}</a>
-                        <a href={EXTERNAL_URLS.SERVICES_URL} target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>{t('nav.services').toUpperCase()}</a>
-                        <a href={EXTERNAL_URLS.GUIDELINES_URL} target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>{t('nav.guidelines').toUpperCase()}</a>
-                        <a href={EXTERNAL_URLS.DOWNLOADS_URL} target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>{t('nav.downloadsMobile')}</a>
-                        <a href={EXTERNAL_URLS.CONTACT_URL} target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>{t('nav.contactMobile')}</a>
+                        <Link to="/" onClick={() => setIsMobileMenuOpen(false)}>{t('nav.home').toUpperCase()}</Link>
+                        <a href={EXTERNAL_URLS.ABOUT_URL} target="_blank" rel="noopener noreferrer" onClick={() => setIsMobileMenuOpen(false)}>{t('nav.aboutMobile')}</a>
+                        <a href={EXTERNAL_URLS.SERVICES_URL} target="_blank" rel="noopener noreferrer" onClick={() => setIsMobileMenuOpen(false)}>{t('nav.services').toUpperCase()}</a>
+                        <a href={EXTERNAL_URLS.GUIDELINES_URL} target="_blank" rel="noopener noreferrer" onClick={() => setIsMobileMenuOpen(false)}>{t('nav.guidelines').toUpperCase()}</a>
+                        <a href={EXTERNAL_URLS.DOWNLOADS_URL} target="_blank" rel="noopener noreferrer" onClick={() => setIsMobileMenuOpen(false)}>{t('nav.downloadsMobile')}</a>
+                        <a href={EXTERNAL_URLS.CONTACT_URL} target="_blank" rel="noopener noreferrer" onClick={() => setIsMobileMenuOpen(false)}>{t('nav.contactMobile')}</a>
                         {isAuthenticated ? (
                             <>
                                 <Link
                                     to={isOfficer() ? `/officer/${userType?.toLowerCase()}/dashboard` : "/noc/dashboard"}
                                     className="nav-btn-link-login"
-                                    onClick={() => setIsMenuOpen(false)}
+                                    onClick={() => setIsMobileMenuOpen(false)}
                                 >
                                     {t('nav.portalMobile')}
                                 </Link>
@@ -151,15 +161,15 @@ const PublicHeader = () => {
                             </>
                         ) : (
                             <>
-                                <Link to="/noc/register" className="nav-btn-link-register" onClick={() => setIsMenuOpen(false)}>{t('nav.registerMobile')}</Link>
-                                <Link to="/officer/login" className="nav-btn-link-login" style={{ background: 'var(--gray-800)' }} onClick={() => setIsMenuOpen(false)}>{t('nav.officerPortal').toUpperCase()}</Link>
+                                <Link to="/noc/register" className="nav-btn-link-register" onClick={() => setIsMobileMenuOpen(false)}>{t('nav.registerMobile')}</Link>
+                                <Link to="/officer/login" className="nav-btn-link-login" style={{ background: 'var(--gray-800)' }} onClick={() => setIsMobileMenuOpen(false)}>{t('nav.officerPortal').toUpperCase()}</Link>
                             </>
                         )}
                     </div>
                 </div>
             </nav>
             {/* Backdrop for mobile */}
-            {isMenuOpen && <div className="public-nav-backdrop" onClick={() => setIsMenuOpen(false)}></div>}
+            {isMobileMenuOpen && <div className="public-nav-backdrop" onClick={() => toggleMobileMenu()}></div>}
         </header>
     );
 };

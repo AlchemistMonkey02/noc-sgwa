@@ -17,7 +17,12 @@ export default defineConfig({
   ],
   // Force optimization to resolve 504 Outdated Dep issues
   optimizeDeps: {
+    include: ['cookie'],
     force: true,
+  },
+  server: {
+    port: 5173,
+    strictPort: true,
   },
   // Cache busting
   define: {

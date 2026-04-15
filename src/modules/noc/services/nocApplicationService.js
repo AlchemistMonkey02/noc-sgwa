@@ -28,6 +28,7 @@ export const nocApplicationService = {
     getTehsils: (districtId) => apiClient.get(`/master/tehsils?districtId=${districtId}`),
     getAssessmentUnits: (districtId) => apiClient.get(`/master/assessment-units?districtId=${districtId}`),
     getBlockCategory: (districtId, blockId) => apiClient.get(`/master/block-category?districtId=${districtId}&blockId=${blockId}`),
+    fetchBlockCategory: (payload) => apiClient.post('/master/blocks/category', payload),
     getGeologyTypes: () => apiClient.get('/master/geology-types'),
     getMeterTypes: () => apiClient.get('/master/meter-types'),
     getSectorTypes: () => apiClient.get('/master/sector-types'),
@@ -129,7 +130,7 @@ export const nocApplicationService = {
 
     downloadCertificate: async (refNumber) => {
         try {
-            const blob = await apiClient.request(`/applications/noc/ref/${refNumber}/document`, { method: 'GET' }, true).then(res => res.blob());
+            const blob = await apiClient.request(`/applications/noc/ref/${refNumber}/document`, { method: 'GET', asBlob: true }).then(res => res.blob());
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -145,7 +146,7 @@ export const nocApplicationService = {
         }
     },
 
-    downloadDocument: (documentId) => apiClient.request(`/documents/${documentId}/download`).then(res => res.blob()),
+    downloadDocument: (documentId) => apiClient.request(`/documents/${documentId}/download`, { asBlob: true }).then(res => res.blob()),
     updateDocumentAIStatus: (documentId, data) => apiClient.post(`/documents/${documentId}/verify-ai`, data),
 
     verifyDocumentWithAI: async (file, docType, metadata = {}) => {

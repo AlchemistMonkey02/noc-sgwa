@@ -4,16 +4,18 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../../context/AuthContext';
 import NotificationBell from '../../../../components/NotificationBell';
 import '../styles/officer-portal.css';
+import { useUI } from '../../../../context/UIContext';
 
 const OfficerHeader = ({ officerName, officerRole, officerDesignation, district }) => {
     const navigate = useNavigate();
     const { logout } = useAuth();
     const { t, i18n } = useTranslation();
+    const { toggleSidebar } = useUI();
 
     const handleLogout = async () => {
         await logout(() => navigate('/officer/login'));
     };
-
+ 
     const toggleLanguage = () => {
         const newLang = i18n.language === 'en' ? 'hi' : 'en';
         i18n.changeLanguage(newLang);
@@ -35,12 +37,7 @@ const OfficerHeader = ({ officerName, officerRole, officerDesignation, district 
                 {/* Mobile Menu Toggle */}
                 <button 
                     className="officer-mobile-toggle"
-                    onClick={() => {
-                        const sidebar = document.querySelector('.officer-sidebar');
-                        if (sidebar) sidebar.classList.toggle('open');
-                        const backdrop = document.querySelector('.officer-sidebar-backdrop');
-                        if (backdrop) backdrop.classList.toggle('active');
-                    }}
+                    onClick={toggleSidebar}
                     aria-label="Toggle Menu"
                 >
                     ☰

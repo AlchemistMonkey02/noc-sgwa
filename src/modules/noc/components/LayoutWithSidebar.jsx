@@ -1,18 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import NOCHeader from './NOCHeader';
 import NOCFooter from './NOCFooter';
 import Sidebar from './Sidebar';
 import '../styles/noc-portal.css';
-import PublicHeader from '../../public/components/PublicHeader';
+import { useUI } from '../../../context/UIContext';
 
-/**
- * Layout wrapper component with sidebar for authenticated NOC portal pages
- * @param {Object} props
- * @param {React.ReactNode} props.children - Page content
- * @param {boolean} props.showSidebar - Whether to show sidebar (default: true)
- */
 const LayoutWithSidebar = ({ children, showSidebar = true, defaultCollapsed = false }) => {
-    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const { isSidebarOpen, setIsSidebarOpen, toggleSidebar } = useUI();
     const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
     const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
 
@@ -31,31 +24,18 @@ const LayoutWithSidebar = ({ children, showSidebar = true, defaultCollapsed = fa
     return (
         <div className="noc-portal">
             {showSidebar && (
-                <>
-                    <Sidebar
-                        isOpen={sidebarOpen}
-                        onToggle={() => setSidebarOpen(!sidebarOpen)}
-                        isCollapsed={isCollapsed}
-                        onCollapse={() => setIsCollapsed(!isCollapsed)}
-                    />
-
-                    {/* Sidebar Toggle Button (Mobile) */}
-                    <button
-                        className="sidebar-toggle-btn"
-                        onClick={() => setSidebarOpen(!sidebarOpen)}
-                        aria-label="Toggle sidebar"
-                    >
-                        ☰
-                    </button>
-                </>
+                <Sidebar
+                    isOpen={isSidebarOpen}
+                    onToggle={toggleSidebar}
+                    isCollapsed={isCollapsed}
+                    onCollapse={() => setIsCollapsed(!isCollapsed)}
+                />
             )}
 
-            <PublicHeader />
-
-            {showSidebar && !isDesktop && sidebarOpen && (
+            {showSidebar && !isDesktop && isSidebarOpen && (
                 <div
                     className="sidebar-backdrop"
-                    onClick={() => setSidebarOpen(false)}
+                    onClick={() => setIsSidebarOpen(false)}
                 />
             )}
 

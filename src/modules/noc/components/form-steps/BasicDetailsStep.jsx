@@ -20,6 +20,7 @@ const BasicDetailsStep = ({
     miningOptions,
     getDisplayLabel
 }) => {
+
     return (
         <div>
             <h3 className="form-section-header">Application Type Details</h3>
